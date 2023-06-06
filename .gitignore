@@ -473,3 +473,6 @@ $RECYCLE.BIN/
 # migrations
 */migrations/*
 !/migrations/__init__.py
+
+#gitmessage
+.gitmessage.txt
