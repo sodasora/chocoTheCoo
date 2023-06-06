@@ -3,28 +3,28 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 class UserManager(BaseUserManager):
     """ 커스텀 유저 매니저 """
-    def create_user(self, email, username, password=None):
+    def create_user(self, email, nickname, password=None):
         """ 관리자 계정 생성 """
         if not password:
             raise ValueError('관리자 계정의 비밀번호는 필수 입력 사항 입니다.')
-        elif not username:
+        elif not nickname:
             raise ValueError('사용자 별명은 필수 입력 사항 입니다.')
         elif not email:
             raise ValueError('사용자 이메일은 필수 입력 사항 입니다.')
         user = self.model(
             email=self.normalize_email(email),
-            username=username,
+            nickname=nickname,
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, username, password=None):
+    def create_superuser(self, email, nickname, password=None):
         """ 관리자 계정 생성 커스텀 """
         user = self.create_user(
             email,
             password=password,
-            username=username,
+            nickname=nickname,
         )
         user.is_admin = True
         user.is_active = True
@@ -58,7 +58,7 @@ class User(AbstractBaseUser):
     # phone_number
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username','password']
+    REQUIRED_FIELDS = ['nickname','password']
     objects = UserManager()
 
     def __str__(self):
@@ -85,12 +85,22 @@ class Seller(models.Model):
     account_holder = models.CharField("예금주",max_length=20)
     contact_number = models.CharField("업체 연락처",max_length=20)
 
-
+    def __str__(self):
+        """ 업체명 """
+        return self.company_name
 
 class Deliverie(models.Model):
-    """ 주소지  """
+    """ 배송 정보  """
     user = models.ForeignKey("users.User",related_name="deliveries_data",on_delete=models.CASCADE)
     address = models.CharField("주소",max_length=100)
     detail_address = models.CharField("상세주소",max_length=100)
     recipient = models.CharField("수령인",max_length=30)
     postal_code = models.CharField("우편번호",max_length=10)
+
+    def __str__(self):
+        """ 수령인 """
+        return self.recipient
+
+
+
+

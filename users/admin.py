@@ -4,9 +4,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User,Consumer,Seller
+from .models import User,Seller,Deliverie
 
-admin.site.register(Consumer)
+admin.site.register(Deliverie)
 admin.site.register(Seller)
 
 class UserCreationForm(forms.ModelForm):
@@ -15,7 +15,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email','username')
+        fields = ('email','nickname')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -37,26 +37,22 @@ class UserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email','username')
+        fields = ('email','nickname')
 
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
-
-
-
-    list_display = ('email', 'is_admin','username')
-    list_filter = ('is_admin','is_active')
+    list_display = ('email', 'is_admin','nickname')
+    list_filter = ('is_admin','is_active','is_seller')
     fieldsets = (
-        (None, {'fields': ('email','username')}),
-        # test 환경에서 profile_image를 조작하고 배포때는 빼보는게 어떨까 싶다.
-        ('Permissions', {'fields': ('is_admin','is_active','profile_image')}),
+        (None, {'fields': ('email','nickname')}),
+        ('Permissions', {'fields': ('is_admin','is_active','is_seller','profile_image','login_type','numbers')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2','username'),
+            'fields': ('email', 'password1', 'password2','nickname'),
         }),
     )
     search_fields = ('email',)
