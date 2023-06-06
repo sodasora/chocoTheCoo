@@ -6,9 +6,7 @@ from products.models import Product
 
 class Cart(CommonModel):
     """ 장바구니 """
-    
-    pass
-
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
 class CartItem(CommonModel):
     """ Cart와 Product의 ManyToManyField """
