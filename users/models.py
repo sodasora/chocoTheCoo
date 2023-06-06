@@ -13,5 +13,3 @@ class CartItem(CommonModel):
     product = models.ForeignKey(Product, models.CASCADE, verbose_name="상품", )
     cart = models.ForeignKey(Cart, models.CASCADE, verbose_name="장바구니", )
     count = models.PositiveIntegerField("상품개수", default=1)
-    
-    
