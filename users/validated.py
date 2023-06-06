@@ -27,7 +27,7 @@ class ValidatedData():
         return bool(password_match)
 
     @classmethod
-    def validated_username(self,username):
+    def validated_nickname(self,nickname):
         """ 유저네임 검증 """
         check = [
             lambda element: element != None,
@@ -35,7 +35,7 @@ class ValidatedData():
             lambda element: True if (len(element) > 1 and len(element) < 21) else False,
         ]
         for i in check:
-            if not i(username):
+            if not i(nickname):
                 return False
         return True
 
@@ -53,9 +53,23 @@ class ValidatedData():
         """ 이메일,유저네임,비밀번호 검증 """
         if not self.validated_email(kwargs.get('email')):
             return [False,"이메일 정보가 올바르지 않습니다."]
-        elif not self.validated_username(kwargs.get('username')):
+        elif not self.validated_nickname(kwargs.get('nickname')):
             return [False,"닉네임이 올바르지 않습니다."]
         elif not self.validated_password(kwargs.get('password')):
             return [False,"비밀번호가 올바르지 않습니다."]
         return [True,"유효성 검사에 통과했습니다."]
 
+    @classmethod
+    def validated_deliverie(self,**kwargs):
+        # 우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
+        postal_code = kwargs.get('postal_code')
+        check = [
+            lambda element: element != None,
+            lambda element: len(element) == len(element.replace(" ", "")),
+            lambda element: True if len(element) == 5 else False,
+            lambda element: element.isdigit(),
+        ]
+        for i in check:
+            if not i(postal_code):
+                return [False,"우편 번호가 정확하지 않습니다."]
+        return [True, "우편 번호가 정확합니다."]

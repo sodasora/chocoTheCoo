@@ -45,7 +45,7 @@ class User(AbstractBaseUser):
     profile_image = models.ImageField("프로필 이미지",upload_to="%Y/%m", blank=True, null=True)
     auth_code = models.CharField("인증 코드", max_length=128, blank=True, null=True)
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
-    numbers = models.CharField("통관번호",max_length=20)
+    numbers = models.CharField("통관번호",max_length=20,blank=True, null=True)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False) # 이메일 인증을 받을시 계정 활성화
     is_seller = models.BooleanField(default=False) # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
@@ -100,7 +100,3 @@ class Deliverie(models.Model):
     def __str__(self):
         """ 수령인 """
         return self.recipient
-
-
-
-
