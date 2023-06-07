@@ -104,3 +104,4 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscribe
         fields = "__all__" 
+        exclude = ('password','auth_code','is_admin','is_active','last_login')
