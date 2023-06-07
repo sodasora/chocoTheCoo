@@ -2,10 +2,10 @@ import django.db.utils
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.generics import get_object_or_404, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializer import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer)
-from .models import User,Deliverie,Seller,CartItem
+from .models import User,Deliverie,Seller
 from django.contrib.auth.hashers import check_password
 from . import validated
 
@@ -193,11 +193,3 @@ class SellerPermissionAPIView(APIView):
 class CustomTokenObtainPairView(TokenObtainPairView):
     """ 로그인 , access token 발급 """
     serializer_class = CustomTokenObtainPairSerializer
-
-class CartView(ListCreateAPIView):
-    queryset = CartItem.objects.all()
-    # serializer_class = 
-
-class CartDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = CartItem.objects.all()
-    # serializer_class = 

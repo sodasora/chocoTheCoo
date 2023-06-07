@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from . import views
+from . import views, orderviews
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -20,7 +20,7 @@ urlpatterns = [
     # refresh token 발급
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # 장바구니 조회, 장바구니 담기
-    path("<int:user_id>/carts/", views.CartView.as_view()),
+    path("<int:user_id>/carts/", orderviews.CartView.as_view()),
     # 장바구니 수량 변경, 삭제
-    path("<int:user_id>/carts/<int:cart_item_id>/", views.CartDetailView.as_view()),
+    path("<int:user_id>/carts/<int:cart_item_id>/", orderviews.CartDetailView.as_view()),
 ]
