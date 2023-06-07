@@ -8,6 +8,6 @@ class CartView(ListCreateAPIView):
     queryset = CartItem.objects.all()
     # serializer_class = 
 
-class CartItemView(RetrieveUpdateDestroyAPIView):
+class CartDetailView(RetrieveUpdateDestroyAPIView):
     queryset = CartItem.objects.all()
     # serializer_class = 
