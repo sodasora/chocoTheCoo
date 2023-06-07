@@ -34,7 +34,7 @@ class CartView(APIView):
     
     def post(self, request):
         """ 장바구니 추가 """
-        cart = get_object_or_404(CartItem, product=request.data['product'])
+        cart = CartItem.objects.filter(product=request.data['product'])
         if cart:
             cart.count += 1
             cart.save()

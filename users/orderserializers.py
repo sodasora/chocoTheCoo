@@ -20,10 +20,23 @@ class CartSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CartListSerializer(serializers.ModelSerializer):
+    product = serializers.SerializerMethodField()
+
     class Meta:
         model = CartItem
-        fields = '__all__'
+        exclude = ('user',)
         depth = 1
+
+    def get_product(self, cart_item):
+        product = cart_item.product
+        image_url = product.image.url if product.image else None
+        return {
+            'id': product.id,
+            'name': product.name,
+            'price': product.price,
+            'image': image_url,
+            'seller': product.seller.company_name,
+        }
 
 class CartDetailSerializer(serializers.ModelSerializer):
     class Meta:
