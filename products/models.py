@@ -1,6 +1,8 @@
 from django.db import models
 from config.models import CommonModel
-from users.models import User
+
+class Product(CommonModel):
+    pass
 
 class Category(models.Model):
     """ 상품 카테고리 """
@@ -10,8 +12,9 @@ class Category(models.Model):
         return str(self.name)
     
 class Review(CommonModel):
-    user = models.ForeignKey(User, verbose_name="작성자", on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, verbose_name="상품", on_delete=models.CASCADE)
+    """ 리뷰 """
+    user = models.ForeignKey("users.User", models.CASCADE, verbose_name="작성자",)
+    product = models.ForeignKey("products.Product", models.CASCADE, verbose_name="상품",)
     title = models.CharField("리뷰 제목", max_length=20)
     content = models.TextField("리뷰 내용", )
     STAR_CHOICES = [
@@ -21,4 +24,4 @@ class Review(CommonModel):
         (4, "⭐⭐⭐⭐"),
         (5, "⭐⭐⭐⭐⭐"),
     ]
-    star = models.IntegerField("리뷰 별점", max_length=1, choices=STAR_CHOICES)
+    star = models.IntegerField("리뷰 별점", choices=STAR_CHOICES)
