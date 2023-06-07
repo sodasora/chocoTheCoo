@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from config.models import CommonModel
-from products.models import Product
-from .models import User
 
 
 class UserManager(BaseUserManager):
@@ -106,10 +104,30 @@ class Deliverie(models.Model):
         return self.recipient
 
 class CartItem(CommonModel):
-    """
-    * 장바구니 
-    * User와 Product의 ManyToManyField
-    """
-    product = models.ForeignKey(Product, models.CASCADE, verbose_name="상품", )
-    user = models.ForeignKey(User, models.CASCADE, verbose_name="유저", )
+    """ 장바구니 """
+    # * User와 Product의 ManyToManyField
+    user = models.ForeignKey("users.User", models.CASCADE, verbose_name="유저", )
+    product = models.ForeignKey("products.Product", models.CASCADE, verbose_name="상품", )
     count = models.PositiveIntegerField("상품개수", default=1)
+
+class Bill(CommonModel):
+    """ 주문내역 """
+    user = models.ForeignKey("users.User", models.CASCADE, verbose_name="유저", )
+    address = models.CharField("주소", max_length=100)
+    detail_address = models.CharField("상세주소", max_length=100)
+    recipient = models.CharField("수령인", max_length=30)
+    postal_code = models.CharField("우편번호", max_length=10)
+
+class StatusCategory(models.Model):
+    """ 상태 카테고리 """
+    name = models.CharField("상태", max_length=20)
+
+class OrderItem(CommonModel):
+    """ 주문상품 """
+    bill = models.ForeignKey("users.Bill", models.CASCADE, verbose_name="주문내역")
+    seller = models.ForeignKey("users.Seller", models.CASCADE, verbose_name="판매자")
+    status = models.ForeignKey("users.StatusCategory", models.CASCADE, verbose_name="주문상태")
+    name = models.CharField("상품명", max_length=100)
+    count = models.PositiveIntegerField("상품개수", default=1)
+    price = models.PositiveIntegerField("상품가격")
+    product_id = models.IntegerField("상품ID")
