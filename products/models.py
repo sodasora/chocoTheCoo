@@ -1,15 +1,26 @@
 from django.db import models
 from config.models import CommonModel
 
-class Product(CommonModel):
-    pass
 
 class Category(models.Model):
-    """ 상품 카테고리 """
-    name = models.CharField("카테고리명", max_length=10)
+    name = models.CharField(max_length=50)
 
     def __str__(self):
-        return str(self.name)
+        return self.name
+    
+class Product(CommonModel):
+    seller = models.ForeignKey('users.Seller', on_delete = models.CASCADE)
+    name = models.CharField("상품이름", max_length=100)
+    content = models.TextField("상품설명")
+    price = models.IntegerField("상품가격")
+    amount = models.IntegerField("상품수량")
+
+     # onetomany , foreign key 로!! 
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
+    image = models.ImageField("상품 이미지", blank=True, null=True)
+
+    def __str__(self):
+        return self.name
     
 class Review(CommonModel):
     """ 리뷰 """
