@@ -3,11 +3,16 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer)
-from .models import User,Deliverie,Seller
+from .serializers import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer, PointSerializer, SubscriptionSerializer)
+from .models import User,Deliverie,Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
 from . import validated
+from django.db import transaction
+import datetime, schedule, time
+from django.utils import timezone
+from django.db.models import Sum, F
 
 
 class GetEmailAuthCode(APIView):
@@ -194,3 +199,103 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     """ 로그인 , access token 발급 """
     serializer_class = CustomTokenObtainPairSerializer
 
+
+"""포인트"""
+class PointView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer  = PointSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PointDateView(APIView):
+    permission_classes = [IsAuthenticated]    
+    # 날짜별 상세보기
+    def get(self, request, date):
+        # 포인트 총합 계산
+        """포인트 종류: 출석(1), 리뷰(2), 구매(3), 사용(4)"""
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1|2|3).filter(date=date).aggregate(total=Sum('points'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=4).filter(date=date).aggregate(total=Sum('points'))
+        total_point = total_plus_point - total_minus_point
+        
+        # 포인트 상세보기
+        points = Point.objects.filter(date=date, user=request.user)
+        
+        return Response({
+            "total_plus_point":total_plus_point,
+            "total_minus_point":total_minus_point,
+            "total_point":total_point,
+            "points": points
+        }, status=status.HTTP_200_OK)
+        
+
+class SubscribeView(APIView):
+    permission_classes = [IsAuthenticated]
+    # 구독 정보 가져오기
+    def get(self, request):
+        subscription = get_object_or_404(Subscribe, user_id=request.user.id)
+        serializer = SubscriptionSerializer(subscription)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # 구독 최초 생성
+    def post(self, request):
+        serializer = SubscriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({"message": "구독성공!"}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # 구독해지 및 복구
+    def patch(self,request):
+        subscription = get_object_or_404(Subscribe, user_id=request.user.id)
+        if subscription.subscribe == True:
+            subscription.subscribe = False
+            subscription.save()
+            return Response({"message": "구독이 성공적으로 해지되었습니다."}, status.HTTP_200_OK)
+        else:
+            subscription.subscribe = True
+            subscription.save()
+            return Response({"message": "구독성공!"}, status.HTTP_200_OK)
+        
+# 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
+def subscribe_check():
+    # 다음 결제일이 오늘의 날짜 이전인 구독들을 삭제(보안목적)
+    Subscribe.objects.filter(next_payment__lt=timezone.now().date(), subscribe=True).delete()
+    subscribe_users = Subscribe.objects.filter(next_payment=timezone.now().date(), subscribe=True)
+    
+    for subscribe_user in subscribe_users:
+        with transaction.atomic():
+            user_point = Point.objects.get(user_id=subscribe_user['user_id'])
+            
+            # 구독료 9900원
+            if user_point >= 9900:
+                user_point.points -= 9900
+                user_point.save()
+                
+                subscribe_user.subscribe = True
+                subscribe_user.next_payment = F('next_payment')+datetime.timedelta(weeks = 4)
+                # 테스트용 (1시간 뒤)
+                # subscribe_user.next_payment = F('next_payment')+datetime.timedelta(hours = 1)
+                subscribe_user.save()
+            else:
+                subscribe_user.subscribe = False
+                subscribe_user.save()
+
+# 매일 자정마다 작업 실행
+schedule.every().day.at("00:00").do(subscribe_check)
+
+# 테스트용 한시간에 한 번씩 확인하기
+# schedule.every().hours.at("00:00").do(subscribe_check)
+
+# 포인트 충전 먼저 진행
+# 구독 결제 유효성 검증하기 중요!!! - 구독 결제 영수증검증!! 포트원에서도 있음!!
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
