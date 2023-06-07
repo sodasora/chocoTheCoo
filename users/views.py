@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializer import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer)
+from .serializers import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer)
 from .models import User,Deliverie,Seller
 from django.contrib.auth.hashers import check_password
 from . import validated
