@@ -24,6 +24,7 @@ class UserAPIView(APIView):
     """ 회원가입, 회원 정보 수정, 휴면 계정 전환"""
     def get(self,request):
         """ 테스트옹 API, 유저 정보 읽기 """
+
         user = get_object_or_404(User,email=request.data.get("email"))
         serializer = ReadUserSerializer(user)
         return Response(serializer.data,status=status.HTTP_200_OK)
@@ -33,14 +34,13 @@ class UserAPIView(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'msg': serializer.data.get('id')}, status=status.HTTP_200_OK)
+            return Response({'msg': "회원 가입 되었습니다. 계정 인증을 진행해 주세요."}, status=status.HTTP_200_OK)
         else:
             return Response({"err":serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
     def put(self,request):
         """ 회원 가입시 이메일 인증  or 휴면 계정 활성화 신청 응답 """
         user = get_object_or_404(User, email=request.data['email'])
-        print(user.auth_code)
         if user.auth_code == None:
             return Response({"mrr":"먼저 인증코드를 발급받아주세요."},status=status.HTTP_400_BAD_REQUEST)
         elif not user.auth_code == request.data['auth_code']:
@@ -74,7 +74,12 @@ class UserAPIView(APIView):
 
 class DeliverieAPIView(APIView):
     """ 배송 정보 추가 """
-    def post(self, request, user_id):
+    def get(self,request,user_id):
+        user = get_object_or_404(User, id=user_id)
+        serializer = DeliverieSerializer(user.deliveries_data,many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request,user_id):
         user = get_object_or_404(User, id=user_id)
         deliverie_cnt = Deliverie.objects.filter(user=user).count()
         if deliverie_cnt > 4:
@@ -187,6 +192,5 @@ class SellerPermissionAPIView(APIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """ 로그인 , access token 발급 """
-    print("hello")
     serializer_class = CustomTokenObtainPairSerializer
 
