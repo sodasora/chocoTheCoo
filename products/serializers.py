@@ -29,7 +29,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'content', 'price', 'category', 'image')
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """ 리뷰조회에 product_id가 필요, 마이페이지 리뷰 조회는 따로 url과 view를 만들어야 함 """
+    """ 
+    상품페이지에서는 리뷰조회에 product_id가 필요, 마이페이지에서는 x
+    프론트에서 보내주고, 조건문으로 보내주는 값을 다르게.
+    """
     class Meta:
         model = Review
         fields = '__all__'
