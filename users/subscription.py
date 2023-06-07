@@ -34,9 +34,6 @@ schedule.every().day.at("00:00").do(subscribe_check)
 # 테스트용 한시간에 한 번씩 확인하기
 # schedule.every().hours.at("00:00").do(subscribe_check)
 
-# 포인트 충전 먼저 진행
-# 구독 결제 유효성 검증하기 중요!!! - 구독 결제 영수증검증!! 포트원에서도 있음!!
-
 while True:
     schedule.run_pending()
     time.sleep(1)
