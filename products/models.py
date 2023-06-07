@@ -26,8 +26,9 @@ class Review(CommonModel):
     """ 리뷰 """
     user = models.ForeignKey("users.User", models.CASCADE, verbose_name="작성자",)
     product = models.ForeignKey("products.Product", models.CASCADE, verbose_name="상품",)
-    title = models.CharField("리뷰 제목", max_length=20)
-    content = models.TextField("리뷰 내용", )
+    title = models.CharField("리뷰제목", max_length=20)
+    content = models.TextField("리뷰내용", )
+    image = models.ImageField("리뷰이미지", upload_to="%Y/%m", blank=True, null=True)
     STAR_CHOICES = [
         (1, "⭐"),
         (2, "⭐⭐"),

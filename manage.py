@@ -21,3 +21,12 @@ def main():
 if __name__ == '__main__': 
     load_dotenv()
     main()
+
+from products.serializers import ReviewSerializer, ReviewDetailSerializer
+from users.orderserializers import *
+serializer = ReviewSerializer()
+serializer2 = ReviewDetailSerializer()
+# serializer5 = ReviewDetailSerializer()
+print(repr(serializer))
+print(repr(serializer2))
+# print(repr(serializer5))
