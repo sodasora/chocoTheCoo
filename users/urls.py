@@ -33,9 +33,9 @@ urlpatterns = [
     # 주문 내역 상세 조회
     path('bills/<int:pk>/', orderviews.BillDetailView.as_view(), name="bill_detail_view"),
     # 주문 생성
-    path("bills/<int:bill_id>/orders/", orderviews.OrderView.as_view(), name='order_view'),
+    path("bills/<int:bill_id>/orders/", orderviews.OrderCreateView.as_view(), name='order_create_view'),
     # 주문 목록 조회
-    path("orders/products/<int:product_id>/", orderviews.OrderListView.as_view(), name='order_view'),
+    path("orders/products/<int:product_id>/", orderviews.OrderListView.as_view(), name='order_list_view'),
     # 주문 상세 조회
     path("orders/<int:pk>/", orderviews.OrderDetailView.as_view(), name='order_detail_view'),
 ]
