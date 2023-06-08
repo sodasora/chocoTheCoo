@@ -5,11 +5,10 @@ from .serializers import *
 from rest_framework import status
 from .models import Product, Category, Review
 
-
 class CategoryListAPIView(generics.ListCreateAPIView):
+    """ 카테고리 조회, 생성 """
     queryset = Category.objects.all()
     serializer_class = CategoryListSerializer
-
 
 class CategoryDetailAPIView(APIView):
     def get(self, request, name):
@@ -19,14 +18,15 @@ class CategoryDetailAPIView(APIView):
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
+    """상품 전체 조회, 생성"""
     queryset = Product.objects.all()
     serializer_class = ProductListSerializer
 
 
-class ProductDetailAPIView(generics.RetrieveAPIView):
+class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
-    lookup_field = 'name'
 
 
 class ReviewView(generics.ListCreateAPIView):
