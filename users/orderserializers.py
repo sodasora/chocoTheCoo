@@ -29,7 +29,10 @@ class CartDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = '__all__'
-
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'product': {'read_only': True},
+        }
 # class OrderItemSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = OrderItem

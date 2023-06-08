@@ -57,7 +57,7 @@ class CartDetailView(APIView):
         serializer = CartDetailSerializer(cart, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'msg': "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
+            return Response({'msg': "수량이 변경되었습니다."}, status=status.HTTP_200_OK)
         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, pk):

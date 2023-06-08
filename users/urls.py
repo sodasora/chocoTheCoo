@@ -22,7 +22,7 @@ urlpatterns = [
     # 장바구니 조회
     path("carts/", orderviews.CartView.as_view(), name='cart_view'),
     # 장바구니 담기, 장바구니 수량 변경, 삭제
-    path("carts/<int:product_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
+    path("carts/<int:pk>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
     # 주문 조회, 생성
     # path("<int:user_id>/orders/", orderviews.OrderView.as_view(), name='cart_view'),
     # 주문 상세 조회, 삭제???
