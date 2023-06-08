@@ -34,18 +34,19 @@ class CartDetailSerializer(serializers.ModelSerializer):
             'product': {'read_only': True},
         }
 
-# class OrderItemSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OrderItem
-#         fields = '__all__'
-#         extra_kwargs = {
-#             'bill': {'read_only': True},
-#         }
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = '__all__'
+        extra_kwargs = { 
+            'bill': {'read_only': True},
+        }
 
-# class OrderItemDetailSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OrderItem
-#         fields = '__all__'
+class OrderItemDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = '__all__'
+        depth = 1
 
 class BillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,7 +62,13 @@ class BillCreateSerializer(serializers.ModelSerializer):
         }
 
 class BillDetailSerializer(serializers.ModelSerializer):
-    # OrderItem = OrderItemSerializer(many=True, read_only=True)
+    order_items = serializers.SerializerMethodField()
+
+    def get_order_items(self, obj):
+        order_items = OrderItem.objects.filter(bill=obj)
+        serializer = OrderItemSerializer(order_items, many=True)
+        return serializer.data
+
     class Meta:
         model = Bill
         fields = '__all__'
