@@ -39,3 +39,10 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     """ 리뷰 상세 조회, 수정, 삭제 """
     queryset = Review.objects.all()
     serializer_class = ReviewDetailSerializer
+
+
+class MyReviewView(generics.ListAPIView):
+    """ 내 리뷰 조회 """
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    lookup_field = 'user_id'

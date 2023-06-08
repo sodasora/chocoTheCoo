@@ -8,6 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
+IAMPORT_KEY = os.environ.get('IAMPORT_KEY')
+IAMPORT_SECRET = os.environ.get('IAMPORT_SECRET')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
