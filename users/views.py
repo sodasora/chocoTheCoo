@@ -193,9 +193,6 @@ class SellerPermissionAPIView(APIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """ 로그인 , access token 발급 """
-<<<<<<< HEAD
-    serializer_class = CustomTokenObtainPairSerializer
-=======
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -262,4 +259,3 @@ class SubscribeView(APIView):
             subscription.save()
             return Response({"message": "구독성공!"}, status.HTTP_200_OK)
         
->>>>>>> 353a3a48fcbd08f3ec38348188e81b593823b114
