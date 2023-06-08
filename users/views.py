@@ -9,11 +9,7 @@ from .serializers import (CustomTokenObtainPairSerializer,UserSerializer,Deliver
 from .models import User,Deliverie,Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
 from . import validated
-from django.db import transaction
-import datetime, schedule, time
-from django.utils import timezone
-from django.db.models import Sum, F
-
+from django.db.models import Sum
 
 class GetEmailAuthCode(APIView):
     """ 이메일 인증코드 발송 """
