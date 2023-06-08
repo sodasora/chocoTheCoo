@@ -1,6 +1,11 @@
+import os, datetime, schedule, time
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'weasley.settings')
+django.setup()
+
 from .models import Point, Subscribe
 from django.db import transaction
-import datetime, schedule, time
 from django.utils import timezone
 from django.db.models import F
 

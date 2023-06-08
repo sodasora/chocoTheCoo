@@ -11,15 +11,11 @@ from .models import User,Delivery,Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
 from . import validated
 from .cryption import AESAlgorithm
-from django.db import transaction
-import datetime, schedule, time
-from django.utils import timezone
-from django.db.models import Sum, F
+from django.db.models import Sum
 """
 response 는 간단 명료하게 
 백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
 """
-
 
 class GetEmailAuthCodeAPIView(APIView):
     """ 이메일 인증코드 발송 """
@@ -262,9 +258,9 @@ class PointDateView(APIView):
     # 날짜별 상세보기
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 리뷰(2), 구매(3), 사용(4)"""
-        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1|2|3).filter(date=date).aggregate(total=Sum('points'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=4).filter(date=date).aggregate(total=Sum('points'))
+        """포인트 종류: 출석(1), 리뷰(2), 구매(3), 충전(4), 사용(5)"""
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1|2|3|4).filter(date=date).aggregate(total=Sum('points'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=5).filter(date=date).aggregate(total=Sum('points'))
         total_point = total_plus_point - total_minus_point
         
         # 포인트 상세보기
@@ -291,7 +287,7 @@ class SubscribeView(APIView):
         serializer = SubscriptionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response({"message": "구독성공!"}, status=status.HTTP_200_OK)
+            return Response({"message": "성공!"}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -301,8 +297,9 @@ class SubscribeView(APIView):
         if subscription.subscribe == True:
             subscription.subscribe = False
             subscription.save()
-            return Response({"message": "구독이 성공적으로 해지되었습니다."}, status.HTTP_200_OK)
+            return Response({"message": "해지"}, status.HTTP_200_OK)
         else:
             subscription.subscribe = True
             subscription.save()
-            return Response({"message": "구독성공!"}, status.HTTP_200_OK)
+            return Response({"message": "성공!"}, status.HTTP_200_OK)
+        
