@@ -1,6 +1,6 @@
-from rest_framework.generics import get_object_or_404, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveDestroyAPIView, RetrieveAPIView
+from rest_framework import generics
 from rest_framework.views import APIView
-from .models import CartItem
+from .models import CartItem, Seller
 from products.models import Product
 from .orderserializers import *
 from rest_framework.response import Response
@@ -48,17 +48,9 @@ class CartView(APIView):
 
 class CartDetailView(APIView):
     """ 장바구니 수량 변경, 삭제 """
-    # def get(self, request, pk):
-    """ 
     #? 장바구니 상세 조회 > 목록으로 충분 / 상품 누르면 상품페이지로 이동하게.
-    """
-    #     cart = get_object_or_404(CartItem, pk=pk)
-    #     serializer = CartDetailSerializer(cart)
-    #     return Response(serializer.data)
-
     def patch(self, request, cart_item_id):
-        # patch로 할 수 있나??? 바뀌는 것은 수량밖에 없음.
-        cart = get_object_or_404(CartItem, pk=cart_item_id)
+        cart = generics.get_object_or_404(CartItem, pk=cart_item_id)
         serializer = CartDetailSerializer(cart, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -66,50 +58,30 @@ class CartDetailView(APIView):
         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, cart_item_id):
-        cart = get_object_or_404(CartItem, pk=cart_item_id)
+        cart = generics.get_object_or_404(CartItem, pk=cart_item_id)
         cart.delete()
         return Response({'msg': "장바구니 삭제"}, status=status.HTTP_204_NO_CONTENT)
     
-# class OrderView(ListCreateAPIView):
-#     def get(self, request, bill_id=None, seller_id=None):
-#         bill = get_object_or_404(Bill, user=request.user)
-#         if bill_id:
-#             order = OrderItem.objects.filter(bill=bill)
-#             serializer = OrderItemSerializer(order, many=True)
-#             return Response(serializer.data)
-#         else:
-#             order = OrderItem.objects.filter(seller=seller_id)
-#             serializer = OrderItemSerializer(order, many=True)
-#             return Response(serializer.data)
+class OrderListView(generics.ListAPIView):
+    serializer_class = OrderItemSerializer
+    def get_queryset(self):
+        product_id = self.kwargs.get('product_id')
+        queryset = OrderItem.objects.filter(product_id=product_id)
+        return queryset
 
-#     def post(self, request, bill_id):
-#         bill = get_object_or_404(Bill, pk=bill_id)
-#         serializer = OrderItemSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(bill=bill)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+class OrderView(generics.CreateAPIView):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
+    def perform_create(self, serializer):
+        bill_id = self.kwargs.get('bill_id')
+        bill = generics.get_object_or_404(Bill, pk=bill_id)
+        serializer.save(bill=bill)
 
-# class OrderDetailView(APIView):
-#     def get(self, request, pk):
-#         order = get_object_or_404(OrderItem, pk=pk)
-#         serializer = OrderItemDetailSerializer(order)
-#         return Response(serializer.data)
+class OrderDetailView(generics.RetrieveUpdateAPIView):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemDetailSerializer
 
-#     def put(self, request, pk):
-#         order = get_object_or_404(OrderItem, pk=pk)
-#         serializer = OrderItemDetailSerializer(order, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({'msg': ""}, status=status.HTTP_200_OK)
-#         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, pk):
-#         order = get_object_or_404(OrderItem, pk=pk)
-#         order.delete()
-#         return Response({'msg': ""}, status=status.HTTP_204_NO_CONTENT)
-
-class BillView(ListCreateAPIView):
+class BillView(generics.ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return BillSerializer
@@ -123,14 +95,16 @@ class BillView(ListCreateAPIView):
         queryset = Bill.objects.filter(user=self.request.user)
         return queryset
 
-class BillDetailView(RetrieveAPIView):
+class BillDetailView(generics.RetrieveAPIView):
     queryset = Bill.objects.all()
     serializer_class = BillDetailSerializer
     def get_object(self):
-        identifier = self.kwargs['pk']
+        pk = self.kwargs.get('pk')
+        obj = self.get_queryset().get(pk=pk, user_id=self.request.user.id)
+        print(BillDetailSerializer(obj))
+        return obj
+    
+        # ! 해당 obj가 없을 때, get에서 자체적으로 에러를 발생, 예외처리 어떻게 해야할지 방법 찾아야함.
         # try:
-        obj = self.get_queryset().get(pk=identifier, user=self.request.user.id)        
-        # ! 해당 주소가 없을 때, 예외처리 어떻게 해야할지 방법 찾아야함.
         # except Bill.DoesNotExist:
         #     raise Response({'msg': "해당 주문내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-        return obj

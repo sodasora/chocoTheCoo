@@ -32,9 +32,10 @@ urlpatterns = [
     path('bills/', orderviews.BillView.as_view(), name="bill_view"),
     # 주문 내역 상세 조회
     path('bills/<int:pk>/', orderviews.BillDetailView.as_view(), name="bill_detail_view"),
-    # 주문 조회, 생성
+    # 주문 생성
     path("bills/<int:bill_id>/orders/", orderviews.OrderView.as_view(), name='order_view'),
-    path("<int:seller_id>/orders/", orderviews.OrderView.as_view(), name='order_view'),
-    # 주문 상세 조회, 삭제???
+    # 주문 목록 조회
+    path("orders/products/<int:product_id>/", orderviews.OrderListView.as_view(), name='order_view'),
+    # 주문 상세 조회
     path("orders/<int:pk>/", orderviews.OrderDetailView.as_view(), name='order_detail_view'),
 ]
