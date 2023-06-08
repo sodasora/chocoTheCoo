@@ -63,13 +63,15 @@ class CartDetailView(APIView):
         return Response({'msg': "장바구니 삭제"}, status=status.HTTP_204_NO_CONTENT)
     
 class OrderListView(generics.ListAPIView):
+    """ 상품별 주문 목록 조회 """
     serializer_class = OrderItemSerializer
     def get_queryset(self):
         product_id = self.kwargs.get('product_id')
         queryset = OrderItem.objects.filter(product_id=product_id)
         return queryset
 
-class OrderView(generics.CreateAPIView):
+class OrderCreateView(generics.CreateAPIView):
+    """ 주문 생성 """
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     def perform_create(self, serializer):
@@ -78,10 +80,12 @@ class OrderView(generics.CreateAPIView):
         serializer.save(bill=bill)
 
 class OrderDetailView(generics.RetrieveUpdateAPIView):
+    """ 주문 상세 조회 """
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemDetailSerializer
 
 class BillView(generics.ListCreateAPIView):
+    """ 주문 내역 조회 """
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return BillSerializer
@@ -96,12 +100,12 @@ class BillView(generics.ListCreateAPIView):
         return queryset
 
 class BillDetailView(generics.RetrieveAPIView):
+    """ 주문 내역 상세 조회 """
     queryset = Bill.objects.all()
     serializer_class = BillDetailSerializer
     def get_object(self):
         pk = self.kwargs.get('pk')
         obj = self.get_queryset().get(pk=pk, user_id=self.request.user.id)
-        print(BillDetailSerializer(obj))
         return obj
     
         # ! 해당 obj가 없을 때, get에서 자체적으로 에러를 발생, 예외처리 어떻게 해야할지 방법 찾아야함.
