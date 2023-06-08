@@ -64,32 +64,39 @@ class DeliverySerializer(serializers.ModelSerializer):
         """
         우편 번호 검증
         """
-        result = ValidatedData.validated_deliveries(**deliveries_data)
-        if not result[0]:
-            raise serializers.ValidationError(result[1])
+        verification_result = ValidatedData.validated_deliveries(**deliveries_data)
+        if not verification_result:
+            raise "우편 정보가 올바르지 않습니다."
         return deliveries_data
+
+    def encrypt_deliveries_information(self, deliveries, validated_data):
+        """
+        오브 젝트 암호화
+        """
+
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        deliveries.address = encrypt_result.get('address')
+        deliveries.detail_address = encrypt_result.get('detail_address')
+        deliveries.recipient = encrypt_result.get('recipient')
+        deliveries.postal_code = encrypt_result.get('postal_code')
+        deliveries.save()
+        return deliveries
 
     def create(self, validated_data):
         """"
-        배송 정보 오브젝트 생성 및 암호화
+        배송 정보 오브 젝트 생성
         """
         deliveries = super().create(validated_data)
-        deliveries.address = AESAlgorithm.encrypt(deliveries.address)
-        deliveries.detail_address = AESAlgorithm.encrypt(deliveries.detail_address)
-        deliveries.recipient = AESAlgorithm.encrypt(deliveries.recipient)
-        deliveries.postal_code = AESAlgorithm.encrypt(deliveries.postal_code)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
         deliveries.save()
         return deliveries
 
     def update(self, instance, validated_data):
         """
-        배송 정보 오브젝트 업데이트 및 암호화
+        배송 정보 오브 젝트 수정
         """
         deliveries = super().update(instance, validated_data)
-        deliveries.address = AESAlgorithm.encrypt(deliveries.address)
-        deliveries.detail_address = AESAlgorithm.encrypt(deliveries.detail_address)
-        deliveries.recipient = AESAlgorithm.encrypt(deliveries.recipient)
-        deliveries.postal_code = AESAlgorithm.encrypt(deliveries.postal_code)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
         deliveries.save()
         return deliveries
 
@@ -103,33 +110,35 @@ class SellerSerializer(serializers.ModelSerializer):
         model = Seller
         exclude = ('user',)
 
+    def encrypt_seller_information(self, seller_information, validated_data):
+        """
+        오브 젝트 암호화
+        """
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        seller_information.company_name = encrypt_result.get('company_name')
+        seller_information.business_number = encrypt_result.get('business_number')
+        seller_information.bank_name = encrypt_result.get('bank_name')
+        seller_information.account_number = encrypt_result.get('account_number')
+        seller_information.business_owner_name = encrypt_result.get('business_owner_name')
+        seller_information.account_holder = encrypt_result.get('account_holder')
+        seller_information.contact_number = encrypt_result.get('contact_number')
+        return seller_information
+
     def create(self, validated_data):
         """"
-        판매자 정보  오브젝트 생성 및 암호화
+        판매자 정보 오브 젝트 생성
         """
         seller_information = super().create(validated_data)
-        seller_information.company_name = AESAlgorithm.encrypt(seller_information.company_name)
-        seller_information.buisness_number = AESAlgorithm.encrypt(seller_information.buisness_number)
-        seller_information.bank_name = AESAlgorithm.encrypt(seller_information.bank_name)
-        seller_information.account_number = AESAlgorithm.encrypt(seller_information.account_number)
-        seller_information.business_owner_name = AESAlgorithm.encrypt(seller_information.business_owner_name)
-        seller_information.account_holder = AESAlgorithm.encrypt(seller_information.account_holder)
-        seller_information.contact_number = AESAlgorithm.encrypt(seller_information.contact_number)
+        seller_information = self.encrypt_seller_information(seller_information, validated_data)
         seller_information.save()
         return seller_information
 
     def update(self, instance, validated_data):
         """
-        판매자 정보 오브젝트 업데이트 및 암호화
+        판매자 정보 오브 젝트 수정
         """
         seller_information = super().update(instance, validated_data)
-        seller_information.company_name = AESAlgorithm.encrypt(seller_information.company_name)
-        seller_information.buisness_number = AESAlgorithm.encrypt(seller_information.buisness_number)
-        seller_information.bank_name = AESAlgorithm.encrypt(seller_information.bank_name)
-        seller_information.account_number = AESAlgorithm.encrypt(seller_information.account_number)
-        seller_information.business_owner_name = AESAlgorithm.encrypt(seller_information.business_owner_name)
-        seller_information.account_holder = AESAlgorithm.encrypt(seller_information.account_holder)
-        seller_information.contact_number = AESAlgorithm.encrypt(seller_information.contact_number)
+        seller_information = self.encrypt_seller_information(seller_information, validated_data)
         seller_information.save()
         return seller_information
 
@@ -149,7 +158,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
-    마이페이지 유저 정보 읽기
+    마이 페이지 유저 정보 읽기
     """
     deliveries_data = DeliverySerializer(many=True)
     user_seller = SellerSerializer()
@@ -160,6 +169,12 @@ class ReadUserSerializer(serializers.ModelSerializer):
     def get_user_seller(self, obj):
         return obj.user_seller
 
+    class Meta:
+        model = User
+        exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+
+
+class TestReadUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')

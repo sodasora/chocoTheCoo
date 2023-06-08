@@ -11,7 +11,7 @@ urlpatterns = [
     # 배송 정보 추가
     path('create/deliverie/<int:user_id>/', views.DeliveryAPIView.as_view(), name='create-deliverie'),
     # 배송 정보 수정 및 삭제
-    path('deliverie/<int:deliverie_id>/', views.UpdateDeliveryAPIView.as_view(), name='update-deliverie'),
+    path('deliverie/<int:delivery_id>/', views.UpdateDeliveryAPIView.as_view(), name='update-deliverie'),
     # 판매자 권한 신청 , 판매자 정보 수정 , 판매자 정보 삭제
     path('seller/', views.SellerAPIView.as_view(), name='seller-view'),
     # 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)

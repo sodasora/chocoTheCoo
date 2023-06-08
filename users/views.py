@@ -12,7 +12,8 @@ from .serializers import (CustomTokenObtainPairSerializer,
                           UserSerializer,
                           DeliverySerializer,
                           ReadUserSerializer,
-                          SellerSerializer)
+                          SellerSerializer,
+                          TestReadUserSerializer)
 
 
 class GetEmailAuthCodeAPIView(APIView):
@@ -93,9 +94,9 @@ class UserProfileAPIView(APIView):
          마이페이지 정보 읽어오기
          """
         user = get_object_or_404(User, id=user_id)
-        serializer = ReadUserSerializer(user)
-        result = AESAlgorithm.decrypt_profile_information(serializer.data)
-        return Response(result, status=status.HTTP_200_OK)
+        serializer = TestReadUserSerializer(user)
+        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
+        return Response(decrypt_result, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
         """
@@ -130,8 +131,8 @@ class DeliveryAPIView(APIView):
          """
         user = get_object_or_404(User, id=user_id)
         serializer = DeliverySerializer(user.deliveries_data, many=True)
-        result = AESAlgorithm.decrypt_deliveries(serializer.data)
-        return Response(result, status=status.HTTP_200_OK)
+        decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
+        return Response(decrypt_result, status=status.HTTP_200_OK)
 
     def post(self, request, user_id):
         """
@@ -158,26 +159,26 @@ class UpdateDeliveryAPIView(APIView):
      배송 정보 수정 및 삭제
      """
 
-    def put(self, request, deliveries_id):
+    def put(self, request, delivery_id):
         """
          배송 정보 수정
          """
-        delivery = get_object_or_404(Delivery, id=deliveries_id)
+        delivery = get_object_or_404(Delivery, id=delivery_id)
         if request.user == delivery.user:
             serializer = DeliverySerializer(delivery, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response({"msg":"배송 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
-    def delete(self, request, deliverie_id):
+    def delete(self, request, delivery_id):
         """
         배송 정보 삭제
         """
-        delivery = get_object_or_404(Delivery, id=deliverie_id)
+        delivery = get_object_or_404(Delivery, id=delivery_id)
         if request.user == delivery.user:
             delivery.delete()
             return Response({"msg": "배송 정보가 삭제 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
@@ -251,8 +252,9 @@ class SellerPermissionAPIView(APIView):
             serializer = SellerSerializer(user.user_seller)
         except Seller.DoesNotExist:
             return Response({'err': "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-        result = AESAlgorithm.decrypt_seller_information(serializer.data)
-        return Response(result, status=status.HTTP_200_OK)
+        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
+        return Response(decrypt_result, status=status.HTTP_200_OK)
+
 
     def patch(self, request, user_id):
         """

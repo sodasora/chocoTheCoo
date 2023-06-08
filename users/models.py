@@ -84,7 +84,7 @@ class Seller(models.Model):
     """ 판매자 모델 """
     user = models.OneToOneField("users.User", related_name="user_seller", on_delete=models.CASCADE)
     company_name = models.CharField("업체명", max_length=20)
-    buisness_number = models.CharField("사업자 등록 번호", max_length=20)
+    business_number = models.CharField("사업자 등록 번호", max_length=20)
     bank_name = models.CharField("은행 이름", max_length=20)
     account_number = models.CharField("계좌 번호", max_length=30)
     business_owner_name = models.CharField("대표자 성함", max_length=20)
