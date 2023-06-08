@@ -1,42 +1,42 @@
 import django.db.utils
+from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import (CustomTokenObtainPairSerializer,UserSerializer,DeliverieSerializer,ReadUserSerializer,SellerSerializer, PointSerializer, SubscriptionSerializer)
-from .models import User,Deliverie,Seller, Point, Subscribe
+from .serializers import (CustomTokenObtainPairSerializer, UserSerializer, DeliverySerializer, ReadUserSerializer, SellerSerializer, PointSerializer, SubscriptionSerializer)
+from .models import User,Delivery,Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
 from . import validated
+from .cryption import AESAlgorithm
 from django.db import transaction
 import datetime, schedule, time
 from django.utils import timezone
 from django.db.models import Sum, F
+"""
+response 는 간단 명료하게 
+백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
+"""
 
 
-class GetEmailAuthCode(APIView):
+class GetEmailAuthCodeAPIView(APIView):
     """ 이메일 인증코드 발송 """
     def put(self, request):
         """ 이메일 인증코드 발송 및 DB 저장 """
         user = get_object_or_404(User, email=request.data['email'])
         auth_code = validated.send_email(user.email)
         user.auth_code = auth_code
+        print(auth_code)
         user.save()
         return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserAPIView(APIView):
-    """ 회원가입, 회원 정보 수정, 휴면 계정 전환"""
-    def get(self,request):
-        """ 테스트옹 API, 유저 정보 읽기 """
-
-        user = get_object_or_404(User,email=request.data.get("email"))
-        serializer = ReadUserSerializer(user)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-
+    """ 회원가입, 이메일 인증, 휴면 계정 전환"""
     def post(self,request):
         """ 회원 가입 """
-        serializer = UserSerializer(data=request.data)
+        serializer = UserSerializer(data=request.data,context="create")
         if serializer.is_valid():
             serializer.save()
             return Response({'msg': "회원 가입 되었습니다. 계정 인증을 진행해 주세요."}, status=status.HTTP_200_OK)
@@ -59,14 +59,10 @@ class UserAPIView(APIView):
     def patch(self,request):
         """ 비밀번호 재 설정(찾기 기능) """
         user = get_object_or_404(User,email = request.data['email'])
-        if check_password(request.data['password'], user.password):
-            return Response({"msg": "기존의 비밀번호로 변경할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
         if user.auth_code == '':
             return Response({"msg":"먼저 인증코드를 발급받아주세요."},status=status.HTTP_400_BAD_REQUEST)
         elif not user.auth_code == request.data['auth_code']:
             return Response({"err":"인증 코드가 올바르지 않습니다."},status=status.HTTP_401_UNAUTHORIZED)
-
         serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -77,20 +73,54 @@ class UserAPIView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class DeliverieAPIView(APIView):
-    """ 배송 정보 추가 """
-    def get(self,request,user_id):
+class UserProfileAPIView(APIView):
+    """ 마이페이지 정보 읽기, 회원 정보 수정, 휴면 계정으로 전환 """
+    def get(self, request,user_id):
+        """ 마이페이지 정보 읽어오기 """
         user = get_object_or_404(User, id=user_id)
-        serializer = DeliverieSerializer(user.deliveries_data,many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = ReadUserSerializer(user)
+        result = AESAlgorithm.decrypt_profile_information(serializer.data)
+        return Response(result, status=status.HTTP_200_OK)
+
+    def put(self,request,user_id):
+        """ 회원 정보 수정 (프로필 이미지, 닉네임, 통관번호, 이메일, 비밀번호) """
+        user = get_object_or_404(User, id=user_id)
+        if request.user != user:
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserSerializer(user, data=request.data, partial=True,context="update")
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self,request,user_id):
+        """ 휴면 계정으로 전환 """
+        user = get_object_or_404(User, id=user_id)
+        if request.user != user:
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = False
+        user.save()
+        return Response({"msg":"휴면 계정으로 전환 되었습니다."}, status=status.HTTP_200_OK)
+
+class DeliveryAPIView(APIView):
+    def get(self,request,user_id):
+        """ 배송 정보들 읽기 """
+        user = get_object_or_404(User, id=user_id)
+        serializer = DeliverySerializer(user.deliveries_data,many=True)
+        result = AESAlgorithm.decrypt_deliveries(serializer.data)
+        return Response(result, status=status.HTTP_200_OK)
 
     def post(self, request,user_id):
+        """ 배송 정보 추가 """
         user = get_object_or_404(User, id=user_id)
-        deliverie_cnt = Deliverie.objects.filter(user=user).count()
+        if request.user != user:
+            return Response({'err': '권한이 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        deliverie_cnt = Delivery.objects.filter(user=user).count()
         if deliverie_cnt > 4:
-            return Response({'err': '배송 정보는 다섯개 까지 등록할 수 있습니다.'}, status=status.HTTP_200_OK)
+            return Response({'err': '배송 정보는 다섯개 까지 등록할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         if request.data.get("postal_code") != None:
-            serializer = DeliverieSerializer(data=request.data)
+            serializer = DeliverySerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user)
                 return Response({'msg': '배송 정보가 등록되었습니다.'}, status=status.HTTP_200_OK)
@@ -99,13 +129,13 @@ class DeliverieAPIView(APIView):
         # 회원가입시 필수 입력 사항이 아니기 때문에 status code 를 204 사용
         return Response({'msg': '우편 번호 정보가 없습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
-class UpdateDeliverieAPIView(APIView):
+class UpdateDeliveryAPIView(APIView):
     """ 배송 정보 수정 및 삭제 """
     def put(self,request,deliverie_id):
         """ 배송 정보 수정 """
-        deliverie = get_object_or_404(Deliverie, id=deliverie_id)
-        if request.user == deliverie.user:
-            serializer = DeliverieSerializer(deliverie, data=request.data)
+        delivery = get_object_or_404(Delivery, id=deliverie_id)
+        if request.user == delivery.user:
+            serializer = DeliverySerializer(delivery, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -116,9 +146,9 @@ class UpdateDeliverieAPIView(APIView):
 
     def delete(self, request, deliverie_id):
         """ 배송 정보가 삭제 되었습니다."""
-        deliverie = get_object_or_404(Deliverie, id=deliverie_id)
-        if request.user == deliverie.user:
-            deliverie.delete()
+        delivery = get_object_or_404(Delivery, id=deliverie_id)
+        if request.user == delivery.user:
+            delivery.delete()
             return Response({"msg": "배송 정보가 삭제 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -137,7 +167,8 @@ class SellerAPIView(APIView):
                 return Response({'msg': "판매자 권한을 성공적으로 신청했습니다. 검증 후에 승인 됩니다."}, status=status.HTTP_200_OK)
             else:
                 return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        except django.db.utils.IntegrityError:
+        except IntegrityError:
+            # 정적 import
             return Response({"err": "이미 판매자 정보가 있습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self,request):
@@ -146,7 +177,10 @@ class SellerAPIView(APIView):
             user = get_object_or_404(User,email=request.user.email)
         except AttributeError:
             return Response({'err': "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = SellerSerializer(user.user_seller,data=request.data,partial=True)
+        try:
+            serializer = SellerSerializer(user.user_seller,data=request.data,partial=True)
+        except Seller.DoesNotExist:
+            return Response({'err': "수정할 판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
         if serializer.is_valid():
             serializer.save()
             return Response({'msg': "판매자 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
@@ -166,7 +200,17 @@ class SellerAPIView(APIView):
         return Response({'msg': "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 class SellerPermissionAPIView(APIView):
-    """ 관리자가 판매자 정보 권한 승인 및 삭제 """
+    """ 판매자 정보 읽기 , 관리자가 판매자 정보 권한 승인 및 삭제 """
+    def get(self,request,user_id):
+        """ 판매자 정보 읽기 """
+        user = get_object_or_404(User, id=user_id)
+        try:
+            serializer = SellerSerializer(user.user_seller)
+        except Seller.DoesNotExist:
+            return Response({'err': "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        result = AESAlgorithm.decrypt_seller_information(serializer.data)
+        return Response(result, status=status.HTTP_200_OK)
+
     def patch(self,request,user_id):
         """ 판매자 권한 승인 """
         try:

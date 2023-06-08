@@ -1,4 +1,5 @@
 from django.db import models
+from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from datetime import date
 from config.models import CommonModel
@@ -33,7 +34,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser,CommonModel):
     """ Base User model 정의 """
     LOGIN_TYPES = [
         ("normal", "일반"),
@@ -48,6 +49,7 @@ class User(AbstractBaseUser):
     auth_code = models.CharField("인증 코드", max_length=128, blank=True, null=True)
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
     numbers = models.CharField("통관번호",max_length=20,blank=True, null=True)
+    login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수",default=0)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False) # 이메일 인증을 받을시 계정 활성화
     is_seller = models.BooleanField(default=False) # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
@@ -64,7 +66,7 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     def __str__(self):
-        return self.nickname
+        return self.email
 
     def has_perm(self, perm, obj=None):
         return True
@@ -91,7 +93,7 @@ class Seller(models.Model):
         """ 업체명 """
         return self.company_name
 
-class Deliverie(models.Model):
+class Delivery(models.Model):
     """ 배송 정보  """
     user = models.ForeignKey("users.User",related_name="deliveries_data",on_delete=models.CASCADE)
     address = models.CharField("주소",max_length=100)
