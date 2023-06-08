@@ -4,9 +4,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User,Seller,Deliverie
+from .models import User,Seller,Delivery
 
-admin.site.register(Deliverie)
+admin.site.register(Delivery)
 admin.site.register(Seller)
 
 class UserCreationForm(forms.ModelForm):

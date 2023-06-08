@@ -19,7 +19,7 @@ class ValidatedData():
     """ 데이터 검증 클래스 """
     # 데이터 검증 클래스 설명 https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/test2.py
     @classmethod
-    def validated_password(self,password):
+    def validated_password(cls,password):
         """ 비밀번호 검증 """
         if password == None:
             return False
@@ -28,7 +28,7 @@ class ValidatedData():
         return bool(password_match)
 
     @classmethod
-    def validated_nickname(self,nickname):
+    def validated_nickname(cls,nickname):
         """ 유저네임 검증 """
         check = [
             lambda element: element != None,
@@ -41,7 +41,7 @@ class ValidatedData():
         return True
 
     @classmethod
-    def validated_email(self,email):
+    def validated_email(cls,email):
         """ 이메일 검증"""
         if email == None:
             return False
@@ -50,11 +50,11 @@ class ValidatedData():
         return bool(email_match)
 
     @classmethod
-    def validated_numbers(self,customs_clearance_number):
+    def validated_numbers(cls,customs_clearance_number):
         """ 통관 번호 검증 """
         number = customs_clearance_number.lower()
         check = [
-            lambda element: element != None,
+            lambda element: element is not None,
             lambda element: len(element) == len(element.replace(" ", "")),
             lambda element: True if (len(element) > 10 and len(element) < 13) else False,
             lambda element: element[1:].isdigit()
@@ -65,39 +65,39 @@ class ValidatedData():
         return True
 
     @classmethod
-    def validated_user_data(self,**kwargs):
+    def validated_user_data(cls,**kwargs):
         """ 이메일,유저네임,비밀번호 검증 """
-        if not self.validated_email(kwargs.get('email')):
+        if not cls.validated_email(kwargs.get('email')):
             return [False,"이메일 정보가 올바르지 않습니다."]
-        elif not self.validated_nickname(kwargs.get('nickname')):
+        elif not cls.validated_nickname(kwargs.get('nickname')):
             return [False,"닉네임이 올바르지 않습니다."]
-        elif not self.validated_password(kwargs.get('password')):
+        elif not cls.validated_password(kwargs.get('password')):
             return [False,"비밀번호가 올바르지 않습니다."]
         return [True,"유효성 검사에 통과했습니다."]
 
     @classmethod
-    def update_validated_user_data(self, **kwargs):
+    def update_validated_user_data(cls, **kwargs):
         """ 이메일,유저네임,비밀번호 검증 """
         email = kwargs.get('email')
         nickname = kwargs.get('nickname')
         password = kwargs.get('password')
         numbers = kwargs.get('numbers')
         if email != None:
-            if not self.validated_email(email):
+            if not cls.validated_email(email):
                 return [False,"이메일 정보가 올바르지 않습니다."]
         if nickname != None:
-            if not self.validated_nickname(nickname):
+            if not cls.validated_nickname(nickname):
                 return [False,"닉네임이 올바르지 않습니다."]
         if password != None:
-            if not self.validated_password(password):
+            if not cls.validated_password(password):
                 return [False,"비밀번호가 올바르지 않습니다."]
         if numbers != None:
-            if not self.validated_numbers(numbers):
+            if not cls.validated_numbers(numbers):
                 return [False,"통관번호가 올바르지 않습니다."]
         return [True,"유효성 검사에 통과했습니다."]
 
     @classmethod
-    def validated_deliverie(self,**kwargs):
+    def validated_deliveries(cls,**kwargs):
         # 우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
         postal_code = kwargs.get('postal_code')
         check = [
