@@ -4,18 +4,21 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User,Seller,Deliverie
+from .models import User, Seller, Deliverie, PointType, Point
 
 admin.site.register(Deliverie)
 admin.site.register(Seller)
+admin.site.register(PointType)
+
 
 class UserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label='Password confirmation', widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ('email','nickname')
+        fields = ('email', 'nickname')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -37,22 +40,23 @@ class UserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email','nickname')
+        fields = ('email', 'nickname')
 
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
-    list_display = ('email', 'is_admin','nickname')
-    list_filter = ('is_admin','is_active','is_seller')
+    list_display = ('email', 'is_admin', 'nickname')
+    list_filter = ('is_admin', 'is_active', 'is_seller')
     fieldsets = (
-        (None, {'fields': ('email','nickname')}),
-        ('Permissions', {'fields': ('is_admin','is_active','is_seller','profile_image','login_type','numbers')}),
+        (None, {'fields': ('email', 'nickname')}),
+        ('Permissions', {'fields': ('is_admin', 'is_active',
+         'is_seller', 'profile_image', 'login_type', 'numbers')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2','nickname'),
+            'fields': ('email', 'password1', 'password2', 'nickname'),
         }),
     )
     search_fields = ('email',)
