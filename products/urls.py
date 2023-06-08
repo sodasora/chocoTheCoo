@@ -7,4 +7,8 @@ urlpatterns = [
     path('categories/<str:name>', views.CategoryDetailAPIView.as_view(), name='category-detail'),
     path('products/', views.ProductListAPIView.as_view(), name='product-list'),
     path('products/<str:name>', views.ProductDetailAPIView.as_view(), name='product-detail'),
+        # 리뷰 조회, 생성
+    path('<int:product_id>/reviews/', views.ReviewView.as_view(), name='review_view'),
+    # 리뷰 상세 조회, 수정, 삭제
+    path('<int:product_id>/reviews/<int:pk>/', views.ReviewDetailView.as_view(), name='review_detail_view'),
 ]

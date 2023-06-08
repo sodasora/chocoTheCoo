@@ -1,7 +1,6 @@
 from django.urls import path
-from . import views
 from rest_framework_simplejwt.views import TokenRefreshView
-
+from . import views, orderviews
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -20,6 +19,14 @@ urlpatterns = [
     path('login/', views.CustomTokenObtainPairView.as_view(), name='login'),
     # refresh token 발급
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # 장바구니 조회
+    path("carts/", orderviews.CartView.as_view(), name='cart_view'),
+    # 장바구니 담기, 장바구니 수량 변경, 삭제
+    path("carts/<int:product_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
+    # 주문 조회, 생성
+    # path("<int:user_id>/orders/", orderviews.OrderView.as_view(), name='cart_view'),
+    # 주문 상세 조회, 삭제???
+    # path("<int:user_id>/orders/<int:order_id>/", orderviews.OrderDetailView.as_view(), name='cart_detail_view'),
     # 포인트
     path('<int:user_id>/points/', views.PointView.as_view(), name='point_view'),
     path('<int:user_id>/points/<str:date>', views.PointDateView.as_view(), name='point_date_view'),
