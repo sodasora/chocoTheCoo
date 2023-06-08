@@ -12,8 +12,7 @@ from .serializers import (CustomTokenObtainPairSerializer,
                           UserSerializer,
                           DeliverySerializer,
                           ReadUserSerializer,
-                          SellerSerializer,
-                          TestReadUserSerializer)
+                          SellerSerializer)
 
 
 class GetEmailAuthCodeAPIView(APIView):
@@ -94,7 +93,7 @@ class UserProfileAPIView(APIView):
          마이페이지 정보 읽어오기
          """
         user = get_object_or_404(User, id=user_id)
-        serializer = TestReadUserSerializer(user)
+        serializer = ReadUserSerializer(user)
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         return Response(decrypt_result, status=status.HTTP_200_OK)
 

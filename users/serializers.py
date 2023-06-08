@@ -45,7 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
         user = super().update(instance, validated_data)
         validated_data.get('password')
         validated_data.get('numbers')
-        user.password = user.set_password(user.password) if validated_data.get('password') is not None else user.password
+        user.password = user.set_password(user.password) if validated_data.get(
+            'password') is not None else user.password
         user.numbers = AESAlgorithm.encrypt(user.numbers) if validated_data.get('numbers') is not None else user.numbers
         user.save()
         return user
@@ -158,23 +159,26 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
-    마이 페이지 유저 정보 읽기
+    유저 정보 읽기
     """
-    deliveries_data = DeliverySerializer(many=True)
-    user_seller = SellerSerializer()
-
-    def get_deliveries(self, obj):
-        return obj.deliveries_data
-
-    def get_user_seller(self, obj):
-        return obj.user_seller
 
     class Meta:
         model = User
         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
 
-
-class TestReadUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+# class ReadUserSerializer(serializers.ModelSerializer):
+#     """
+#     마이 페이지 유저 정보 읽기
+#     """
+#     deliveries_data = DeliverySerializer(many=True)
+#     user_seller = SellerSerializer()
+#
+#     def get_deliveries(self, obj):
+#         return obj.deliveries_data
+#
+#     def get_user_seller(self, obj):
+#         return obj.user_seller
+#
+#     class Meta:
+#         model = User
+#         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
