@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from users.models import User,Delivery,Seller
+
+from users.models import User,Delivery,Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from  .validated import ValidatedData
 from .cryption import AESAlgorithm
+
 class UserSerializer(serializers.ModelSerializer):
     """ 유저 회원가입, 업데이트 시리얼 라이저 """
     class Meta:
@@ -32,10 +34,6 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """ 유저 오브젝트 업데이트 """
         user = super().update(instance, validated_data)
-        # try:
-        #     validated_password = validated_data.get("password")
-        #     validated_number = validated_data.get("number")
-        # except:
         validated_data.get('password')
         validated_data.get('numbers')
         user.password = user.set_password(user.password) if validated_data.get('password') != None else user.password
@@ -137,3 +135,15 @@ class ReadUserSerializer(serializers.ModelSerializer):
         model = User
         exclude = ('auth_code','is_admin','is_active','last_login',"created_at","updated_at",'password')
 
+class PointSerializer(serializers.ModelSerializer):
+    """포인트 시리얼라이저"""
+    class Meta:
+        modle = Point
+        fields = "__all__"
+        
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """구독시리얼라이저"""
+    class Meta:
+        model = Subscribe
+        fields = "__all__" 
+        exclude = ('password','auth_code','is_admin','is_active','last_login')

@@ -1,6 +1,8 @@
 from django.db import models
 from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from datetime import date
+from config.models import CommonModel
 
 class UserManager(BaseUserManager):
     """ 커스텀 유저 매니저 """
@@ -51,7 +53,7 @@ class User(AbstractBaseUser,CommonModel):
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False) # 이메일 인증을 받을시 계정 활성화
     is_seller = models.BooleanField(default=False) # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
-
+    
     """  모델 생성시 연결  """
     # wish_list = models.ManyToManyField('products.Product', symmetrical=False, related_name='wish_lists', blank=True)
     # review_like = models.ManyToManyField('products.Review', symmetrical=False, related_name='liking_people', blank=True)
@@ -102,3 +104,56 @@ class Delivery(models.Model):
     def __str__(self):
         """ 수령인 """
         return self.recipient
+
+
+class CartItem(CommonModel):
+    """ 장바구니 """
+    # * User와 Product의 ManyToManyField
+    user = models.ForeignKey("users.User", models.CASCADE, verbose_name="유저", )
+    product = models.ForeignKey("products.Product", models.CASCADE, verbose_name="상품", )
+    amount = models.PositiveIntegerField("상품개수", default=1)
+
+class Bill(CommonModel):
+    """ 주문내역 """
+    user = models.ForeignKey("users.User", models.CASCADE, verbose_name="유저", )
+    address = models.CharField("주소", max_length=100)
+    detail_address = models.CharField("상세주소", max_length=100)
+    recipient = models.CharField("수령인", max_length=30)
+    postal_code = models.CharField("우편번호", max_length=10)
+
+class StatusCategory(models.Model):
+    """ 상태 카테고리 """
+    name = models.CharField("상태", max_length=20)
+
+class OrderItem(CommonModel):
+    """ 주문상품 """
+    bill = models.ForeignKey("users.Bill", models.CASCADE, verbose_name="주문내역")
+    seller = models.ForeignKey("users.Seller", models.CASCADE, verbose_name="판매자")
+    status = models.ForeignKey("users.StatusCategory", models.CASCADE, verbose_name="주문상태", default=1)
+    name = models.CharField("상품명", max_length=100)
+    count = models.PositiveIntegerField("상품개수", default=1)
+    price = models.PositiveIntegerField("상품가격")
+    product_id = models.IntegerField("상품ID")
+
+class PointType(models.Model):
+    """포인트 종류: 출석(1), 리뷰(2), 구매(3), 사용(4)"""
+    title = models.CharField(verbose_name="포인트 종류", max_length=10, null=False, blank=False)
+    
+    def __str__(self):
+        return self.title
+
+
+class Point(models.Model):
+    """포인트"""
+    user = models.ForeignKey("users.User",related_name="point_data",on_delete=models.CASCADE)
+    date = models.DateField("날짜",default=date.today)
+    points = models.IntegerField("포인트점수", null=False, blank=False)
+    point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
+    
+
+class Subscribe(CommonModel):
+    """소비자구독"""
+    user = models.OneToOneField("users.User",related_name="subscribe_data",on_delete=models.CASCADE)
+    subscribe = models.BooleanField("구독여부", default=True, null=False)
+    next_payment = models.DateField("다음결제일")
+
