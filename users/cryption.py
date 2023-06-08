@@ -89,7 +89,7 @@ class AESAlgorithm():
     @classmethod
     def decrypt_profile_information(cls, elements):
         """ 프로필 정보 데이터 복호화 """
-        if elements.get('numbers') != None:
+        if elements.get('numbers') is not None:
             """ 통관 번호 복호화 """
             numbers = AESAlgorithm.decrypt(elements['numbers'])
             elements['numbers'] = numbers
