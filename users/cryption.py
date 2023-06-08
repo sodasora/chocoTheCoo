@@ -1,30 +1,34 @@
-import base64,os
+import base64
+import os
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+
+
 # 필요 라이브러리 : poytre add pycryptodome
 # 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES2.PY0
 
-class AESAlgorithm():
+class AESAlgorithm:
     """ 암호화, 복호화 알고리즘 """
     AES_KEY = os.environ.get('AES_KEY')
     AES_KEY = bytes(AES_KEY, 'utf-8')
 
     @classmethod
-    def encrypt_all(cls,**kwargs):
+    def encrypt_all(cls, **kwargs):
         """ 암호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
 
-        data_dict = {} # key값 특정
-        for key,value in kwargs.items():
+        data_dict = {}  # key값 특정
+        for key, value in kwargs.items():
             # 분기
             cipher_data = cipher.encrypt(pad(value.encode(), AES.block_size))
             encrypt_element = base64.b64encode(cipher_data).decode()
             data_dict[key] = encrypt_element
         return data_dict
+
     # 키값을 기준으로
 
     @classmethod
-    def decrypt_all(cls,**kwargs):
+    def decrypt_all(cls, **kwargs):
         """ 복호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         data_dict = {}
@@ -36,14 +40,14 @@ class AESAlgorithm():
         return data_dict
 
     @classmethod
-    def encrypt(cls,data):
+    def encrypt(cls, data):
         """ 단일 데이터 암호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         cipher_data = cipher.encrypt(pad(data.encode(), AES.block_size))
         return base64.b64encode(cipher_data).decode()
 
     @classmethod
-    def decrypt(cls,cipher_data):
+    def decrypt(cls, cipher_data):
         """ 단일 데이터 복호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         cipher_data = base64.b64decode(cipher_data)
@@ -53,7 +57,7 @@ class AESAlgorithm():
     @classmethod
     def decrypt_userdata(cls, elements):
         """ 사용자 정보 복호화 """
-        if elements.get('numbers') != None:
+        if elements.get('numbers') is not None:
             """ 통관 번호 복호화 """
             numbers = AESAlgorithm.decrypt(elements['numbers'])
             elements['numbers'] = numbers
@@ -76,7 +80,7 @@ class AESAlgorithm():
     @classmethod
     def decrypt_seller_information(cls, elements):
         """ 판매자 정보 복호화 """
-        if elements != None:
+        if elements is not None:
             elements['company_name'] = AESAlgorithm.decrypt(elements['company_name'])
             elements['buisness_number'] = AESAlgorithm.decrypt(elements['buisness_number'])
             elements['bank_name'] = AESAlgorithm.decrypt(elements['bank_name'])
