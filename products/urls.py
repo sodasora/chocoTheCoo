@@ -10,5 +10,5 @@ urlpatterns = [
         # 리뷰 조회, 생성
     path('<int:product_id>/reviews/', views.ReviewView.as_view(), name='review_view'),
     # 리뷰 상세 조회, 수정, 삭제
-    path('<int:product_id>/reviews/<int:review_id>/', views.ReviewDetailView.as_view(), name='review_detail_view'),
+    path('<int:product_id>/reviews/<int:pk>/', views.ReviewDetailView.as_view(), name='review_detail_view'),
 ]

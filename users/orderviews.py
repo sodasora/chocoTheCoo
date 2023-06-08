@@ -1,6 +1,6 @@
-from rest_framework.generics import get_object_or_404, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import get_object_or_404, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveDestroyAPIView, RetrieveAPIView
 from rest_framework.views import APIView
-from .models import CartItem, OrderItem
+from .models import CartItem
 from products.models import Product
 from .orderserializers import *
 from rest_framework.response import Response
@@ -65,35 +65,43 @@ class CartDetailView(APIView):
         cart.delete()
         return Response({'msg': "장바구니 삭제"}, status=status.HTTP_204_NO_CONTENT)
     
-class OrderView(APIView):
-    def get(self, request):
-        order = OrderItem.objects.filter(user=request.user)
-        serializer = OrderItemSerializer(order, many=True)
-        return Response(serializer.data)
+# class OrderView(APIView):
+#     def get(self, request):
+#         order = OrderItem.objects.filter(user=request.user)
+#         serializer = OrderItemSerializer(order, many=True)
+#         return Response(serializer.data)
     
-    def post(self, request):
-        serializer = OrderItemSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response({'msg': ""}, status=status.HTTP_201_CREATED)
-        return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
-class OrderDetailView(APIView):
-    def get(self, request, pk):
-        order = get_object_or_404(OrderItem, pk=pk)
-        serializer = OrderItemDetailSerializer(order)
-        return Response(serializer.data)
-    
-    def put(self, request, pk):
-        order = get_object_or_404(OrderItem, pk=pk)
-        serializer = OrderItemDetailSerializer(order, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'msg': ""}, status=status.HTTP_200_OK)
-        return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self, request, pk):
-        order = get_object_or_404(OrderItem, pk=pk)
-        order.delete()
-        return Response({'msg': ""}, status=status.HTTP_204_NO_CONTENT)
+#     def post(self, request):
+#         serializer = OrderItemSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(user=request.user)
+#             return Response({'msg': ""}, status=status.HTTP_201_CREATED)
+#         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+# class OrderDetailView(APIView):
+#     def get(self, request, pk):
+#         order = get_object_or_404(OrderItem, pk=pk)
+#         serializer = OrderItemDetailSerializer(order)
+#         return Response(serializer.data)
+
+#     def put(self, request, pk):
+#         order = get_object_or_404(OrderItem, pk=pk)
+#         serializer = OrderItemDetailSerializer(order, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({'msg': ""}, status=status.HTTP_200_OK)
+#         return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         order = get_object_or_404(OrderItem, pk=pk)
+#         order.delete()
+#         return Response({'msg': ""}, status=status.HTTP_204_NO_CONTENT)
+
+# class BillView(ListCreateAPIView):
+#     queryset = Bill.objects.all()
+#     serializer_class = BillSerializer
+
+# class BillDetailView(RetrieveAPIView):
+#     queryset = Bill.objects.all()
+#     serializer_class = BillDetailSerializer
 

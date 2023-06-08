@@ -24,7 +24,7 @@ urlpatterns = [
     # 장바구니 담기, 장바구니 수량 변경, 삭제
     path("carts/<int:product_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
     # 주문 조회, 생성
-    path("<int:user_id>/orders/", orderviews.OrderView.as_view(), name='cart_view'),
+    # path("<int:user_id>/orders/", orderviews.OrderView.as_view(), name='cart_view'),
     # 주문 상세 조회, 삭제???
-    path("<int:user_id>/orders/<int:order_id>/", orderviews.OrderDetailView.as_view(), name='cart_detail_view'),
+    # path("<int:user_id>/orders/<int:order_id>/", orderviews.OrderDetailView.as_view(), name='cart_detail_view'),
 ]
