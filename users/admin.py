@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User, Seller, Deliverie, PointType, Point
+from .models import User, Seller, Deliverie, PointType, Point, StatusCategory, OrderItem, CartItem, Bill
 
 admin.site.register(Deliverie)
 admin.site.register(Seller)
@@ -66,3 +66,6 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)
+admin.site.register(OrderItem)
+admin.site.register(Bill)
+admin.site.register(CartItem)

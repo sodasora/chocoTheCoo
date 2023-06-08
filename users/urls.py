@@ -22,14 +22,20 @@ urlpatterns = [
     # 장바구니 조회
     path("carts/", orderviews.CartView.as_view(), name='cart_view'),
     # 장바구니 담기, 장바구니 수량 변경, 삭제
-    path("carts/<int:product_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
-    # 주문 조회, 생성
-    # path("<int:user_id>/orders/", orderviews.OrderView.as_view(), name='cart_view'),
-    # 주문 상세 조회, 삭제???
-    # path("<int:user_id>/orders/<int:order_id>/", orderviews.OrderDetailView.as_view(), name='cart_detail_view'),
+    path("carts/<int:cart_item_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
     # 포인트
     path('<int:user_id>/points/', views.PointView.as_view(), name='point_view'),
     path('<int:user_id>/points/<str:date>', views.PointDateView.as_view(), name='point_date_view'),
     # 구독
-    path('subscribe/',views.SubscribeView.as_view(), name="subscribe_view")
+    path('subscribe/',views.SubscribeView.as_view(), name="subscribe_view"),
+    # 주문 내역 생성, 조회
+    path('bills/', orderviews.BillView.as_view(), name="bill_view"),
+    # 주문 내역 상세 조회
+    path('bills/<int:pk>/', orderviews.BillDetailView.as_view(), name="bill_detail_view"),
+    # 주문 생성
+    path("bills/<int:bill_id>/orders/", orderviews.OrderCreateView.as_view(), name='order_create_view'),
+    # 주문 목록 조회
+    path("orders/products/<int:product_id>/", orderviews.OrderListView.as_view(), name='order_list_view'),
+    # 주문 상세 조회
+    path("orders/<int:pk>/", orderviews.OrderDetailView.as_view(), name='order_detail_view'),
 ]
