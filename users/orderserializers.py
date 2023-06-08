@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import CartItem
+from users.models import CartItem, Bill, OrderItem
 
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,7 +20,7 @@ class CartListSerializer(serializers.ModelSerializer):
             'id': product.id,
             'name': product.name,
             'price': product.price,
-            'total_price': product.price * obj.count,
+            'total_price': product.price * obj.amount,
             'image': image_url,
             'seller': str(product.seller),
         }
@@ -33,17 +33,35 @@ class CartDetailSerializer(serializers.ModelSerializer):
             'user': {'read_only': True},
             'product': {'read_only': True},
         }
+
 # class OrderItemSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = OrderItem
 #         fields = '__all__'
+#         extra_kwargs = {
+#             'bill': {'read_only': True},
+#         }
 
 # class OrderItemDetailSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = OrderItem
 #         fields = '__all__'
 
-# class BillSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Bill
-#         fields = '__all__'
+class BillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bill
+        fields = '__all__'
+
+class BillCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bill
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'read_only': True},
+        }
+
+class BillDetailSerializer(serializers.ModelSerializer):
+    # OrderItem = OrderItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Bill
+        fields = '__all__'

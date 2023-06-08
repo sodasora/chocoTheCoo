@@ -57,6 +57,7 @@ class CartDetailView(APIView):
     #     return Response(serializer.data)
 
     def patch(self, request, cart_item_id):
+        # patch로 할 수 있나??? 바뀌는 것은 수량밖에 없음.
         cart = get_object_or_404(CartItem, pk=cart_item_id)
         serializer = CartDetailSerializer(cart, data=request.data)
         if serializer.is_valid():
@@ -108,28 +109,28 @@ class CartDetailView(APIView):
 #         order.delete()
 #         return Response({'msg': ""}, status=status.HTTP_204_NO_CONTENT)
 
-# class BillView(ListCreateAPIView):
-#     def get_serializer_class(self):
-#         if self.request.method == 'GET':
-#             return BillSerializer
-#         elif self.request.method == 'POST':
-#             return BillCreateSerializer
+class BillView(ListCreateAPIView):
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return BillSerializer
+        elif self.request.method == 'POST':
+            return BillCreateSerializer
         
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
-#     def get_queryset(self):
-#         queryset = Bill.objects.filter(user=self.request.user)
-#         return queryset
+    def get_queryset(self):
+        queryset = Bill.objects.filter(user=self.request.user)
+        return queryset
 
-# class BillDetailView(RetrieveAPIView):
-#     queryset = Bill.objects.all()
-#     serializer_class = BillDetailSerializer
-#     def get_object(self):
-#         identifier = self.kwargs['pk']
-#         # try:
-#         obj = self.get_queryset().get(pk=identifier, user=self.request.user.id)        
-#         # ! 해당 주소가 없을 때, 예외처리 어떻게 해야할지 방법 찾아야함.
-#         # except Bill.DoesNotExist:
-#         #     raise Response({'msg': "해당 주문내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-#         return obj
+class BillDetailView(RetrieveAPIView):
+    queryset = Bill.objects.all()
+    serializer_class = BillDetailSerializer
+    def get_object(self):
+        identifier = self.kwargs['pk']
+        # try:
+        obj = self.get_queryset().get(pk=identifier, user=self.request.user.id)        
+        # ! 해당 주소가 없을 때, 예외처리 어떻게 해야할지 방법 찾아야함.
+        # except Bill.DoesNotExist:
+        #     raise Response({'msg': "해당 주문내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        return obj
