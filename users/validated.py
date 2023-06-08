@@ -1,15 +1,16 @@
-import random,re
+import random,re,string
 from django.core.mail import EmailMessage
-
 def send_email(email):
     """ 인증 메일 발송 """
-    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    random_value = string.ascii_letters + string.digits
+    random_value = list(random_value)
+    random.shuffle(random_value)
+    code = "".join(random_value[:10])
     title = "ChocoTheCoo"
-    string = "초코더쿠에서 회원님의 가입 인증을 위한 코드를 발송했습니다.\n"
-    string += "스파르타 코딩클럽 학생들의 팀 프로젝트이니 혹여 요쳥하신적이 없다면 무시해주세요.\n"
-    string += "요청하신분이 맞다면, 아래의 인중코드를 인증란에 작성해주십시오.\n"
-    string += code
-    content = string
+    content = "초코더쿠에서 회원님의 가입 인증을 위한 코드를 발송했습니다.\n"
+    content += "스파르타 코딩클럽 학생들의 팀 프로젝트이니 혹여 요쳥하신적이 없다면 무시해주세요.\n"
+    content += "요청하신분이 맞다면, 아래의 인중코드를 인증란에 작성해주십시오.\n"
+    content += code
     mail = EmailMessage(title,content,to=[email])
     mail.send()
     return code
@@ -32,7 +33,7 @@ class ValidatedData():
         check = [
             lambda element: element != None,
             lambda element: len(element) == len(element.replace(" ", "")),
-            lambda element: True if (len(element) > 1 and len(element) < 21) else False,
+            lambda element: True if (len(element) > 1 and len(element) < 10) else False,
         ]
         for i in check:
             if not i(nickname):
@@ -49,6 +50,21 @@ class ValidatedData():
         return bool(email_match)
 
     @classmethod
+    def validated_numbers(self,customs_clearance_number):
+        """ 통관 번호 검증 """
+        number = customs_clearance_number.lower()
+        check = [
+            lambda element: element != None,
+            lambda element: len(element) == len(element.replace(" ", "")),
+            lambda element: True if (len(element) > 10 and len(element) < 13) else False,
+            lambda element: element[1:].isdigit()
+        ]
+        for i in check:
+            if not i(number):
+                return False
+        return True
+
+    @classmethod
     def validated_user_data(self,**kwargs):
         """ 이메일,유저네임,비밀번호 검증 """
         if not self.validated_email(kwargs.get('email')):
@@ -57,6 +73,27 @@ class ValidatedData():
             return [False,"닉네임이 올바르지 않습니다."]
         elif not self.validated_password(kwargs.get('password')):
             return [False,"비밀번호가 올바르지 않습니다."]
+        return [True,"유효성 검사에 통과했습니다."]
+
+    @classmethod
+    def update_validated_user_data(self, **kwargs):
+        """ 이메일,유저네임,비밀번호 검증 """
+        email = kwargs.get('email')
+        nickname = kwargs.get('nickname')
+        password = kwargs.get('password')
+        numbers = kwargs.get('numbers')
+        if email != None:
+            if not self.validated_email(email):
+                return [False,"이메일 정보가 올바르지 않습니다."]
+        if nickname != None:
+            if not self.validated_nickname(nickname):
+                return [False,"닉네임이 올바르지 않습니다."]
+        if password != None:
+            if not self.validated_password(password):
+                return [False,"비밀번호가 올바르지 않습니다."]
+        if numbers != None:
+            if not self.validated_numbers(numbers):
+                return [False,"통관번호가 올바르지 않습니다."]
         return [True,"유효성 검사에 통과했습니다."]
 
     @classmethod

@@ -1,4 +1,5 @@
 from django.db import models
+from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 class UserManager(BaseUserManager):
@@ -31,7 +32,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser,CommonModel):
     """ Base User model 정의 """
     LOGIN_TYPES = [
         ("normal", "일반"),
@@ -62,7 +63,7 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     def __str__(self):
-        return self.nickname
+        return self.email
 
     def has_perm(self, perm, obj=None):
         return True
