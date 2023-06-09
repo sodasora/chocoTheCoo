@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
-from users.models import User,Delivery,Seller, Point, Subscribe
+from users.models import User, Delivery, Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .validated import ValidatedData
 from .cryption import AESAlgorithm
 from products.models import Product
+from django.contrib.auth.hashers import make_password
+
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -46,8 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
         user = super().update(instance, validated_data)
         password = validated_data.get('password')
         customs_code = validated_data.get('customs_code')
-        if password is not None:
-            user.set_password(password)
+        user.password = make_password(user.password)
         user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
         user.save()
         return user
@@ -151,21 +152,23 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['email'] = user.email
         token['nickname'] = user.nickname
+
         return token
+
 
 class BriefProductInformation(serializers.ModelSerializer):
     """
     간략한 상품 정보
     """
+
     class Meta:
         model = Product
-        fields = ('id','name','content','image')
-
+        fields = ('id', 'name', 'content', 'image')
 
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
-    유저 정보 읽기
+    유저 프로필 정보 읽어오기
     """
     product_wish_list = BriefProductInformation(many=True)
     product_wish_list_count = serializers.SerializerMethodField()
@@ -175,15 +178,18 @@ class ReadUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("profile_image","nickname",'id',"email",'product_wish_list','product_wish_list_count')
+        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count')
+
 
 class BriefUserInformation(serializers.ModelSerializer):
     """
     간략한 사용자 정보
     """
+
     class Meta:
         model = User
-        fields = ("profile_image","nickname",'id')
+        fields = ("profile_image", "nickname", 'id')
+
 
 class GetWishListUserInfo(serializers.ModelSerializer):
     """
@@ -197,7 +203,8 @@ class GetWishListUserInfo(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('wish_lists','wish_lists_count')
+        fields = ('wish_lists', 'wish_lists_count')
+
 
 class GetReviewUserListInfo(serializers.ModelSerializer):
     """
@@ -209,21 +216,26 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
     def get_review_liking_people_count(self, obj):
         return obj.review_liking_people.count()
 
-
     class Meta:
         model = User
-        fields = ('review_liking_people','review_liking_people_count')
+        fields = ('review_liking_people', 'review_liking_people_count')
 
 
 class PointSerializer(serializers.ModelSerializer):
-    """포인트 시리얼라이저"""
+    """
+    포인트 시리 얼라이저
+    """
+
     class Meta:
         model = Point
         fields = "__all__"
-        
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """구독시리얼라이저"""
+    """
+    구독 시리얼라이저
+    """
+
     class Meta:
         model = Subscribe
-        fields = "__all__" 
-
+        fields = "__all__"

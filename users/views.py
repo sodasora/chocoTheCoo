@@ -10,15 +10,13 @@ from .serializers import (CustomTokenObtainPairSerializer, UserSerializer, Deliv
                           GetReviewUserListInfo)
 from .models import User, Delivery, Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
 from . import validated
 from products.models import Product, Review
 from .cryption import AESAlgorithm
 from django.db.models import Sum
 from django.utils import timezone
-"""
-response 는 간단 명료하게 
-백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
-"""
+
 
 class GetEmailAuthCodeAPIView(APIView):
     """
@@ -99,7 +97,8 @@ class UserProfileAPIView(APIView):
          """
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        total_plus_point = Point.objects.filter(user_id=user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
+        total_plus_point = Point.objects.filter(user_id=user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(
+            total=Sum('point'))
         total_minus_point = Point.objects.filter(user_id=user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
         try:
             total_point = total_plus_point['total'] - total_minus_point['total']
@@ -305,8 +304,32 @@ class CustomTokenObtainPairView(TokenObtainPairView):
      로그인 , access token 발급
      """
     serializer_class = CustomTokenObtainPairSerializer
-    # def post(self, request, *args, **kwargs):
-    #     pass
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, email=request.data.get('email'))
+        if user.is_active is False:
+            return Response({'msg': "휴면 계정입니다."}, status=status.HTTP_204_NO_CONTENT)
+        # elif user.login_attempts_count >= 5:
+        #     return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        try:
+            if check_password(request.data.get('password'), user.password):
+                user.login_attempts_count = 0
+                user.save()
+
+                response = super().post(request, *args, **kwargs)
+                refresh_token = response.data['refresh']
+                access_token = response.data['access']
+                data_dict = {
+                    "refresh_token": refresh_token,
+                    "access_token": access_token
+                }
+                return Response(data_dict, status=status.HTTP_200_OK)
+            else:
+                user.login_attempts_count += 1
+                user.save()
+                return Response(user.login_attempts_count,status=status.HTTP_401_UNAUTHORIZED)
+        except TypeError:
+            return Response({'err': "입력값이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class WishListAPIView(APIView):
@@ -365,19 +388,21 @@ class ReviewListAPIView(APIView):
             return Response({"message": "리뷰 좋아요를 등록 했습니다."}, status=status.HTTP_201_CREATED)
 
 
-"""포인트"""
 class PointView(APIView):
+    """
+    포인트
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         # 포인트 적립
-        serializer  = PointSerializer(data=request.data)
+        serializer = PointSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     def get(self, request, date):
         # 포인트 상세보기
         points = Point.objects.filter(date=date, user=request.user)
@@ -386,25 +411,33 @@ class PointView(APIView):
 
 
 class PointDateView(APIView):
-    permission_classes = [IsAuthenticated]    
+    permission_classes = [IsAuthenticated]
+
     # 요약보기
     def get(self, request, date):
         # 포인트 총합 계산
         """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
-        day_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date=date).aggregate(total=Sum('point'))
-        day_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date=date).aggregate(total=Sum('point'))
-        month_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
-        month_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
-        total_plus_point =  Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
-        
+        day_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(
+            date=date).aggregate(total=Sum('point'))
+        day_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(
+            date=date).aggregate(total=Sum('point'))
+        month_plus_point = Point.objects.filter(user_id=request.user.id).filter(
+            point_type_id__in=[1, 2, 3, 4, 5]).filter(date__month=timezone.now().date().month).aggregate(
+            total=Sum('point'))
+        month_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(
+            date__month=timezone.now().date().month).aggregate(total=Sum('point'))
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(
+            point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(
+            total=Sum('point'))
+
         return Response({
-            "day_plus_point":day_plus_point,
-            "day_minus_point":day_minus_point,
-            "month_minus_point":month_minus_point,
-            "month_plus_point":month_plus_point,
-            "total_plus_point":total_plus_point,
-            "total_minus_point":total_minus_point,
+            "day_plus_point": day_plus_point,
+            "day_minus_point": day_minus_point,
+            "month_minus_point": month_minus_point,
+            "month_plus_point": month_plus_point,
+            "total_plus_point": total_plus_point,
+            "total_minus_point": total_minus_point,
         }, status=status.HTTP_200_OK)
 
 
