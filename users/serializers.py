@@ -1,118 +1,151 @@
 from rest_framework import serializers
-
+from rest_framework.serializers import ValidationError
 from users.models import User,Delivery,Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from  .validated import ValidatedData
+from .validated import ValidatedData
 from .cryption import AESAlgorithm
 
+
 class UserSerializer(serializers.ModelSerializer):
-    """ 유저 회원가입, 업데이트 시리얼 라이저 """
+    """
+     유저 회원가입, 업데이트 시리얼 라이저
+    """
+
     class Meta:
         model = User
         fields = "__all__"
-        extra_kwargs = {"password": {"write_only": True},}
+        extra_kwargs = {"password": {"write_only": True}, }
 
     def validate(self, element):
-        """ email,password,username 검사 """
+        """
+         email,password,username 검사
+         """
         if self.context == 'create':
-            result = ValidatedData.validated_user_data(**element)
-            if not result[0]:
-                raise serializers.ValidationError(result[1])
+            verification_result = ValidatedData.validated_user_data(**element)
+            if not verification_result:
+                raise ValidationError("입력값이 올바르지 않습니다.")
         elif self.context == 'update':
-            result = ValidatedData.update_validated_user_data(**element)
-            if not result[0]:
-                raise serializers.ValidationError(result[1])
+            verification_result = ValidatedData.update_validated_user_data(**element)
+            if not verification_result:
+                raise ValidationError("입력값이 올바르지 않습니다.")
         return element
 
     def create(self, validated_data):
-        """"  유저 오브젝트 생성  """
+        """"
+        유저 오브 젝트 생성
+        """
         user = super().create(validated_data)
         user.set_password(user.password)
         user.save()
         return user
 
     def update(self, instance, validated_data):
-        """ 유저 오브젝트 업데이트 """
+        """
+        유저 오브 젝트 업데이트
+        """
         user = super().update(instance, validated_data)
-        validated_data.get('password')
-        validated_data.get('numbers')
-        user.password = user.set_password(user.password) if validated_data.get('password') != None else user.password
-        if validated_data.get('password') != None: # get으로 가져오는 데이터를 변수로 빼둘 것
-            user.set_password(user.password)
-        if validated_data.get('numbers') == None:
-            pass
-        else:
-            user.numbers = AESAlgorithm.encrypt(user.numbers)
+        password = validated_data.get('password')
+        customs_code = validated_data.get('customs_code')
+        if password is not None:
+            user.set_password(password)
+        user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
         user.save()
         return user
 
+
 class DeliverySerializer(serializers.ModelSerializer):
-    """  배송 정보 저장  및 업데이트 """
+    """
+    배송 정보 저장  및 업데이트
+    """
+
     class Meta:
         model = Delivery
         exclude = ('user',)
 
     def validate(self, deliveries_data):
-        """ 우편 번호 검증 """
-        result = ValidatedData.validated_deliveries(**deliveries_data)
-        if not result[0]:
-            raise serializers.ValidationError(result[1])
+        """
+        우편 번호 검증
+        """
+        verification_result = ValidatedData.validated_deliveries(**deliveries_data)
+        if not verification_result:
+            raise ValidationError("우편 정보가 올바르지 않습니다.")
         return deliveries_data
 
+    def encrypt_deliveries_information(self, deliveries, validated_data):
+        """
+        오브 젝트 암호화
+        """
+
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        deliveries.address = encrypt_result.get('address')
+        deliveries.detail_address = encrypt_result.get('detail_address')
+        deliveries.recipient = encrypt_result.get('recipient')
+        deliveries.postal_code = encrypt_result.get('postal_code')
+        deliveries.save()
+        return deliveries
+
     def create(self, validated_data):
-        """"  배송 정보 오브젝트 생성 및 암호화 """
+        """"
+        배송 정보 오브 젝트 생성
+        """
         deliveries = super().create(validated_data)
-        deliveries.address = AESAlgorithm.encrypt(deliveries.address)
-        deliveries.detail_address = AESAlgorithm.encrypt(deliveries.detail_address)
-        deliveries.recipient = AESAlgorithm.encrypt(deliveries.recipient)
-        deliveries.postal_code = AESAlgorithm.encrypt(deliveries.postal_code)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
         deliveries.save()
         return deliveries
 
     def update(self, instance, validated_data):
-        """ 배송 정보 오브젝트 업데이트 및 암호화 """
+        """
+        배송 정보 오브 젝트 수정
+        """
         deliveries = super().update(instance, validated_data)
-        deliveries.address = AESAlgorithm.encrypt(deliveries.address)
-        deliveries.detail_address = AESAlgorithm.encrypt(deliveries.detail_address)
-        deliveries.recipient = AESAlgorithm.encrypt(deliveries.recipient)
-        deliveries.postal_code = AESAlgorithm.encrypt(deliveries.postal_code)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
         deliveries.save()
         return deliveries
 
+
 class SellerSerializer(serializers.ModelSerializer):
-    """  판매자 정보 저장 및 업데이트 """
+    """
+    판매자 정보 저장 및 업데이트
+    """
+
     class Meta:
         model = Seller
         exclude = ('user',)
 
+    def encrypt_seller_information(self, seller_information, validated_data):
+        """
+        오브 젝트 암호화
+        """
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        seller_information.bank_name = encrypt_result.get('bank_name')
+        seller_information.account_number = encrypt_result.get('account_number')
+        seller_information.account_holder = encrypt_result.get('account_holder')
+        return seller_information
+
     def create(self, validated_data):
-        """"  판매자 정보  오브젝트 생성 및 암호화 """
+        """"
+        판매자 정보 오브 젝트 생성
+        """
         seller_information = super().create(validated_data)
-        seller_information.company_name = AESAlgorithm.encrypt(seller_information.company_name)
-        seller_information.buisness_number = AESAlgorithm.encrypt(seller_information.buisness_number)
-        seller_information.bank_name = AESAlgorithm.encrypt(seller_information.bank_name)
-        seller_information.account_number = AESAlgorithm.encrypt(seller_information.account_number)
-        seller_information.business_owner_name = AESAlgorithm.encrypt(seller_information.business_owner_name)
-        seller_information.account_holder = AESAlgorithm.encrypt(seller_information.account_holder)
-        seller_information.contact_number = AESAlgorithm.encrypt(seller_information.contact_number)
+        seller_information = self.encrypt_seller_information(seller_information, validated_data)
         seller_information.save()
         return seller_information
 
     def update(self, instance, validated_data):
-        """ 판매자 정보 오브젝트 업데이트 및 암호화 """
+        """
+        판매자 정보 오브 젝트 수정
+        """
         seller_information = super().update(instance, validated_data)
-        seller_information.company_name = AESAlgorithm.encrypt(seller_information.company_name)
-        seller_information.buisness_number = AESAlgorithm.encrypt(seller_information.buisness_number)
-        seller_information.bank_name = AESAlgorithm.encrypt(seller_information.bank_name)
-        seller_information.account_number = AESAlgorithm.encrypt(seller_information.account_number)
-        seller_information.business_owner_name = AESAlgorithm.encrypt(seller_information.business_owner_name)
-        seller_information.account_holder = AESAlgorithm.encrypt(seller_information.account_holder)
-        seller_information.contact_number = AESAlgorithm.encrypt(seller_information.contact_number)
+        seller_information = self.encrypt_seller_information(seller_information, validated_data)
         seller_information.save()
         return seller_information
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """ payload 재정의 """
+    """
+    payload 재정의
+    """
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -120,20 +153,52 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['nickname'] = user.nickname
         return token
 
+
 class ReadUserSerializer(serializers.ModelSerializer):
-    """ 마이페이지 유저 정보 읽기 """
-    deliveries_data = DeliverySerializer(many=True)
-    user_seller = SellerSerializer()
-
-    def get_deliveries(self,obj):
-        return obj.deliveries_data
-
-    def get_user_seller(self,obj):
-        return obj.user_seller
+    """
+    유저 정보 읽기
+    """
 
     class Meta:
         model = User
-        exclude = ('auth_code','is_admin','is_active','last_login',"created_at","updated_at",'password')
+        exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+
+class BriefUserInformation(serializers.ModelSerializer):
+    """
+    간략한 사용자 정보
+    """
+    class Meta:
+        model = User
+        fields = ("profile_image","nickname",'id')
+
+class GetWishListUserInfo(serializers.ModelSerializer):
+    """
+    상품 찜 등록한  유저들 정보 불러오기
+    """
+    wish_lists = BriefUserInformation(many=True)
+    wish_lists_count = serializers.SerializerMethodField()
+
+    def get_wish_lists_count(self, obj):
+        return obj.wish_lists.count()
+
+    class Meta:
+        model = User
+        fields = ('wish_lists','wish_lists_count')
+
+class GetReviewUserListInfo(serializers.ModelSerializer):
+    """
+    리뷰 좋아요 유저들 정보 불러오기
+    """
+    review_liking_people = BriefUserInformation(many=True)
+    review_liking_people_count = serializers.SerializerMethodField()
+
+    def get_review_liking_people_count(self, obj):
+        return obj.review_liking_people.count()
+
+    class Meta:
+        model = User
+        fields = ('wish_lists', 'wish_lists_count')
+
 
 class PointSerializer(serializers.ModelSerializer):
     """포인트 시리얼라이저"""
@@ -146,3 +211,4 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscribe
         fields = "__all__" 
+
