@@ -245,32 +245,33 @@ class PointView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        # 포인트 적립
         serializer  = PointSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    def get(self, request, date):
+        # 포인트 상세보기
+        points = Point.objects.filter(date=date, user=request.user)
+        serializer = PointSerializer(points, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PointDateView(APIView):
     permission_classes = [IsAuthenticated]    
-    # 날짜별 상세보기
+    # 날짜별 요약보기
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 리뷰(2), 구매(3), 충전(4), 사용(5)"""
-        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1|2|3|4).filter(date=date).aggregate(total=Sum('points'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=5).filter(date=date).aggregate(total=Sum('points'))
-        total_point = total_plus_point - total_minus_point
-        
-        # 포인트 상세보기
-        points = Point.objects.filter(date=date, user=request.user)
+        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date=date).aggregate(total=Sum('point'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date=date).aggregate(total=Sum('point'))
         
         return Response({
             "total_plus_point":total_plus_point,
             "total_minus_point":total_minus_point,
-            "total_point":total_point,
-            "points": points
         }, status=status.HTTP_200_OK)
         
 
