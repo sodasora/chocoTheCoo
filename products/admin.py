@@ -11,4 +11,4 @@ admin.site.register(Product, ProductAdmin)
 
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ['title','content', 'image','star', 'created_at', 'updated_at']
-admin.site.register(Review)
+admin.site.register(Review, ReviewAdmin)
