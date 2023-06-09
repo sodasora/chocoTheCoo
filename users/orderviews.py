@@ -1,8 +1,8 @@
 from rest_framework import generics
 from rest_framework.views import APIView
-from .models import CartItem, Seller
-from products.models import Product
-from .orderserializers import *
+from .models import CartItem, OrderItem, Bill
+from .orderserializers import (CartListSerializer, CartSerializer, CartDetailSerializer, OrderItemSerializer, 
+                               OrderItemDetailSerializer, BillSerializer, BillCreateSerializer, BillDetailSerializer)
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -36,17 +36,18 @@ class CartView(APIView):
     
     def post(self, request):
         """ 장바구니 추가 """
-        cart = CartItem.objects.filter(product=request.data['product'])
-        serializer = CartSerializer(data=request.data)
         # 이미 존재하는 상품이면 개수 amount개 추가
-        if cart:
-            cart[0].amount += request.data.get('amount')
-            cart[0].save()
+        try:
+            cart = CartItem.objects.get(product=request.data['product'])
+            cart.amount += request.data.get('amount')
+            cart.save()
             return Response({'msg': "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
-        elif serializer.is_valid():
-            serializer.save()
-            return Response({'msg': "장바구니에 추가되었습니다."}, status=status.HTTP_201_CREATED)
-        return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except CartItem.DoesNotExist:
+            if serializer.is_valid():
+                serializer = CartSerializer(data=request.data)
+                serializer.save()
+                return Response({'msg': "장바구니에 추가되었습니다."}, status=status.HTTP_201_CREATED)
+            return Response({"err":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class CartDetailView(APIView):
     """ 장바구니 수량 변경, 삭제 """
@@ -109,14 +110,12 @@ class BillView(generics.ListCreateAPIView):
 class BillDetailView(generics.RetrieveAPIView):
     """ 주문 내역 상세 조회 """
     permission_classes = [IsAuthenticated]
-    queryset = Bill.objects.all()
     serializer_class = BillDetailSerializer
+    def get_queryset(self):
+        queryset = Bill.objects.filter(user=self.request.user)
+        return queryset
+    
     def get_object(self):
         pk = self.kwargs.get('pk')
-        obj = self.get_queryset().get(pk=pk, user_id=self.request.user.id)
+        obj = self.get_queryset().get(pk=pk)
         return obj
-    
-        # ! 해당 obj가 없을 때, get에서 자체적으로 에러를 발생, 예외처리 어떻게 해야할지 방법 찾아야함.
-        # try:
-        # except Bill.DoesNotExist:
-        #     raise Response({'msg': "해당 주문내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
