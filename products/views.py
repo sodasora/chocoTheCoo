@@ -1,7 +1,7 @@
 from rest_framework.views import APIView 
 from rest_framework.response import Response
 from rest_framework import generics
-from .serializers import *
+from .serializers import ProductListSerializer, CategoryListSerializer, ProductDetailSerializer, ReviewSerializer,ReviewDetailSerializer
 from rest_framework import status
 from .models import Product, Category, Review
 from rest_framework.permissions import IsAuthenticated
@@ -32,14 +32,14 @@ class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class ReviewView(generics.ListCreateAPIView):
     """ 리뷰 조회, 생성 """
-    permission_classes = [IsAuthenticated]
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     """ 리뷰 상세 조회, 수정, 삭제 """
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        return super().get_permissions()
     queryset = Review.objects.all()
     serializer_class = ReviewDetailSerializer
 
