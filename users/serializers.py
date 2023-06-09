@@ -44,10 +44,10 @@ class UserSerializer(serializers.ModelSerializer):
         """
         user = super().update(instance, validated_data)
         validated_data.get('password')
-        validated_data.get('numbers')
+        validated_data.get('customs_code')
         user.password = user.set_password(user.password) if validated_data.get(
             'password') is not None else user.password
-        user.numbers = AESAlgorithm.encrypt(user.numbers) if validated_data.get('numbers') is not None else user.numbers
+        user.customs_code = AESAlgorithm.encrypt(user.customs_code) if validated_data.get('customs_code') is not None else user.customs_code
         user.save()
         return user
 
@@ -166,22 +166,42 @@ class ReadUserSerializer(serializers.ModelSerializer):
         model = User
         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
 
-# class ReadUserSerializer(serializers.ModelSerializer):
-#     """
-#     마이 페이지 유저 정보 읽기
-#     """
-#     deliveries_data = DeliverySerializer(many=True)
-#     user_seller = SellerSerializer()
-#
-#     def get_deliveries(self, obj):
-#         return obj.deliveries_data
-#
-#     def get_user_seller(self, obj):
-#         return obj.user_seller
-#
-#     class Meta:
-#         model = User
-#         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+class BriefUserInformation(serializers.ModelSerializer):
+    """
+    간략한 사용자 정보
+    """
+    class Meta:
+        model = User
+        fields = ("profile_image","nickname",'id')
+
+class GetWishListUserInfo(serializers.ModelSerializer):
+    """
+    상품 찜 등록한  유저들 정보 불러오기
+    """
+    wish_lists = BriefUserInformation(many=True)
+    wish_lists_count = serializers.SerializerMethodField()
+
+    def get_wish_lists_count(self, obj):
+        return obj.wish_lists.count()
+
+    class Meta:
+        model = User
+        fields = ('wish_lists','wish_lists_count')
+
+class GetReviewUserListInfo(serializers.ModelSerializer):
+    """
+    리뷰 좋아요 유저들 정보 불러오기
+    """
+    review_liking_people = BriefUserInformation(many=True)
+    review_liking_people_count = serializers.SerializerMethodField()
+
+    def get_review_liking_people_count(self, obj):
+        return obj.review_liking_people.count()
+
+    class Meta:
+        model = User
+        fields = ('wish_lists', 'wish_lists_count')
+
 
 class PointSerializer(serializers.ModelSerializer):
     """포인트 시리얼라이저"""

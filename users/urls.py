@@ -40,4 +40,8 @@ urlpatterns = [
     path("orders/products/<int:product_id>/", orderviews.OrderListView.as_view(), name='order_list_view'),
     # 주문 상세 조회
     path("orders/<int:pk>/", orderviews.OrderDetailView.as_view(), name='order_detail_view'),
+    # 리뷰 좋아요 등록 및 취소, 좋아요 등록한 유저의 간략한 정보 불러오기
+    path("review/<int:review_id>/", views.ReviewListAPIView.as_view(), name='review-list-API'),
+    # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
+    path("wish/<int:product_id>/", views.WishListAPIView.as_view(), name='wish-list-API'),
 ]

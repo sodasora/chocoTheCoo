@@ -54,7 +54,7 @@ class ValidatedData:
         return bool(email_match)
 
     @classmethod
-    def validated_numbers(cls, customs_clearance_number):
+    def validated_customs_code(cls, customs_clearance_number):
         """ 통관 번호 검증 """
         number = customs_clearance_number.lower()
         check = [
@@ -85,7 +85,7 @@ class ValidatedData:
         email = kwargs.get('email')
         nickname = kwargs.get('nickname')
         password = kwargs.get('password')
-        numbers = kwargs.get('numbers')
+        customs_code = kwargs.get('customs_code')
         if email is not None:
             if not cls.validated_email(email):
                 return False
@@ -95,8 +95,8 @@ class ValidatedData:
         if password is not None:
             if not cls.validated_password(password):
                 return False
-        if numbers is not None:
-            if not cls.validated_numbers(numbers):
+        if customs_code is not None:
+            if not cls.validated_customs_code(customs_code):
                 return False
         return True
 

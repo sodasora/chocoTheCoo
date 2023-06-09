@@ -5,17 +5,18 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.utils import IntegrityError
-from .serializers import (CustomTokenObtainPairSerializer, UserSerializer, DeliverySerializer, ReadUserSerializer, SellerSerializer, PointSerializer, SubscriptionSerializer)
-from .models import User,Delivery,Seller, Point, Subscribe
+from .serializers import (CustomTokenObtainPairSerializer, UserSerializer, DeliverySerializer, ReadUserSerializer,
+                          SellerSerializer, PointSerializer, SubscriptionSerializer, GetWishListUserInfo,
+                          GetReviewUserListInfo)
+from .models import User, Delivery, Seller, Point, Subscribe
 from django.contrib.auth.hashers import check_password
-from .models import User, Delivery, Seller
 from . import validated
+from products.models import Product, Review
 from .cryption import AESAlgorithm
 from django.db import transaction
 import datetime, schedule, time
 from django.utils import timezone
 from django.db.models import Sum, F
-
 
 
 class GetEmailAuthCodeAPIView(APIView):
@@ -170,7 +171,7 @@ class UpdateDeliveryAPIView(APIView):
             serializer = DeliverySerializer(delivery, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response({"msg":"배송 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
+                return Response({"msg": "배송 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -257,7 +258,6 @@ class SellerPermissionAPIView(APIView):
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         return Response(decrypt_result, status=status.HTTP_200_OK)
 
-
     def patch(self, request, user_id):
         """
         판매자 권한 승인
@@ -291,7 +291,6 @@ class SellerPermissionAPIView(APIView):
         return Response({'msg': "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
      로그인 , access token 발급
@@ -299,12 +298,68 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
+class WishListAPIView(APIView):
+    """
+    상품 찜 등록한 유저 정보 불러오기,
+    상품 찜 등록 및 취소
+    """
+
+    def get(self, request, product_id):
+        """
+        상품을 찜 등록한 사용자 정보들 불러오기
+        """
+        product = get_object_or_404(Product, id=product_id)
+        serializer = GetWishListUserInfo(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, challenge_id):
+        """
+        상품 찜 등록 및 취소
+        """
+        user = get_object_or_404(User, email=request.user.email)
+        product = get_object_or_404(Product, id=challenge_id)
+        if product in user.product_wish_list.all():
+            user.product_wish_list.remove(product)
+            return Response({"message": "상품 찜 등록을 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            user.product_wish_list.add(product)
+            return Response({"message": "상품을 찜 등록 했습니다."}, status=status.HTTP_201_CREATED)
+
+
+class ReviewListAPIView(APIView):
+    """
+    리뷰 좋아요 등록한 유저 정보 불러오기,
+    리뷰 좋아요 등록 및 취소
+    """
+
+    def get(self, request, review_id):
+        """
+        리뷰를 좋아요 등록한 사용자 정보들 불러오기
+        """
+        review = get_object_or_404(Review, id=review_id)
+        serializer = GetReviewUserListInfo(review)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, review_id):
+        """
+        리뷰 좋아요 등록 및 취소
+        """
+        user = get_object_or_404(User, email=request.user.email)
+        review = get_object_or_404(Product, id=review_id)
+        if review in user.review_like.all():
+            user.review_like.remove(review)
+            return Response({"message": "리뷰 좋아요를 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            user.review_like.add(review)
+            return Response({"message": "리뷰 좋아요를 등록 했습니다."}, status=status.HTTP_201_CREATED)
+
+
 """포인트"""
 class PointView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
-        serializer  = PointSerializer(data=request.data)
+        serializer = PointSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -313,34 +368,38 @@ class PointView(APIView):
 
 
 class PointDateView(APIView):
-    permission_classes = [IsAuthenticated]    
+    permission_classes = [IsAuthenticated]
+
     # 날짜별 상세보기
     def get(self, request, date):
         # 포인트 총합 계산
         """포인트 종류: 출석(1), 리뷰(2), 구매(3), 사용(4)"""
-        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1|2|3).filter(date=date).aggregate(total=Sum('points'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=4).filter(date=date).aggregate(total=Sum('points'))
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=1 | 2 | 3).filter(
+            date=date).aggregate(total=Sum('points'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=4).filter(
+            date=date).aggregate(total=Sum('points'))
         total_point = total_plus_point - total_minus_point
-        
+
         # 포인트 상세보기
         points = Point.objects.filter(date=date, user=request.user)
-        
+
         return Response({
-            "total_plus_point":total_plus_point,
-            "total_minus_point":total_minus_point,
-            "total_point":total_point,
+            "total_plus_point": total_plus_point,
+            "total_minus_point": total_minus_point,
+            "total_point": total_point,
             "points": points
         }, status=status.HTTP_200_OK)
-        
+
 
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
+
     # 구독 정보 가져오기
     def get(self, request):
         subscription = get_object_or_404(Subscribe, user_id=request.user.id)
         serializer = SubscriptionSerializer(subscription)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     # 구독 최초 생성
     def post(self, request):
         serializer = SubscriptionSerializer(data=request.data)
@@ -349,9 +408,9 @@ class SubscribeView(APIView):
             return Response({"message": "구독성공!"}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     # 구독해지 및 복구
-    def patch(self,request):
+    def patch(self, request):
         subscription = get_object_or_404(Subscribe, user_id=request.user.id)
         if subscription.subscribe == True:
             subscription.subscribe = False
@@ -361,4 +420,3 @@ class SubscribeView(APIView):
             subscription.subscribe = True
             subscription.save()
             return Response({"message": "구독성공!"}, status.HTTP_200_OK)
-

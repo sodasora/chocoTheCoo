@@ -51,14 +51,13 @@ class User(AbstractBaseUser, CommonModel):
     profile_image = models.ImageField("프로필 이미지", upload_to="%Y/%m", blank=True, null=True)
     auth_code = models.CharField("인증 코드", max_length=128, blank=True, null=True)
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
-    numbers = models.CharField("통관번호", max_length=20, blank=True, null=True)
+    customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)  # 이메일 인증을 받을시 계정 활성화
     is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
-    """  모델 생성시 연결  """
-    # wish_list = models.ManyToManyField('products.Product', symmetrical=False, related_name='wish_lists', blank=True)
-    # review_like = models.ManyToManyField('products.Review', symmetrical=False, related_name='liking_people', blank=True)
+    product_wish_list = models.ManyToManyField('products.Product', symmetrical=False, related_name='wish_lists', blank=True)
+    review_like = models.ManyToManyField('products.Review', symmetrical=False, related_name='review_liking_people', blank=True)
 
     # 추가기능 : 핸드폰 번호 https://django-phonenumber-field.readthedocs.io/en/latest/reference.html
     # phone_number
