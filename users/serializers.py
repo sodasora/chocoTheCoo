@@ -4,7 +4,7 @@ from users.models import User,Delivery,Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .validated import ValidatedData
 from .cryption import AESAlgorithm
-
+from products.models import Product
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -153,15 +153,29 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['nickname'] = user.nickname
         return token
 
+class BriefProductInformation(serializers.ModelSerializer):
+    """
+    간략한 상품 정보
+    """
+    class Meta:
+        model = Product
+        fields = ('id','name','content','image')
+
+
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
     유저 정보 읽기
     """
+    product_wish_list = BriefProductInformation(many=True)
+    product_wish_list_count = serializers.SerializerMethodField()
+
+    def get_product_wish_list_count(self, obj):
+        return obj.product_wish_list.count()
 
     class Meta:
         model = User
-        exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+        fields = ("profile_image","nickname",'id',"email",'product_wish_list','product_wish_list_count')
 
 class BriefUserInformation(serializers.ModelSerializer):
     """
