@@ -12,9 +12,9 @@ urlpatterns = [
     # 인증 코드 발급 받기
     path('get/auth_code/', GetEmailAuthCodeAPIView.as_view(), name='deliveries_view'),
     # 배송 정보 추가
-    path('create/deliverie/<int:user_id>/', DeliveryAPIView.as_view(), name='create-deliverie'),
+    path('create/delivery/<int:user_id>/', DeliveryAPIView.as_view(), name='create-delivery'),
     # 배송 정보 수정 및 삭제
-    path('deliverie/<int:deliverie_id>/', UpdateDeliveryAPIView.as_view(), name='update-deliverie'),
+    path('delivery/<int:delivery_id>/', UpdateDeliveryAPIView.as_view(), name='update-delivery'),
     # 판매자 권한 신청 , 판매자 정보 수정 , 판매자 정보 삭제
     path('seller/', SellerAPIView.as_view(), name='seller-view'),
     # 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)
