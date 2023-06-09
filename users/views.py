@@ -305,8 +305,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
      로그인 , access token 발급
      """
     serializer_class = CustomTokenObtainPairSerializer
-    # def post(self, request, *args, **kwargs):
-    #     pass
+    #def post(self, request, *args, **kwargs):
+        #pass
 
 
 class WishListAPIView(APIView):
