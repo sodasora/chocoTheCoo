@@ -153,7 +153,7 @@ class PointType(models.Model):
 
 class Point(CommonModel):
     """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
-    user = models.ForeignKey("users.User",on_delete=models.CASCADE)
+    user = models.ForeignKey("users.User",on_delete=models.CASCADE,related_name="detail_point")
     date = models.DateField("날짜",default=date.today)
     point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
     point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
