@@ -1,20 +1,26 @@
 import random, re, string
 from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
 
 
 def send_email(email):
-    """ 인증 메일 발송 """
+    """
+    인증 메일 발송
+    템플릿 경로 : .users/templates/email_template.html
+    """
     random_value = string.ascii_letters + string.digits
     random_value = list(random_value)
     random.shuffle(random_value)
     code = "".join(random_value[:10])
     title = "ChocoTheCoo"
-    content = "초코더쿠에서 회원님의 가입 인증을 위한 코드를 발송했습니다.\n"
-    content += "스파르타 코딩클럽 학생들의 팀 프로젝트이니 혹여 요쳥하신적이 없다면 무시해주세요.\n"
-    content += "요청하신분이 맞다면, 아래의 인중코드를 인증란에 작성해주십시오.\n"
-    content += code
+
+    context = {'code': code}
+    content = render_to_string('email_template.html', context)
+
     mail = EmailMessage(title, content, to=[email])
+    mail.content_subtype = "html"
     mail.send()
+
     return code
 
 
