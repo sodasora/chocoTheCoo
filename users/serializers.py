@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import User, Delivery, Seller
+from users.models import User,Delivery,Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .validated import ValidatedData
 from .cryption import AESAlgorithm
@@ -182,3 +182,17 @@ class ReadUserSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = User
 #         exclude = ('auth_code', 'is_admin', 'is_active', 'last_login', "created_at", "updated_at", 'password')
+
+class PointSerializer(serializers.ModelSerializer):
+    """포인트 시리얼라이저"""
+    class Meta:
+        modle = Point
+        fields = "__all__"
+        
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """구독시리얼라이저"""
+    class Meta:
+        model = Subscribe
+        fields = "__all__" 
+        exclude = ('password','auth_code','is_admin','is_active','last_login')
+

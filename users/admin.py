@@ -4,15 +4,17 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User, Seller, Delivery
+from .models import User, Seller, Delivery, PointType, Point, StatusCategory, OrderItem, CartItem, Bill
 
 admin.site.register(Delivery)
 admin.site.register(Seller)
+admin.site.register(PointType)
 
 
 class UserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label='Password confirmation', widget=forms.PasswordInput)
 
     class Meta:
         model = User
@@ -63,3 +65,6 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)
+admin.site.register(OrderItem)
+admin.site.register(Bill)
+admin.site.register(CartItem)
