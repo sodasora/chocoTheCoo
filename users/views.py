@@ -99,8 +99,13 @@ class UserProfileAPIView(APIView):
          """
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-        return Response(decrypt_result, status=status.HTTP_200_OK)
+        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
+        print(total_minus_point)
+        print(total_plus_point)
+        # serializer.data.update(total_plus_point)
+        # serializer.data.update(total_minus_point)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
         """
@@ -430,4 +435,3 @@ class SubscribeView(APIView):
             subscription.subscribe = True
             subscription.save()
             return Response({"message": "성공!"}, status.HTTP_200_OK)
-        
