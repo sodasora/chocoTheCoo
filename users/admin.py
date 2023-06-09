@@ -4,15 +4,29 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import User, Seller, Delivery, PointType, Point, StatusCategory, OrderItem, CartItem, Bill
-
+from .models import (
+    User,
+    Seller,
+    Delivery,
+    PointType,
+    Point,
+    StatusCategory,
+    OrderItem,
+    CartItem,
+    Bill,
+)
 
 
 @admin.register(Seller)
 class SellerAdmin(admin.ModelAdmin):
-    list_display = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number']
-    list_display_links = ['user', 'company_name']
-
+    list_display = [
+        "user",
+        "company_name",
+        "business_number",
+        "business_owner_name",
+        "contact_number",
+    ]
+    list_display_links = ["user", "company_name"]
 
 
 admin.site.register(PointType)
@@ -21,13 +35,14 @@ admin.site.register(StatusCategory)
 
 
 class UserCreationForm(forms.ModelForm):
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
+    password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
     password2 = forms.CharField(
-        label='Password confirmation', widget=forms.PasswordInput)
+        label="Password confirmation", widget=forms.PasswordInput
+    )
 
     class Meta:
         model = User
-        fields = ('email', 'nickname')
+        fields = ("email", "nickname")
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -49,26 +64,40 @@ class UserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'nickname')
+        fields = ("email", "nickname")
 
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
-    list_display = ('email', 'is_admin', 'nickname')
-    list_filter = ('is_admin', 'is_active', 'is_seller')
+    list_display = ("email", "is_admin", "nickname")
+    list_filter = ("is_admin", "is_active", "is_seller")
     fieldsets = (
-        (None, {'fields': ('email', 'nickname')}),
-        ('Permissions', {'fields': ('is_admin', 'is_active', 'is_seller', 'profile_image', 'login_type')}),
+        (None, {"fields": ("email", "nickname")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_admin",
+                    "is_active",
+                    "is_seller",
+                    "profile_image",
+                    "login_type",
+                )
+            },
+        ),
     )
     add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'nickname'),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "password1", "password2", "nickname"),
+            },
+        ),
     )
-    search_fields = ('email',)
-    ordering = ('email',)
+    search_fields = ("email",)
+    ordering = ("email",)
     filter_horizontal = ()
 
 

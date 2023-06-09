@@ -43,7 +43,9 @@ urlpatterns = [
     path('bills/<int:pk>/', BillDetailView.as_view(), name="bill_detail_view"),
     # 주문 생성
     path("bills/<int:bill_id>/orders/", OrderCreateView.as_view(), name='order_create_view'),
-    # 주문 목록 조회
+    # 전체 주문 목록 조회
+    path("orders/products/", OrderListView.as_view(), name='all_order_list_view'),
+    # 상품별 주문 목록 조회
     path("orders/products/<int:product_id>/", OrderListView.as_view(), name='order_list_view'),
     # 주문 상세 조회
     path("orders/<int:pk>/", OrderDetailView.as_view(), name='order_detail_view'),
@@ -51,5 +53,4 @@ urlpatterns = [
     path("review/<int:review_id>/", ReviewListAPIView.as_view(), name='review-list-API'),
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
     path("wish/<int:product_id>/", WishListAPIView.as_view(), name='wish-list-API'),
-    path("orders/<int:pk>/", OrderDetailView.as_view(), name='order_detail_view'),
 ]
