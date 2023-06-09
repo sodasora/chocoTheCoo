@@ -99,10 +99,6 @@ class UserProfileAPIView(APIView):
          """
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
-        # serializer.data.update(total_plus_point)
-        # serializer.data.update(total_minus_point)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
@@ -301,8 +297,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
      로그인 , access token 발급
      """
     serializer_class = CustomTokenObtainPairSerializer
-    # def post(self, request, *args, **kwargs):
-    #     pass
+    #def post(self, request, *args, **kwargs):
+        #pass
 
 
 class WishListAPIView(APIView):
