@@ -13,19 +13,12 @@ from django.contrib.auth.hashers import check_password
 from . import validated
 from products.models import Product, Review
 from .cryption import AESAlgorithm
-<<<<<<< HEAD
 from django.db.models import Sum
 from django.utils import timezone
 """
 response 는 간단 명료하게 
 백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
 """
-=======
-from django.db import transaction
-import datetime, schedule, time
-from django.utils import timezone
-from django.db.models import Sum, F
->>>>>>> e3ca2e877c7f04233dcd8a0bde75ef518f959748
 
 class GetEmailAuthCodeAPIView(APIView):
     """
