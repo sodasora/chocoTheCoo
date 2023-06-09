@@ -1,3 +1,4 @@
+from rest_framework import generics
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -366,47 +367,58 @@ class ReviewListAPIView(APIView):
 
 
 """포인트"""
-class PointView(APIView):
+class PointView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        # 포인트 적립
-        serializer  = PointSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-    def get(self, request, date):
-        # 포인트 상세보기
-        points = Point.objects.filter(date=date, user=request.user)
-        serializer = PointSerializer(points, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+    serializer_class = PointSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    def get_queryset(self):
+        date = self.kwargs.get('date')
+        queryset = Point.objects.filter(user=self.request.user, date=date)
+        return queryset
+    # status:201
 
 class PointDateView(APIView):
     permission_classes = [IsAuthenticated]    
-    # 요약보기
     def get(self, request, date):
         # 포인트 총합 계산
         """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
         day_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date=date).aggregate(total=Sum('point'))
         day_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date=date).aggregate(total=Sum('point'))
+        plus_point = day_plus_point['total'] if day_plus_point['total'] is not None else 0
+        minus_point = day_minus_point['total'] if day_minus_point['total'] is not None else 0
+        day_total_point = plus_point - minus_point
         month_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
         month_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
+        month_plus =  month_plus_point['total'] if  month_plus_point['total'] is not None else 0
+        month_minus =  month_minus_point['total'] if  month_minus_point['total'] is not None else 0
+        month_total_point = month_plus - month_minus
+
         total_plus_point =  Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
         total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
+        try:
+            total_point = total_plus_point['total'] - total_minus_point['total']
+        except TypeError:
+            total_point = total_plus_point['total'] if total_plus_point['total'] is not None else 0
         
         return Response({
-            "day_plus_point":day_plus_point,
-            "day_minus_point":day_minus_point,
-            "month_minus_point":month_minus_point,
-            "month_plus_point":month_plus_point,
-            "total_plus_point":total_plus_point,
-            "total_minus_point":total_minus_point,
+            "day_plus":plus_point,
+            "day_minus":minus_point,
+            "day_total_point":day_total_point,
+            "month_total_point":month_total_point,
+            "total_point":total_point,
         }, status=status.HTTP_200_OK)
 
+
+class PointAttendanceView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
+    def get_queryset(self):
+        date = self.kwargs.get('date')
+        queryset = Point.objects.filter(point_type_id=1, date=date)
+        return queryset
 
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
