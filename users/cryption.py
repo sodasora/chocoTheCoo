@@ -2,7 +2,7 @@ import base64
 import os
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from  binascii import Error
+from binascii import Error
 
 # 필요 라이브러리 : poytre add pycryptodome
 # 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES2.PY0
@@ -16,7 +16,7 @@ class AESAlgorithm:
     def encrypt_all(cls, **kwargs):
         """ 암호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
-        BASIC_DATA = ['user',]
+        BASIC_DATA = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number']
         data_dict = {}  # key값 특정
         for key, value in kwargs.items():
             if key in BASIC_DATA:
@@ -56,6 +56,7 @@ class AESAlgorithm:
             data_dict[key] = new_data
             # data_dict.update(new_data)
         return data_dict
+
 
     @classmethod
     def encrypt(cls,data):

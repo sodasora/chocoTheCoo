@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.serializers import ValidationError
 from users.models import User,Delivery,Seller, Point, Subscribe
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .validated import ValidatedData
@@ -22,11 +23,11 @@ class UserSerializer(serializers.ModelSerializer):
         if self.context == 'create':
             verification_result = ValidatedData.validated_user_data(**element)
             if not verification_result:
-                raise "입력값이 올바르지 않습니다."
+                raise ValidationError("입력값이 올바르지 않습니다.")
         elif self.context == 'update':
             verification_result = ValidatedData.update_validated_user_data(**element)
             if not verification_result:
-                raise "입력값이 올바르지 않습니다."
+                raise ValidationError("입력값이 올바르지 않습니다.")
         return element
 
     def create(self, validated_data):
@@ -43,11 +44,11 @@ class UserSerializer(serializers.ModelSerializer):
         유저 오브 젝트 업데이트
         """
         user = super().update(instance, validated_data)
-        validated_data.get('password')
-        validated_data.get('customs_code')
-        user.password = user.set_password(user.password) if validated_data.get(
-            'password') is not None else user.password
-        user.customs_code = AESAlgorithm.encrypt(user.customs_code) if validated_data.get('customs_code') is not None else user.customs_code
+        password = validated_data.get('password')
+        customs_code = validated_data.get('customs_code')
+        if password is not None:
+            user.set_password(password)
+        user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
         user.save()
         return user
 
@@ -67,7 +68,7 @@ class DeliverySerializer(serializers.ModelSerializer):
         """
         verification_result = ValidatedData.validated_deliveries(**deliveries_data)
         if not verification_result:
-            raise "우편 정보가 올바르지 않습니다."
+            raise ValidationError("우편 정보가 올바르지 않습니다.")
         return deliveries_data
 
     def encrypt_deliveries_information(self, deliveries, validated_data):
@@ -116,13 +117,9 @@ class SellerSerializer(serializers.ModelSerializer):
         오브 젝트 암호화
         """
         encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
-        seller_information.company_name = encrypt_result.get('company_name')
-        seller_information.business_number = encrypt_result.get('business_number')
         seller_information.bank_name = encrypt_result.get('bank_name')
         seller_information.account_number = encrypt_result.get('account_number')
-        seller_information.business_owner_name = encrypt_result.get('business_owner_name')
         seller_information.account_holder = encrypt_result.get('account_holder')
-        seller_information.contact_number = encrypt_result.get('contact_number')
         return seller_information
 
     def create(self, validated_data):

@@ -83,7 +83,7 @@ class User(AbstractBaseUser, CommonModel):
 class Seller(models.Model):
     """ 판매자 모델 """
     user = models.OneToOneField("users.User", related_name="user_seller", on_delete=models.CASCADE)
-    company_name = models.CharField("업체명", max_length=20)
+    company_name = models.CharField("업체명", max_length=20,unique=True)
     business_number = models.CharField("사업자 등록 번호", max_length=20)
     bank_name = models.CharField("은행 이름", max_length=20)
     account_number = models.CharField("계좌 번호", max_length=30)
@@ -106,7 +106,7 @@ class Delivery(models.Model):
 
     def __str__(self):
         """ 수령인 """
-        return self.recipient
+        return self.user
 
 
 class CartItem(CommonModel):

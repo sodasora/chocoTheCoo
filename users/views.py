@@ -33,7 +33,7 @@ class GetEmailAuthCodeAPIView(APIView):
         user.auth_code = auth_code
         print(auth_code)
         user.save()
-        return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
 
 class UserAPIView(APIView):
@@ -65,7 +65,7 @@ class UserAPIView(APIView):
             user.is_active = True
             user.auth_code = None
             user.save()
-            return Response({"msg": "인증 되었습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"msg": "인증 되었습니다."}, status=status.HTTP_200_OK)
 
     def patch(self, request):
         """
@@ -202,6 +202,7 @@ class SellerAPIView(APIView):
             serializer = SellerSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user)
+                # user.user_seller.delete()
                 return Response({'msg': "판매자 권한을 성공적으로 신청했습니다. 검증 후에 승인 됩니다."}, status=status.HTTP_200_OK)
             else:
                 return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -255,6 +256,7 @@ class SellerPermissionAPIView(APIView):
             serializer = SellerSerializer(user.user_seller)
         except Seller.DoesNotExist:
             return Response({'err': "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        print(serializer.data)
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         return Response(decrypt_result, status=status.HTTP_200_OK)
 
