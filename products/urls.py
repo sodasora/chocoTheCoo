@@ -4,9 +4,9 @@ from .views import (CategoryListAPIView, CategoryDetailAPIView, ProductListAPIVi
 
 urlpatterns = [
     path('categories/', CategoryListAPIView.as_view(), name='category-list'),
-    path('categories/<str:name>', CategoryDetailAPIView.as_view(), name='category-detail'),
-    path('products/', ProductListAPIView.as_view(), name='product-list'),
-    path('products/<str:name>', ProductDetailAPIView.as_view(), name='product-detail'),
+    path('categories/<int:id>/', CategoryDetailAPIView.as_view(), name='category-detail'),
+    path('', ProductListAPIView.as_view(), name='product-list'),
+    path('<int:id>/', ProductDetailAPIView.as_view(), name='product-detail'),
         # 리뷰 조회, 생성
     path('<int:product_id>/reviews/', ReviewView.as_view(), name='review_view'),
     # 리뷰 상세 조회, 수정, 삭제
