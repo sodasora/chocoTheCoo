@@ -11,4 +11,6 @@ urlpatterns = [
     path('<int:product_id>/reviews/', views.ReviewView.as_view(), name='review_view'),
     # 리뷰 상세 조회, 수정, 삭제
     path('<int:product_id>/reviews/<int:pk>/', views.ReviewDetailView.as_view(), name='review_detail_view'),
+    # 유저의 리뷰 간단조회
+    path('mypage/reviews/<int:user_id>/', views.MyReviewView.as_view(), name='myreview_view'),
 ]

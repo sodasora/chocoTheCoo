@@ -13,6 +13,7 @@ djangorestframework-simplejwt = "^5.2.2"
 python-dotenv = "^1.0.0"
 django-cors-headers = "^4.0.0"
 pillow = "^9.5.0"
+pycryptodome = "^3.18.0"
 schedule = "^1.2.0"
 
 

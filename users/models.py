@@ -1,7 +1,13 @@
 from django.db import models
+from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from datetime import date
 from config.models import CommonModel
+from .iamport import validation_prepare, get_transaction
+import hashlib
+import random
+import time
+from django.db.models.signals import post_save
 
 class UserManager(BaseUserManager):
     """ 커스텀 유저 매니저 """
@@ -33,7 +39,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser,CommonModel):
     """ Base User model 정의 """
     LOGIN_TYPES = [
         ("normal", "일반"),
@@ -48,6 +54,7 @@ class User(AbstractBaseUser):
     auth_code = models.CharField("인증 코드", max_length=128, blank=True, null=True)
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
     numbers = models.CharField("통관번호",max_length=20,blank=True, null=True)
+    login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수",default=0)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False) # 이메일 인증을 받을시 계정 활성화
     is_seller = models.BooleanField(default=False) # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
@@ -64,7 +71,7 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     def __str__(self):
-        return self.nickname
+        return self.email
 
     def has_perm(self, perm, obj=None):
         return True
@@ -91,7 +98,7 @@ class Seller(models.Model):
         """ 업체명 """
         return self.company_name
 
-class Deliverie(models.Model):
+class Delivery(models.Model):
     """ 배송 정보  """
     user = models.ForeignKey("users.User",related_name="deliveries_data",on_delete=models.CASCADE)
     address = models.CharField("주소",max_length=100)
@@ -134,20 +141,109 @@ class OrderItem(CommonModel):
     product_id = models.IntegerField("상품ID")
 
 class PointType(models.Model):
-    """포인트 종류: 출석(1), 리뷰(2), 구매(3), 사용(4)"""
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
     title = models.CharField(verbose_name="포인트 종류", max_length=10, null=False, blank=False)
     
     def __str__(self):
         return self.title
 
 
-class Point(models.Model):
-    """포인트"""
-    user = models.ForeignKey("users.User",related_name="point_data",on_delete=models.CASCADE)
+class Point(CommonModel):
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
+    user = models.ForeignKey("users.User",on_delete=models.CASCADE)
     date = models.DateField("날짜",default=date.today)
-    points = models.IntegerField("포인트점수", null=False, blank=False)
+    point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
     point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
     
+
+class TransactionManager(models.Manager):
+    # 새로운 트랜젝션 생성
+    def create_new(self, user, amount, type, success=None, transaction_status=None):
+        if not user:
+            raise ValueError("유저가 확인되지 않습니다.")
+        short_hash = hashlib.sha1(str(random.random())).hexdigest()[:2]
+        time_hash = hashlib.sha1(str(int(time.time()))).hexdigest()[-3:]
+        base = str(user.email).split("@")[0]
+        key = hashlib.sha1(short_hash + time_hash + base).hexdigest()[:10]
+        new_order_id = "%s" % (key)
+
+        # 아임포트 결제 사전 검증 단계
+        validation_prepare(new_order_id, amount)
+
+        # 트랜젝션 저장
+        new_trans = self.model(
+            user=user,
+            order_id=new_order_id,
+            amount=amount,
+            type=type
+        )
+
+        if success is not None:
+            new_trans.success = success
+            new_trans.transaction_status = transaction_status
+
+        new_trans.save(using=self._db)
+        return new_trans.order_id
+
+    # 생선된 트랜잭션 검증
+    def validation_trans(self, merchant_id):
+        result = get_transaction(merchant_id)
+
+        if result['status'] != 'paid':
+            return result
+        else:
+            return None
+
+    def all_for_user(self, user):
+        return super(TransactionManager, self).filter(user=user)
+
+    def get_recent_user(self, user, num):
+        return super(TransactionManager, self).filter(user=user)[:num]
+
+
+
+class Transaction(CommonModel):
+    """결제 정보가 담기는 모델"""
+    user = models.ForeignKey("users.User",related_name="point_data",on_delete=models.CASCADE)
+    transaction_id = models.CharField(max_length=120, null=True, blank=True)
+    order_id = models.CharField(max_length=120, unique=True)
+    amount = models.PositiveIntegerField(default=0)
+    success = models.BooleanField(default=False)
+    transaction_status = models.CharField(max_length=220, null=True, blank=True)
+    type = models.CharField(max_length=120)
+
+    def __str__(self):
+        return self.order_id
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+
+def new_trans_validation(sender, instance, created, *args, **kwargs):
+    if instance.transaction_id:
+        # 거래 후 아임포트에서 넘긴 결과
+        v_trans = Transaction.objects.validation_trans(
+            merchant_id=instance.order_id
+        )
+
+        res_merchant_id = v_trans['merchant_id']
+        res_imp_id = v_trans['imp_id']
+        res_amount = v_trans['amount']
+
+        # 데이터베이스에 실제 결제된 정보가 있는지 체크
+        r_trans = Transaction.objects.filter(
+            order_id=res_merchant_id,
+            transaction_id=res_imp_id,
+            amount=res_amount
+        ).exists()
+
+        if not v_trans or not r_trans:
+            raise ValueError('비정상적인 거래입니다.')
+
+
+post_save.connect(new_trans_validation, sender=Transaction)
+
 
 class Subscribe(CommonModel):
     """소비자구독"""
