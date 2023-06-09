@@ -201,7 +201,6 @@ class SellerAPIView(APIView):
             serializer = SellerSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user)
-                # user.user_seller.delete()
                 return Response({'msg': "판매자 권한을 성공적으로 신청했습니다. 검증 후에 승인 됩니다."}, status=status.HTTP_200_OK)
             else:
                 return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -297,6 +296,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
      로그인 , access token 발급
      """
     serializer_class = CustomTokenObtainPairSerializer
+    def post(self, request, *args, **kwargs):
+        pass
 
 
 class WishListAPIView(APIView):
@@ -313,12 +314,12 @@ class WishListAPIView(APIView):
         serializer = GetWishListUserInfo(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request, challenge_id):
+    def post(self, request, product_id):
         """
         상품 찜 등록 및 취소
         """
         user = get_object_or_404(User, email=request.user.email)
-        product = get_object_or_404(Product, id=challenge_id)
+        product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
             return Response({"message": "상품 찜 등록을 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT)
@@ -346,7 +347,7 @@ class ReviewListAPIView(APIView):
         리뷰 좋아요 등록 및 취소
         """
         user = get_object_or_404(User, email=request.user.email)
-        review = get_object_or_404(Product, id=review_id)
+        review = get_object_or_404(Review, id=review_id)
         if review in user.review_like.all():
             user.review_like.remove(review)
             return Response({"message": "리뷰 좋아요를 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT)

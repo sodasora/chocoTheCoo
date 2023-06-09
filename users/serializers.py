@@ -195,9 +195,10 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
     def get_review_liking_people_count(self, obj):
         return obj.review_liking_people.count()
 
+
     class Meta:
         model = User
-        fields = ('wish_lists', 'wish_lists_count')
+        fields = ('review_liking_people','review_liking_people_count')
 
 
 class PointSerializer(serializers.ModelSerializer):
