@@ -101,9 +101,12 @@ class UserProfileAPIView(APIView):
         serializer = ReadUserSerializer(user)
         total_plus_point = Point.objects.filter(user_id=user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
         total_minus_point = Point.objects.filter(user_id=user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
+        try:
+            total_point = total_plus_point['total'] - total_minus_point['total']
+        except TypeError:
+            total_point = total_plus_point['total'] if total_plus_point['total'] is not None else 0
         new_serializer_data = dict(serializer.data)
-        new_serializer_data['plus_point'] = total_plus_point
-        new_serializer_data['minus_point'] = total_minus_point
+        new_serializer_data['total_point'] = total_point
         return Response(new_serializer_data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
