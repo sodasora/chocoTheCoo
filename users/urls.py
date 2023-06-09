@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, UpdateDeliveryAPIView, 
                     SellerAPIView, SellerPermissionAPIView, UserProfileAPIView, CustomTokenObtainPairView, 
-                    PointView, PointDateView, SubscribeView,ReviewListAPIView,WishListAPIView)
+                    PointView, PointDateView, SubscribeView, ReviewListAPIView, WishListAPIView,PointAttendanceView)
 from .orderviews import (CartView, CartDetailView, BillView,
                         BillDetailView, OrderCreateView, OrderListView, OrderDetailView)
 
@@ -33,6 +33,8 @@ urlpatterns = [
     path('points/', PointView.as_view(), name='point_view'),
     path('points/<str:date>/statistic/', PointDateView.as_view(), name='point_date_static'),
     path('points/<str:date>/', PointView.as_view(), name='point_date_view'),
+    # 출석인증용 포인트검증
+    path('points/<str:date>/attendance/', PointAttendanceView.as_view(), name="point_attendance_view"),
     # 구독
     path('subscribe/',SubscribeView.as_view(), name="subscribe_view"),
     # 주문 내역 생성, 조회
