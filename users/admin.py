@@ -7,8 +7,14 @@ from django.core.exceptions import ValidationError
 from .models import User, Seller, Delivery, PointType, Point, StatusCategory, OrderItem, CartItem, Bill
 
 
-admin.site.register(Delivery)
-admin.site.register(Seller)
+
+@admin.register(Seller)
+class SellerAdmin(admin.ModelAdmin):
+    list_display = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number']
+    list_display_links = ['user', 'company_name']
+
+
+
 admin.site.register(PointType)
 admin.site.register(Point)
 
@@ -52,8 +58,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('is_admin', 'is_active', 'is_seller')
     fieldsets = (
         (None, {'fields': ('email', 'nickname')}),
-        ('Permissions', {'fields': ('is_admin', 'is_active',
-         'is_seller', 'profile_image', 'login_type', 'numbers')}),
+        ('Permissions', {'fields': ('is_admin', 'is_active', 'is_seller', 'profile_image', 'login_type')}),
     )
     add_fieldsets = (
         (None, {
