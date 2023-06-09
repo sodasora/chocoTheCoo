@@ -12,6 +12,7 @@ from django.contrib.auth.hashers import check_password
 from . import validated
 from .cryption import AESAlgorithm
 from django.db.models import Sum
+from django.utils import timezone
 """
 response 는 간단 명료하게 
 백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
@@ -262,14 +263,22 @@ class PointView(APIView):
 
 class PointDateView(APIView):
     permission_classes = [IsAuthenticated]    
-    # 날짜별 요약보기
+    # 요약보기
     def get(self, request, date):
         # 포인트 총합 계산
         """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
-        total_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date=date).aggregate(total=Sum('point'))
-        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date=date).aggregate(total=Sum('point'))
+        day_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date=date).aggregate(total=Sum('point'))
+        day_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date=date).aggregate(total=Sum('point'))
+        month_plus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
+        month_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).filter(date__month=timezone.now().date().month).aggregate(total=Sum('point'))
+        total_plus_point =  Point.objects.filter(user_id=request.user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
+        total_minus_point = Point.objects.filter(user_id=request.user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
         
         return Response({
+            "day_plus_point":day_plus_point,
+            "day_minus_point":day_minus_point,
+            "month_minus_point":month_minus_point,
+            "month_plus_point":month_plus_point,
             "total_plus_point":total_plus_point,
             "total_minus_point":total_minus_point,
         }, status=status.HTTP_200_OK)

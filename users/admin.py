@@ -11,6 +11,7 @@ admin.site.register(Delivery)
 admin.site.register(Seller)
 admin.site.register(PointType)
 admin.site.register(Point)
+admin.site.register(StatusCategory)
 
 
 class UserCreationForm(forms.ModelForm):
