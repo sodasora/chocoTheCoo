@@ -4,7 +4,7 @@ from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, Updat
                     SellerAPIView, SellerPermissionAPIView, UserProfileAPIView, CustomTokenObtainPairView, 
                     PointView, PointDateView, SubscribeView, ReviewListAPIView, WishListAPIView,PointAttendanceView)
 from .orderviews import (CartView, CartDetailView, BillView,
-                        BillDetailView, OrderCreateView, OrderListView, OrderDetailView)
+                        BillDetailView, OrderCreateView, OrderListView, OrderDetailView, StatusView)
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -43,6 +43,8 @@ urlpatterns = [
     path('bills/<int:pk>/', BillDetailView.as_view(), name="bill_detail_view"),
     # 주문 생성
     path("bills/<int:bill_id>/orders/", OrderCreateView.as_view(), name='order_create_view'),
+    # 주문 상태 조회
+    path("orders/products/<int:pk>/", StatusView.as_view(), name='order_status_view'),
     # 전체 주문 목록 조회
     path("orders/products/", OrderListView.as_view(), name='all_order_list_view'),
     # 상품별 주문 목록 조회

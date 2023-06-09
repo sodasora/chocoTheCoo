@@ -1,6 +1,6 @@
 from rest_framework import generics
 from rest_framework.views import APIView
-from .models import CartItem, OrderItem, Bill
+from .models import CartItem, OrderItem, Bill, StatusCategory
 from .orderserializers import (
     CartListSerializer,
     CartSerializer,
@@ -10,6 +10,7 @@ from .orderserializers import (
     BillSerializer,
     BillCreateSerializer,
     BillDetailSerializer,
+    StatusCategorySerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -97,7 +98,6 @@ class OrderListView(generics.ListAPIView):
             queryset = OrderItem.objects.filter(product_id=product_id)
         else:
             queryset = OrderItem.objects.all()
-        print(queryset)
         return queryset
 
 
@@ -155,3 +155,9 @@ class BillDetailView(generics.RetrieveAPIView):
         pk = self.kwargs.get("pk")
         obj = self.get_queryset().get(pk=pk)
         return obj
+
+class StatusView(generics.RetrieveUpdateAPIView):
+    """주문상태 조회"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = StatusCategorySerializer
+    queryset = StatusCategory.objects.all()
