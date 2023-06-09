@@ -26,8 +26,9 @@ urlpatterns = [
     # 장바구니 담기, 장바구니 수량 변경, 삭제
     path("carts/<int:cart_item_id>/", orderviews.CartDetailView.as_view(), name='cart_detail_view'),
     # 포인트
-    path('<int:user_id>/points/', views.PointView.as_view(), name='point_view'),
-    path('<int:user_id>/points/<str:date>', views.PointDateView.as_view(), name='point_date_view'),
+    path('points/', views.PointView.as_view(), name='point_view'),
+    path('points/<str:date>/statistic/', views.PointDateView.as_view(), name='point_date_static'),
+    path('points/<str:date>/', views.PointView.as_view(), name='point_date_view'),
     # 구독
     path('subscribe/',views.SubscribeView.as_view(), name="subscribe_view"),
     # 주문 내역 생성, 조회
