@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from .models import User, Seller, Delivery, PointType, Point, StatusCategory, OrderItem, CartItem, Bill
 
 
+
 @admin.register(Seller)
 class SellerAdmin(admin.ModelAdmin):
     list_display = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number']
@@ -15,6 +16,7 @@ class SellerAdmin(admin.ModelAdmin):
 
 
 admin.site.register(PointType)
+admin.site.register(Point)
 
 
 class UserCreationForm(forms.ModelForm):

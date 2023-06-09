@@ -203,7 +203,7 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
 class PointSerializer(serializers.ModelSerializer):
     """포인트 시리얼라이저"""
     class Meta:
-        modle = Point
+        model = Point
         fields = "__all__"
         
 class SubscriptionSerializer(serializers.ModelSerializer):
