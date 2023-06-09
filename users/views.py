@@ -6,20 +6,26 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.utils import IntegrityError
-from .serializers import (CustomTokenObtainPairSerializer, UserSerializer, DeliverySerializer, ReadUserSerializer,
-                          SellerSerializer, PointSerializer, SubscriptionSerializer, GetWishListUserInfo,
-                          GetReviewUserListInfo)
-from .models import User, Delivery, Seller, Point, Subscribe
-from django.contrib.auth.hashers import check_password
-from . import validated
-from products.models import Product, Review
-from .cryption import AESAlgorithm
 from django.db.models import Sum
 from django.utils import timezone
-"""
-response 는 간단 명료하게 
-백엔드 과정을 예측 하지 못하도록 설정할 것 (보안 유지)
-"""
+from django.contrib.auth.hashers import check_password
+from .models import User, Delivery, Seller, Point, Subscribe
+from products.models import Product, Review
+from .validated import send_email
+from .cryption import AESAlgorithm
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    UserSerializer,
+    DeliverySerializer,
+    ReadUserSerializer,
+    SellerSerializer,
+    PointSerializer,
+    SubscriptionSerializer,
+    GetWishListUserInfo,
+    GetReviewUserListInfo,
+    UserDetailSerializer,
+)
+
 
 class GetEmailAuthCodeAPIView(APIView):
     """
@@ -31,17 +37,31 @@ class GetEmailAuthCodeAPIView(APIView):
         이메일 인증코드 발송 및 DB 저장
         """
         user = get_object_or_404(User, email=request.data['email'])
-        auth_code = validated.send_email(user.email)
+        auth_code = send_email(user.email)
         user.auth_code = auth_code
-        print(auth_code)
         user.save()
         return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
 
 class UserAPIView(APIView):
     """
-    회원가입, 이메일 인증, 휴면 계정 전환
+    GET : 사용자 디테일 정보 불러오기
+    POST : 회원가입
+    PUT : 이메일 인증
+    PATCH : 비밀번호 재 설정 (비밀번호 찾기 기능)
     """
+
+    def get(self, request):
+        """
+        사용자 디테일 정보 불러오기  (복호화가 필요한 데이터 포함)
+        """
+        try:
+            user = get_object_or_404(User, email=request.user.email)
+        except AttributeError:
+            return Response({"err": "로그인이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserDetailSerializer(user)
+        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
+        return Response(decrypt_result, status=status.HTTP_200_OK)
 
     def post(self, request):
         """
@@ -91,7 +111,9 @@ class UserAPIView(APIView):
 
 class UserProfileAPIView(APIView):
     """
-     마이페이지 정보 읽기, 회원 정보 수정, 휴면 계정으로 전환
+     GET : 마이페이지 정보 읽기
+     PUT : 회원 정보 수정
+     DELETE : 휴면 계정으로 전환
     """
 
     def get(self, request, user_id):
@@ -100,7 +122,8 @@ class UserProfileAPIView(APIView):
          """
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        total_plus_point = Point.objects.filter(user_id=user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(total=Sum('point'))
+        total_plus_point = Point.objects.filter(user_id=user.id).filter(point_type_id__in=[1, 2, 3, 4, 5]).aggregate(
+            total=Sum('point'))
         total_minus_point = Point.objects.filter(user_id=user.id).filter(point_type_id=6).aggregate(total=Sum('point'))
         try:
             total_point = total_plus_point['total'] - total_minus_point['total']
@@ -137,6 +160,10 @@ class UserProfileAPIView(APIView):
 
 
 class DeliveryAPIView(APIView):
+    """
+    GET : 사용자의 배송 정보들 읽기 (복호화)
+    POST : 사용자의 배송 정보 기입
+    """
     def get(self, request, user_id):
         """
          배송 정보들 읽기
@@ -168,7 +195,8 @@ class DeliveryAPIView(APIView):
 
 class UpdateDeliveryAPIView(APIView):
     """
-     배송 정보 수정 및 삭제
+     PUT : 사용자의 배송 정보 수정
+     DELETE : 사용자의 배송 정보 삭제
      """
 
     def put(self, request, delivery_id):
@@ -199,6 +227,11 @@ class UpdateDeliveryAPIView(APIView):
 
 
 class SellerAPIView(APIView):
+    """
+    POST : 판매자 정보 기입과 동시에 권한 신청
+    PUT : 사용자의 판매자 정보 수정
+    DELETE : 사용자가 판매자 정보 삭제
+    """
     def post(self, request):
         """
          판매자 정보 저장 및 권한 신청
@@ -252,7 +285,9 @@ class SellerAPIView(APIView):
 
 class SellerPermissionAPIView(APIView):
     """
-     판매자 정보 읽기 , 관리자가 판매자 정보 권한 승인 및 삭제
+     GET : 사용자의 판매자 정보 읽기 (복호화)
+     PATCH : 관리자가 판매자 권한 승인 (사용자의 is_seller 필드 True로 변경)
+     DELETE : 관리자가 판매자 권한 거절 (사용자의 판매자 정보 삭제)
      """
 
     def get(self, request, user_id):
@@ -264,7 +299,6 @@ class SellerPermissionAPIView(APIView):
             serializer = SellerSerializer(user.user_seller)
         except Seller.DoesNotExist:
             return Response({'err': "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-        print(serializer.data)
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         return Response(decrypt_result, status=status.HTTP_200_OK)
 
@@ -303,17 +337,41 @@ class SellerPermissionAPIView(APIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
-     로그인 , access token 발급
+     POST : 로그인 , access token 발급
      """
     serializer_class = CustomTokenObtainPairSerializer
-    #def post(self, request, *args, **kwargs):
-        #pass
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, email=request.data.get('email'))
+        if user.is_active is False:
+            return Response({'msg': "휴면 계정입니다."}, status=status.HTTP_204_NO_CONTENT)
+        # elif user.login_attempts_count >= 5:
+        #     return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        try:
+            if check_password(request.data.get('password'), user.password):
+                user.login_attempts_count = 0
+                user.save()
+
+                response = super().post(request, *args, **kwargs)
+                refresh_token = response.data['refresh']
+                access_token = response.data['access']
+                data_dict = {
+                    "refresh_token": refresh_token,
+                    "access_token": access_token
+                }
+                return Response(data_dict, status=status.HTTP_200_OK)
+            else:
+                user.login_attempts_count += 1
+                user.save()
+                return Response(user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED)
+        except TypeError:
+            return Response({'err': "입력값이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class WishListAPIView(APIView):
     """
-    상품 찜 등록한 유저 정보 불러오기,
-    상품 찜 등록 및 취소
+    GET : 상품 찜 등록한 유저 정보 불러오기,
+    POST : 상품 찜 등록 및 취소
     """
 
     def get(self, request, product_id):
@@ -340,8 +398,8 @@ class WishListAPIView(APIView):
 
 class ReviewListAPIView(APIView):
     """
-    리뷰 좋아요 등록한 유저 정보 불러오기,
-    리뷰 좋아요 등록 및 취소
+    GET : 리뷰 좋아요 등록한 유저 정보 불러오기,
+    POST : 리뷰 좋아요 등록 및 취소
     """
 
     def get(self, request, review_id):
@@ -378,7 +436,6 @@ class PointView(generics.ListCreateAPIView):
         date = self.kwargs.get('date')
         queryset = Point.objects.filter(user=self.request.user, date=date)
         return queryset
-    # status:201
 
 class PointDateView(APIView):
     permission_classes = [IsAuthenticated]    

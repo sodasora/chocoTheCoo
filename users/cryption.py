@@ -54,7 +54,6 @@ class AESAlgorithm:
         for key,value in enumerate(elements):
             new_data = AESAlgorithm.decrypt_all(**value)
             data_dict[key] = new_data
-            # data_dict.update(new_data)
         return data_dict
 
 
