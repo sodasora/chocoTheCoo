@@ -239,3 +239,14 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscribe
         fields = "__all__"
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """
+    사용자 디테일 정보
+    """
+
+    class Meta:
+        model = User
+        fields = ("id", "email", "nickname", "profile_image", "customs_code")
+

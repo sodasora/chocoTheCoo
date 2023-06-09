@@ -72,13 +72,10 @@ class ValidatedData:
     def validated_user_data(cls, **kwargs):
         """ (오브 젝트 생성) 이메일,유저 네임,비밀 번호 검증 """
         if not cls.validated_email(kwargs.get('email')):
-            print("이메일")
             return False
         elif not cls.validated_nickname(kwargs.get('nickname')):
-            print("닉네임")
             return False
         elif not cls.validated_password(kwargs.get('password')):
-            print("비밀번호")
             return False
         return True
 
