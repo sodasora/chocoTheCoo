@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from .models import User, Delivery, Seller, Point, Subscribe
 from products.models import Product, Review
-from .validated import send_email
+from .validated import EmailService
 from .cryption import AESAlgorithm
 from .serializers import (
     CustomTokenObtainPairSerializer,
@@ -34,12 +34,22 @@ class GetEmailAuthCodeAPIView(APIView):
 
     def put(self, request):
         """
-        이메일 인증코드 발송 및 DB 저장
+        인증 코드 이메일 발송 및 DB 저장
         """
         user = get_object_or_404(User, email=request.data["email"])
-        auth_code = send_email(user.email)
+        auth_code = EmailService.get_authentication_code()
         user.auth_code = auth_code
         user.save()
+
+        information = {
+            "email": user.email,
+            "context": {
+                'subject_message': "Choco The Coo has sent you a verification code",
+                'content_message': user.auth_code,
+            }
+        }
+        EmailService.message_forwarding(**information)
+
         return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
 
@@ -366,12 +376,23 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         user.is_seller = True
+        information = {
+            "email": user.email,
+            "context": {
+                'subject_message': "관리자가 판매자 권한을 승인 했습니다.",
+                'content_message': "사용자분께서 이제 판매자로서 활동하실 수 있습니다.",
+            }
+        }
+        EmailService.message_forwarding(**information)
         user.save()
         return Response({"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
     def delete(self, request, user_id):
         """
         판매자 정보 삭제
+        request
+         - admin accesstoken
+         - "msg" : "거절 사유"
         """
         try:
             admin = get_object_or_404(User, email=request.user.email)
@@ -383,12 +404,20 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         try:
+            information = {
+                "email": user.email,
+                "context": {
+                    'subject_message': "관리자가 판매자 권한을 거절 했습니다.",
+                    'content_message': request.data.get('msg'),
+                }
+            }
+            EmailService.message_forwarding(**information)
             user.user_seller.delete()
+            return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
         except Seller.DoesNotExist:
-            return Response(
-                {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"err": "판매자 정보가 없습니다."}, status=status.HTTP_410_GONE)
+
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
