@@ -5,9 +5,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'weasley.settings')
 django.setup()
 
 from .models import Point, Subscribe
+from .views import PointServiceView
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import F
+from django.db.models import F, Sum
 
 # 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
 def subscribe_check():
@@ -17,12 +18,29 @@ def subscribe_check():
     
     for subscribe_user in subscribe_users:
         with transaction.atomic():
-            user_point = Point.objects.get(user_id=subscribe_user['user_id'])
+            total_plus_point = (
+            Point.objects.filter(user_id=subscribe_user['user_id'])
+            .filter(point_type__in=[1,2,3,5])
+            .aggregate(total=Sum("point"))
+            )
+            total_minus_point = (
+                Point.objects.filter(user_id=subscribe_user['user_id'])
+                .filter(point_type__in=[4,6])
+                .aggregate(total=Sum("point"))
+            )
+            
+            try:
+                total_point = total_plus_point["total"] - total_minus_point["total"]
+            except TypeError:
+                total_point = (
+                    total_plus_point["total"]
+                    if total_plus_point["total"] is not None
+                    else 0
+                )
             
             # 구독료 9900원
-            if user_point >= 9900:
-                user_point.points -= 9900
-                user_point.save()
+            if total_point >= 9900:
+                PointServiceView.perform_create()
                 
                 subscribe_user.subscribe = True
                 subscribe_user.next_payment = F('next_payment')+datetime.timedelta(weeks = 4)

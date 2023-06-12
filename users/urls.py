@@ -2,7 +2,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, UpdateDeliveryAPIView, 
                     SellerAPIView, SellerPermissionAPIView, UserProfileAPIView, CustomTokenObtainPairView, 
-                    PointView, PointDateView, SubscribeView, ReviewListAPIView, WishListAPIView,PointAttendanceView)
+                    PointView, PointStaticView, SubscribeView, ReviewListAPIView, WishListAPIView, PointAttendanceView,
+                    PointReviewView, PointPhotoView, PointServiceView)
 from .orderviews import (CartView, CartDetailView, BillView,
                         BillDetailView, OrderCreateView, OrderListView, OrderDetailView, StatusView)
 
@@ -29,12 +30,17 @@ urlpatterns = [
     path("carts/", CartView.as_view(), name='cart_view'),
     # 장바구니 담기, 장바구니 수량 변경, 삭제
     path("carts/<int:cart_item_id>/", CartDetailView.as_view(), name='cart_detail_view'),
-    # 포인트
-    path('points/', PointView.as_view(), name='point_view'),
-    path('points/<str:date>/statistic/', PointDateView.as_view(), name='point_date_static'),
+    # 포인트 보기
+    path('points/<str:date>/statistic/', PointStaticView.as_view(), name='point_date_static'),
     path('points/<str:date>/', PointView.as_view(), name='point_date_view'),
-    # 출석인증용 포인트검증
-    path('points/<str:date>/attendance/', PointAttendanceView.as_view(), name="point_attendance_view"),
+    # 출석용 포인트
+    path('attendance/', PointAttendanceView.as_view(), name="point_attendance_view"),
+    # 텍스트리뷰용
+    path('text/', PointReviewView.as_view(), name="point_review_view"),
+    # 포토리뷰용
+    path('photo/', PointPhotoView.as_view(), name="point_photo_view"),
+    # 구독권이용료
+    path('service/', PointServiceView.as_view(), name="point_service_view"),
     # 구독
     path('subscribe/',SubscribeView.as_view(), name="subscribe_view"),
     # 주문 내역 생성, 조회

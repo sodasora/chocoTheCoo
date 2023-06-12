@@ -3,34 +3,56 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 
-def send_email(email):
+class EmailService:
     """
-    인증 메일 발송
+    이메일 발송 및 인증코드 만들기
     템플릿 경로 : .users/templates/email_template.html
     """
-    random_value = string.ascii_letters + string.digits
-    random_value = list(random_value)
-    random.shuffle(random_value)
-    code = "".join(random_value[:10])
-    title = "ChocoTheCoo"
 
-    context = {'code': code}
-    content = render_to_string('email_template.html', context)
 
-    mail = EmailMessage(title, content, to=[email])
-    mail.content_subtype = "html"
-    mail.send()
+    @classmethod
+    def get_authentication_code(cls):
+        """
+        인증 코드 반환
+        """
 
-    return code
+        random_value = string.ascii_letters + string.digits
+        random_value = list(random_value)
+        random.shuffle(random_value)
+        code = "".join(random_value[:10])
+        return code
+
+    @classmethod
+    def message_forwarding(cls, **information):
+        """
+        이메일 발송
+        """
+
+        title = "Choco The Coo"
+
+        email = information.get('email')
+        context = information.get('context')
+
+        content = render_to_string('email_template.html', context)
+
+        mail = EmailMessage(title, content, to=[email])
+        mail.content_subtype = "html"
+        mail.send()
 
 
 class ValidatedData:
-    """ 데이터 검증 클래스 """
+    """
+    데이터 검증 클래스
+    https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/validate_test.py
+    """
 
-    # 데이터 검증 클래스 설명 https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/test2.py
+
     @classmethod
     def validated_password(cls, password):
-        """ 비밀 번호 검증 """
+        """
+        비밀 번호 검증
+        """
+
         if password is None:
             return False
         password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
@@ -39,7 +61,10 @@ class ValidatedData:
 
     @classmethod
     def validated_nickname(cls, nickname):
-        """ 유저 네임 검증 """
+        """
+        유저 네임 검증
+        """
+
         check = [
             lambda element: element is not None,
             lambda element: len(element) == len(element.replace(" ", "")),
@@ -52,7 +77,10 @@ class ValidatedData:
 
     @classmethod
     def validated_email(cls, email):
-        """ 이메일 검증"""
+        """
+        이메일 검증
+        """
+
         if email is None:
             return False
         email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
@@ -61,7 +89,10 @@ class ValidatedData:
 
     @classmethod
     def validated_customs_code(cls, customs_clearance_number):
-        """ 통관 번호 검증 """
+        """
+        통관 번호 검증
+        """
+
         number = customs_clearance_number.lower()
         check = [
             lambda element: element is not None,
@@ -76,7 +107,11 @@ class ValidatedData:
 
     @classmethod
     def validated_user_data(cls, **kwargs):
-        """ (오브 젝트 생성) 이메일,유저 네임,비밀 번호 검증 """
+        """
+        회원 가입용
+        이메일,유저 네임,비밀 번호 검증
+        """
+
         if not cls.validated_email(kwargs.get('email')):
             return False
         elif not cls.validated_nickname(kwargs.get('nickname')):
@@ -87,7 +122,11 @@ class ValidatedData:
 
     @classmethod
     def update_validated_user_data(cls, **kwargs):
-        """ (오브 젝트 업 데이트) 이메일,유저 네임,비밀번호 검증 """
+        """
+        회원 정보 수정용
+        이메일,유저 네임,비밀번호 검증
+        """
+
         email = kwargs.get('email')
         nickname = kwargs.get('nickname')
         password = kwargs.get('password')
@@ -108,7 +147,10 @@ class ValidatedData:
 
     @classmethod
     def validated_deliveries(cls, **kwargs):
-        # 우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
+        """
+        우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
+        """
+
         postal_code = kwargs.get('postal_code')
         check = [
             lambda element: element is not None,

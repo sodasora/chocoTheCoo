@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="email_template.css/" />
+    <title>Choco The Coo</title>
 </head>
-<body>
-    <div class = "top-box">
-            <p id = "title">ChocoTheCoo </p>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">
+  <div style="max-width: 680px; margin: 30px auto; padding: 20px; border: 1px solid #d3d3d3; background-color: #ffffff;">
+    <div style="text-align: center;">
+      <h2 style="color: #522F18;">{{ subject_message }}</h2>
     </div>
-    <div class = "buttom-box">
-            <p id = "content">{{ message }}</p>
+    <hr style="border: none; height: 1px; background-color: #d3d3d3;">
+    <div style="text-align:center;">
+      <h3 style="color: #333333;">  {{ content_message }}</h3>
     </div>
+  </div>
 </body>
+
 </html>
