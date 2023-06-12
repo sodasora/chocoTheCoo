@@ -27,6 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
             if not verification_result:
                 raise ValidationError("입력값이 올바르지 않습니다.")
         elif self.context == 'update':
+            print("정상 실행")
             verification_result = ValidatedData.update_validated_user_data(**element)
             if not verification_result:
                 raise ValidationError("입력값이 올바르지 않습니다.")
@@ -46,7 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
         유저 오브 젝트 업데이트
         """
         user = super().update(instance, validated_data)
-        password = validated_data.get('password')
         customs_code = validated_data.get('customs_code')
         user.password = make_password(user.password)
         user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
