@@ -14,6 +14,7 @@ from .models import (
     OrderItem,
     CartItem,
     Bill,
+    Subscribe
 )
 
 
@@ -31,6 +32,7 @@ class SellerAdmin(admin.ModelAdmin):
 
 admin.site.register(PointType)
 admin.site.register(Point)
+admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
 
 
