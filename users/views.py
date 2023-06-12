@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from .models import User, Delivery, Seller, Point, Subscribe
 from products.models import Product, Review
-from .validated import send_email
+from .validated import EmailService
 from .cryption import AESAlgorithm
 from .serializers import (
     CustomTokenObtainPairSerializer,
@@ -35,12 +35,22 @@ class GetEmailAuthCodeAPIView(APIView):
 
     def put(self, request):
         """
-        이메일 인증코드 발송 및 DB 저장
+        인증 코드 이메일 발송 및 DB 저장
         """
         user = get_object_or_404(User, email=request.data["email"])
-        auth_code = send_email(user.email)
+        auth_code = EmailService.get_authentication_code()
         user.auth_code = auth_code
         user.save()
+
+        information = {
+            "email": user.email,
+            "context": {
+                'subject_message': "Choco The Coo has sent you a verification code",
+                'content_message': user.auth_code,
+            }
+        }
+        EmailService.message_forwarding(**information)
+
         return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
 
@@ -81,12 +91,12 @@ class UserAPIView(APIView):
 
     def put(self, request):
         """
-        회원 가입시 이메일 인증  or 휴면 계정 활성화 신청 응답
+        회원 가입시 이메일 인증
         """
         user = get_object_or_404(User, email=request.data["email"])
         if user.auth_code is None:
             return Response(
-                {"mrr": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_400_BAD_REQUEST
+                {"mrr": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
         elif not user.auth_code == request.data["auth_code"]:
             return Response(
@@ -100,22 +110,23 @@ class UserAPIView(APIView):
 
     def patch(self, request):
         """
-        비밀번호 재 설정(찾기 기능)
+        비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
         """
         user = get_object_or_404(User, email=request.data["email"])
         if user.auth_code == "":
             return Response(
-                {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_400_BAD_REQUEST
+                {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
         elif not user.auth_code == request.data["auth_code"]:
             return Response(
                 {"err": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True,context="update")
         if serializer.is_valid():
             serializer.save()
             user.auth_code = None
             user.is_active = True
+            user.login_attempts_count = 0
             user.save()
             return Response({"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK)
         else:
@@ -169,6 +180,8 @@ class UserProfileAPIView(APIView):
         )
         if serializer.is_valid():
             serializer.save()
+            user.login_attempts_count = 0
+            user.save()
             return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -367,12 +380,23 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         user.is_seller = True
+        information = {
+            "email": user.email,
+            "context": {
+                'subject_message': "관리자가 판매자 권한을 승인 했습니다.",
+                'content_message': "사용자분께서 이제 판매자로서 활동하실 수 있습니다.",
+            }
+        }
+        EmailService.message_forwarding(**information)
         user.save()
         return Response({"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
     def delete(self, request, user_id):
         """
         판매자 정보 삭제
+        request
+         - admin accesstoken
+         - "msg" : "거절 사유"
         """
         try:
             admin = get_object_or_404(User, email=request.user.email)
@@ -384,12 +408,20 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         try:
+            information = {
+                "email": user.email,
+                "context": {
+                    'subject_message': "관리자가 판매자 권한을 거절 했습니다.",
+                    'content_message': request.data.get('msg'),
+                }
+            }
+            EmailService.message_forwarding(**information)
             user.user_seller.delete()
+            return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
         except Seller.DoesNotExist:
-            return Response(
-                {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"err": "판매자 정보가 없습니다."}, status=status.HTTP_410_GONE)
+
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -403,8 +435,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         user = get_object_or_404(User, email=request.data.get("email"))
         if user.is_active is False:
             return Response({"msg": "휴면 계정입니다."}, status=status.HTTP_204_NO_CONTENT)
-        # elif user.login_attempts_count >= 5:
-        #     return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        elif user.login_attempts_count >= 5:
+            return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_424_FAILED_DEPENDENCY)
         try:
             if check_password(request.data.get("password"), user.password):
                 user.login_attempts_count = 0
@@ -414,16 +446,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 refresh_token = response.data["refresh"]
                 access_token = response.data["access"]
                 data_dict = {
-                    "refresh_token": refresh_token,
-                    "access_token": access_token,
+                    "refresh": refresh_token,
+                    "access": access_token,
                 }
                 return Response(data_dict, status=status.HTTP_200_OK)
             else:
                 user.login_attempts_count += 1
                 user.save()
-                return Response(
-                    user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED
-                )
+                return Response(5 - user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED)
         except TypeError:
             return Response({"err": "입력값이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
