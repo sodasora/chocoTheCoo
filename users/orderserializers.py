@@ -35,6 +35,10 @@ class CartDetailSerializer(serializers.ModelSerializer):
         }
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    status_name = serializers.SerializerMethodField()
+    def get_status_name(self, obj):
+        return obj.order_status.name
+    
     class Meta:
         model = OrderItem
         fields = '__all__'
