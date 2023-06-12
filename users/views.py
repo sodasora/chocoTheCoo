@@ -24,6 +24,7 @@ from .serializers import (
     GetWishListUserInfo,
     GetReviewUserListInfo,
     UserDetailSerializer,
+    SubscriptionInfoSerializer,
 )
 
 
@@ -522,14 +523,10 @@ class ReviewListAPIView(APIView):
 
 
 """포인트"""
-
-
-class PointView(generics.ListCreateAPIView):
+# 날짜별 포인트 보기
+class PointView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
     def get_queryset(self):
         date = self.kwargs.get("date")
@@ -537,21 +534,22 @@ class PointView(generics.ListCreateAPIView):
         return queryset
 
 
-class PointDateView(APIView):
+# 통계
+class PointStaticView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
+        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6)"""
         day_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id__in=[1, 2, 3, 4, 5])
+            .filter(point_type__in=[1,2,3,5])
             .filter(date=date)
             .aggregate(total=Sum("point"))
         )
         day_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id=6)
+            .filter(point_type__in=[4,6])
             .filter(date=date)
             .aggregate(total=Sum("point"))
         )
@@ -564,13 +562,13 @@ class PointDateView(APIView):
         day_total_point = plus_point - minus_point
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id__in=[1, 2, 3, 4, 5])
+            .filter(point_type__in=[1,2,3,5])
             .filter(date__month=timezone.now().date().month)
             .aggregate(total=Sum("point"))
         )
         month_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id=6)
+            .filter(point_type__in=[4,6])
             .filter(date__month=timezone.now().date().month)
             .aggregate(total=Sum("point"))
         )
@@ -584,12 +582,12 @@ class PointDateView(APIView):
 
         total_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id__in=[1, 2, 3, 4, 5])
+            .filter(point_type__in=[1,2,3,5])
             .aggregate(total=Sum("point"))
         )
         total_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type_id=6)
+            .filter(point_type__in=[4,6])
             .aggregate(total=Sum("point"))
         )
         try:
@@ -613,30 +611,81 @@ class PointDateView(APIView):
         )
 
 
-class PointAttendanceView(generics.ListAPIView):
+"""포인트 종류: 출석(1)"""
+class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=1, point=100)
 
     def get_queryset(self):
-        date = self.kwargs.get("date")
-        queryset = Point.objects.filter(point_type_id=1, date=date)
+        queryset = Point.objects.filter(point_type=1, date=timezone.now().date())
         return queryset
 
 
+"""포인트 종류: 텍스트리뷰(2)"""
+class PointReviewView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=2, point=50)
+    
+
+"""포인트 종류: 포토리뷰(3)"""
+class PointPhotoView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=3, point=100)
+
+
+# """포인트 종류: 구매(4)"""
+# class PointBuyView(generics.CreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = PointSerializer
+    
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user, point_type_id=4)
+        
+
+# """포인트 종류: 충전(5)"""
+# class PointChargeView(generics.CreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = PointSerializer
+    
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user, point_type_id=5)
+        
+
+"""포인트 종류: 구독권이용료(6)"""
+class PointServiceView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=6, point=9900)
+        
+
+
+"""구독"""
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
     # 구독 정보 가져오기
     def get(self, request):
         subscription = get_object_or_404(Subscribe, user_id=request.user.id)
-        serializer = SubscriptionSerializer(subscription)
+        serializer = SubscriptionInfoSerializer(subscription)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # 구독 최초 생성
     def post(self, request):
         serializer = SubscriptionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            newmonth = int(timezone.now().date().month) + 1
+            serializer.save(user=request.user, next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(timezone.now().date().day))
             return Response({"message": "성공!"}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -650,5 +699,10 @@ class SubscribeView(APIView):
             return Response({"message": "해지"}, status.HTTP_200_OK)
         else:
             subscription.subscribe = True
+            if timezone.now().date().month == 12:
+                newmonth = 1
+            else:
+                newmonth = int(timezone.now().date().month) + 1
+            subscription.next_payment = str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(timezone.now().date().day)
             subscription.save()
             return Response({"message": "성공!"}, status.HTTP_200_OK)
