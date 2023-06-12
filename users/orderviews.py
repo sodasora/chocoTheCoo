@@ -1,4 +1,11 @@
-from rest_framework import generics
+from rest_framework.generics import (
+    get_object_or_404,
+    ListCreateAPIView,
+    ListAPIView,
+    CreateAPIView,
+    RetrieveUpdateAPIView,
+    RetrieveAPIView,
+)
 from rest_framework.views import APIView
 from .models import CartItem, OrderItem, Bill
 from .orderserializers import (
@@ -69,9 +76,8 @@ class CartDetailView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    # ? 장바구니 상세 조회 > 목록에서 데이터를 모두 줌 / 상품 누르면 상품페이지로 이동하게.
     def patch(self, request, cart_item_id):
-        cart = generics.get_object_or_404(CartItem, pk=cart_item_id)
+        cart = get_object_or_404(CartItem, pk=cart_item_id)
         serializer = CartDetailSerializer(cart, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -79,12 +85,12 @@ class CartDetailView(APIView):
         return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, cart_item_id):
-        cart = generics.get_object_or_404(CartItem, pk=cart_item_id)
+        cart = get_object_or_404(CartItem, pk=cart_item_id)
         cart.delete()
         return Response({"msg": "장바구니 삭제"}, status=status.HTTP_204_NO_CONTENT)
 
 
-class OrderListView(generics.ListAPIView):
+class OrderListView(ListAPIView):
     """상품별 주문 목록 조회, 전체 주문 목록 조회"""
 
     permission_classes = [IsAuthenticated]
@@ -97,11 +103,10 @@ class OrderListView(generics.ListAPIView):
             queryset = OrderItem.objects.filter(product_id=product_id)
         else:
             queryset = OrderItem.objects.all()
-        print(queryset)
         return queryset
 
 
-class OrderCreateView(generics.CreateAPIView):
+class OrderCreateView(CreateAPIView):
     """주문 생성"""
 
     permission_classes = [IsAuthenticated]
@@ -110,11 +115,11 @@ class OrderCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         bill_id = self.kwargs.get("bill_id")
-        bill = generics.get_object_or_404(Bill, pk=bill_id)
+        bill = get_object_or_404(Bill, pk=bill_id)
         serializer.save(bill=bill)
 
 
-class OrderDetailView(generics.RetrieveUpdateAPIView):
+class OrderDetailView(RetrieveUpdateAPIView):
     """주문 상세 조회"""
 
     permission_classes = [IsAuthenticated]
@@ -122,7 +127,7 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = OrderItemDetailSerializer
 
 
-class BillView(generics.ListCreateAPIView):
+class BillView(ListCreateAPIView):
     """주문 내역 조회"""
 
     permission_classes = [IsAuthenticated]
@@ -141,7 +146,7 @@ class BillView(generics.ListCreateAPIView):
         return queryset
 
 
-class BillDetailView(generics.RetrieveAPIView):
+class BillDetailView(RetrieveAPIView):
     """주문 내역 상세 조회"""
 
     permission_classes = [IsAuthenticated]

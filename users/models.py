@@ -161,6 +161,7 @@ class Bill(CommonModel):
     detail_address = models.CharField("상세주소", max_length=100)
     recipient = models.CharField("수령인", max_length=30)
     postal_code = models.CharField("우편번호", max_length=10)
+    is_paid = models.BooleanField("결제 여부", default=False)
 
 
 class StatusCategory(models.Model):
@@ -178,11 +179,11 @@ class OrderItem(CommonModel):
 
     bill = models.ForeignKey("users.Bill", models.CASCADE, verbose_name="주문내역")
     seller = models.ForeignKey("users.Seller", models.CASCADE, verbose_name="판매자")
-    status = models.ForeignKey(
+    order_status = models.ForeignKey(
         "users.StatusCategory", models.CASCADE, verbose_name="주문상태", default=1
     )
     name = models.CharField("상품명", max_length=100)
-    count = models.PositiveIntegerField("상품개수", default=1)
+    amount = models.PositiveIntegerField("상품개수", default=1)
     price = models.PositiveIntegerField("상품가격")
     product_id = models.IntegerField("상품ID")
 
