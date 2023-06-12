@@ -7,7 +7,9 @@ from rest_framework.generics import (
     RetrieveAPIView,
 )
 from rest_framework.views import APIView
-from .models import CartItem, OrderItem, Bill
+from products.models import Product
+from .models import CartItem, OrderItem, Bill, Delivery, StatusCategory
+from .serializers import DeliverySerializer
 from .orderserializers import (
     CartListSerializer,
     CartSerializer,
@@ -17,10 +19,12 @@ from .orderserializers import (
     BillSerializer,
     BillCreateSerializer,
     BillDetailSerializer,
+    StatusCategorySerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from .cryption import AESAlgorithm
 
 """ 
 #* 작동 잘되면 제네릭API로 바꾸겠습니다 -광운- 
@@ -60,9 +64,9 @@ class CartView(APIView):
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
         except CartItem.DoesNotExist:
+            serializer = CartSerializer(data=request.data)
             if serializer.is_valid():
-                serializer = CartSerializer(data=request.data)
-                serializer.save()
+                serializer.save(user=request.user)
                 return Response(
                     {"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_201_CREATED
                 )
@@ -114,9 +118,13 @@ class OrderCreateView(CreateAPIView):
     serializer_class = OrderItemSerializer
 
     def perform_create(self, serializer):
+        product_id = self.request.data.get("product_id")
+        product = get_object_or_404(Product, pk=product_id)
         bill_id = self.kwargs.get("bill_id")
         bill = get_object_or_404(Bill, pk=bill_id)
-        serializer.save(bill=bill)
+        serializer.save(
+            bill=bill, name=product.name, price=product.price, seller=product.seller
+        )
 
 
 class OrderDetailView(RetrieveUpdateAPIView):
@@ -139,7 +147,14 @@ class BillView(ListCreateAPIView):
             return BillCreateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        deli = get_object_or_404(Delivery, pk=self.request.data.get("delivery_id"))
+        serializer.save(
+            user=self.request.user,
+            address=deli.address,
+            detail_address=deli.detail_address,
+            recipient=deli.recipient,
+            postal_code=deli.postal_code,
+        )
 
     def get_queryset(self):
         queryset = Bill.objects.filter(user=self.request.user)
@@ -160,3 +175,11 @@ class BillDetailView(RetrieveAPIView):
         pk = self.kwargs.get("pk")
         obj = self.get_queryset().get(pk=pk)
         return obj
+
+
+class StatusCategoryView(ListCreateAPIView):
+    """주문 상태 생성"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = StatusCategorySerializer
+    queryset = StatusCategory.objects.all()
