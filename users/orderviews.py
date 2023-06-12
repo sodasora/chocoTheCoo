@@ -1,10 +1,10 @@
 from rest_framework.generics import (
-    get_object_or_404, 
-    ListCreateAPIView, 
-    ListAPIView, 
-    CreateAPIView, 
-    RetrieveUpdateAPIView, 
-    RetrieveAPIView
+    get_object_or_404,
+    ListCreateAPIView,
+    ListAPIView,
+    CreateAPIView,
+    RetrieveUpdateAPIView,
+    RetrieveAPIView,
 )
 from rest_framework.views import APIView
 from .models import CartItem, OrderItem, Bill
