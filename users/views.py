@@ -90,12 +90,12 @@ class UserAPIView(APIView):
 
     def put(self, request):
         """
-        회원 가입시 이메일 인증  or 휴면 계정 활성화 신청 응답
+        회원 가입시 이메일 인증
         """
         user = get_object_or_404(User, email=request.data["email"])
         if user.auth_code is None:
             return Response(
-                {"mrr": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_400_BAD_REQUEST
+                {"mrr": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
         elif not user.auth_code == request.data["auth_code"]:
             return Response(
@@ -109,22 +109,23 @@ class UserAPIView(APIView):
 
     def patch(self, request):
         """
-        비밀번호 재 설정(찾기 기능)
+        비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
         """
         user = get_object_or_404(User, email=request.data["email"])
         if user.auth_code == "":
             return Response(
-                {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_400_BAD_REQUEST
+                {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
         elif not user.auth_code == request.data["auth_code"]:
             return Response(
                 {"err": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True,context="update")
         if serializer.is_valid():
             serializer.save()
             user.auth_code = None
             user.is_active = True
+            user.login_attempts_count = 0
             user.save()
             return Response({"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK)
         else:
@@ -178,6 +179,8 @@ class UserProfileAPIView(APIView):
         )
         if serializer.is_valid():
             serializer.save()
+            user.login_attempts_count = 0
+            user.save()
             return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -431,8 +434,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         user = get_object_or_404(User, email=request.data.get("email"))
         if user.is_active is False:
             return Response({"msg": "휴면 계정입니다."}, status=status.HTTP_204_NO_CONTENT)
-        # elif user.login_attempts_count >= 5:
-        #     return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        elif user.login_attempts_count >= 5:
+            return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_424_FAILED_DEPENDENCY)
         try:
             if check_password(request.data.get("password"), user.password):
                 user.login_attempts_count = 0
@@ -442,16 +445,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 refresh_token = response.data["refresh"]
                 access_token = response.data["access"]
                 data_dict = {
-                    "refresh_token": refresh_token,
-                    "access_token": access_token,
+                    "refresh": refresh_token,
+                    "access": access_token,
                 }
                 return Response(data_dict, status=status.HTTP_200_OK)
             else:
                 user.login_attempts_count += 1
                 user.save()
-                return Response(
-                    user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED
-                )
+                return Response(5 - user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED)
         except TypeError:
             return Response({"err": "입력값이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
