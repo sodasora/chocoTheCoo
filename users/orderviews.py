@@ -161,9 +161,3 @@ class BillDetailView(RetrieveAPIView):
         pk = self.kwargs.get("pk")
         obj = self.get_queryset().get(pk=pk)
         return obj
-
-class StatusView(generics.RetrieveUpdateAPIView):
-    """주문상태 조회"""
-    permission_classes = [IsAuthenticated]
-    serializer_class = StatusCategorySerializer
-    queryset = StatusCategory.objects.all()
