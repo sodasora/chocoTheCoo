@@ -620,7 +620,7 @@ class PointAttendanceView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
 
     def get_queryset(self):
-        queryset = Point.objects.filter(point_type=1, date=timezone.now().date())
+        queryset = Point.objects.filter(point_type=1, user=self.request.user, date=timezone.now().date())
         return queryset
 
 
