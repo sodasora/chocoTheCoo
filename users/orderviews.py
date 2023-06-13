@@ -7,7 +7,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
 )
 from rest_framework.views import APIView
-from .models import CartItem, OrderItem, Bill, StatusCategory
+from .models import CartItem, OrderItem, Bill
 from .orderserializers import (
     CartListSerializer,
     CartSerializer,
@@ -17,7 +17,6 @@ from .orderserializers import (
     BillSerializer,
     BillCreateSerializer,
     BillDetailSerializer,
-    StatusCategorySerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
