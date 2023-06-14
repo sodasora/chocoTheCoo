@@ -21,7 +21,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = "__all__"
+        fields = '__all__'
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
