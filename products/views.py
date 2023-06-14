@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework import generics
 from .serializers import (
     ProductListSerializer,
@@ -9,9 +10,7 @@ from .serializers import (
     ReviewSerializer,
     ReviewDetailSerializer,
 )
-from rest_framework import status
 from .models import Product, Category, Review
-from rest_framework.permissions import IsAuthenticated
 
 
 class CategoryListAPIView(generics.ListCreateAPIView):
@@ -32,9 +31,13 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
 class ProductListAPIView(generics.ListCreateAPIView):
     """상품 전체 조회, 생성"""
 
-    queryset = Product.objects.all()
     serializer_class = ProductListSerializer
-
+    
+    def get_queryset(self):
+        queryset = Product.objects.all()
+        print(self.request.data)
+        return queryset
+    
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
