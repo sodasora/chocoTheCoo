@@ -75,6 +75,7 @@ class User(AbstractBaseUser, CommonModel):
         related_name="review_liking_people",
         blank=True,
     )
+    introduction = models.CharField("소개",max_length=50,blank=True,null=True,default="아직 소개글이 없습니다.")
 
     # 추가기능 : 핸드폰 번호 https://django-phonenumber-field.readthedocs.io/en/latest/reference.html
     # phone_number
@@ -84,7 +85,7 @@ class User(AbstractBaseUser, CommonModel):
     objects = UserManager()
 
     def __str__(self):
-        return self.email
+        return self.nickname
 
     def has_perm(self, perm, obj=None):
         return True
