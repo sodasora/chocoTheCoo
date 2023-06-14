@@ -171,14 +171,9 @@ class BillDetailView(RetrieveAPIView):
         queryset = Bill.objects.filter(user=self.request.user)
         return queryset
 
-    def get_object(self):
-        pk = self.kwargs.get("pk")
-        obj = self.get_queryset().get(pk=pk)
-        return obj
-
 
 class StatusCategoryView(ListCreateAPIView):
-    """주문 상태 생성"""
+    """주문 상태 생성, 목록 조회"""
 
     permission_classes = [IsAuthenticated]
     serializer_class = StatusCategorySerializer
