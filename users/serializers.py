@@ -27,7 +27,6 @@ class UserSerializer(serializers.ModelSerializer):
             if not verification_result:
                 raise ValidationError("입력값이 올바르지 않습니다.")
         elif self.context == 'update':
-            print("정상 실행")
             verification_result = ValidatedData.update_validated_user_data(**element)
             if not verification_result:
                 raise ValidationError("입력값이 올바르지 않습니다.")
@@ -178,7 +177,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count')
+        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count','introduction')
 
 
 class BriefUserInformation(serializers.ModelSerializer):
@@ -272,5 +271,4 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "nickname", "profile_image", "customs_code")
-
+        fields = ("id", "email", "nickname", "profile_image", "customs_code","introduction")

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.http import HttpResponse
 from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
@@ -26,7 +27,7 @@ from .serializers import (
     UserDetailSerializer,
     SubscriptionInfoSerializer,
 )
-
+from django.http import JsonResponse
 
 class GetEmailAuthCodeAPIView(APIView):
     """
@@ -70,9 +71,26 @@ class UserAPIView(APIView):
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
             return Response({"err": "로그인이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        # 사용자 정보 딕셔너리에 추가
         serializer = UserDetailSerializer(user)
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-        return Response(decrypt_result, status=status.HTTP_200_OK)
+        new_dict = decrypt_result
+
+        # 사용자의 배송정보 딕셔너리에 추가
+        serializer = DeliverySerializer(user.deliveries_data, many=True)
+        decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
+        new_dict['delivery'] = decrypt_result
+
+        try:
+            # 사용자의 판매자 정보 딕셔너리에 추가
+            serializer = SellerSerializer(user.user_seller)
+            decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
+            new_dict['seller'] = decrypt_result
+        except Seller.DoesNotExist:
+            # 판매자 정보 없으면 넘어감
+            pass
+
+        return JsonResponse(new_dict,status=status.HTTP_200_OK)
 
     def post(self, request):
         """
@@ -166,15 +184,24 @@ class UserProfileAPIView(APIView):
             )
         new_serializer_data = dict(serializer.data)
         new_serializer_data["total_point"] = total_point
-        return Response(new_serializer_data, status=status.HTTP_200_OK)
+        return JsonResponse(new_serializer_data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
         """
-        회원 정보 수정 (프로필 이미지, 닉네임, 통관번호, 이메일, 비밀번호)
+        회원 정보 수정
         """
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        elif request.data.get('password') or request.data.get('new_password'):
+            # 비밀 번호를 변경 하고자 할때 변경
+            if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
+                return Response({"err": "비밀번호를 변경하기위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            elif not check_password(request.data.get('password'), user.password):
+                return Response({"err": "회원 정보에 저장된 비밀번호와 같지 않습니다."}, status=status.HTTP_409_CONFLICT)
+            else:
+                request.data['password'] = request.data['new_password']
+
         serializer = UserSerializer(
             user, data=request.data, partial=True, context="update"
         )
@@ -211,7 +238,7 @@ class DeliveryAPIView(APIView):
         user = get_object_or_404(User, id=user_id)
         serializer = DeliverySerializer(user.deliveries_data, many=True)
         decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
-        return Response(decrypt_result, status=status.HTTP_200_OK)
+        return JsonResponse(decrypt_result, status=status.HTTP_200_OK)
 
     def post(self, request, user_id):
         """
@@ -219,7 +246,7 @@ class DeliveryAPIView(APIView):
         """
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
         deliveries_cnt = Delivery.objects.filter(user=user).count()
         if deliveries_cnt > 4:
             return Response(
@@ -232,9 +259,9 @@ class DeliveryAPIView(APIView):
                 return Response({"msg": "배송 정보가 등록되었습니다."}, status=status.HTTP_200_OK)
             else:
                 return Response(
-                    {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
                 )
-        return Response({"msg": "우편 번호 정보가 없습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"msg": "주소지 정보가 올바르지 않습니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
 class UpdateDeliveryAPIView(APIView):
@@ -256,7 +283,7 @@ class UpdateDeliveryAPIView(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request, delivery_id):
         """
@@ -269,7 +296,7 @@ class UpdateDeliveryAPIView(APIView):
                 {"msg": "배송 정보가 삭제 되었습니다."}, status=status.HTTP_204_NO_CONTENT
             )
         else:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class SellerAPIView(APIView):
@@ -364,7 +391,7 @@ class SellerPermissionAPIView(APIView):
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-        return Response(decrypt_result, status=status.HTTP_200_OK)
+        return JsonResponse(decrypt_result, status=status.HTTP_200_OK)
 
     def patch(self, request, user_id):
         """
