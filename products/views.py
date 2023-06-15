@@ -29,15 +29,21 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
-    """상품 전체 조회, 생성"""
+    """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
 
+    permission_classes = [IsAuthenticated]
     serializer_class = ProductListSerializer
-    
+
     def get_queryset(self):
-        queryset = Product.objects.all()
-        print(self.request.data)
+        user_id = self.kwargs.get("user_id")
+        # url에서 user_id 존재하면 필터링, 없으면 전체
+        if user_id:
+            queryset = Product.objects.filter(seller=user_id)
+        else:
+            queryset = Product.objects.all()
         return queryset
-    
+
+
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""

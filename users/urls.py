@@ -52,13 +52,9 @@ urlpatterns = [
         name="update-delivery",
     ),
     # 판매자 권한 신청 , 판매자 정보 수정 , 판매자 정보 삭제
-    path("seller/", SellerAPIView.as_view(), name="seller-view"),
-    # 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)
-    path(
-        "seller/permissions/<int:user_id>/",
-        SellerPermissionAPIView.as_view(),
-        name="seller-view",
-    ),
+    path('seller/', SellerAPIView.as_view(), name='seller-view'),
+    # 판매자 정보 조회 , 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)
+    path('seller/permissions/<int:user_id>/', SellerPermissionAPIView.as_view(), name='seller-view'),
     # 프로필 읽기, 회원정보 수정, 휴면 계정으로 전환
     path("profile/<int:user_id>/", UserProfileAPIView.as_view(), name="profile-view"),
     # SIMPLE JWT Token 발급
@@ -101,7 +97,9 @@ urlpatterns = [
         name="order_create_view",
     ),
     # 전체 주문 목록 조회
-    path("orders/products/", OrderListView.as_view(), name="all_order_list_view"),
+    path("orders/products/", OrderListView.as_view(), name='all_order_list_view'),
+    # 판매자별 주문 목록 조회
+    path("orders/products/seller/<int:user_id>/", OrderListView.as_view(), name='seller_order_list_view'),
     # 상품별 주문 목록 조회
     path(
         "orders/products/<int:product_id>/",
