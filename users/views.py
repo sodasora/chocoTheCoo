@@ -739,7 +739,6 @@ class PointImpAjaxView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, *args, **kwargs):
-
         user = request.user
         merchant_id = request.data.get('merchant_id')
         imp_id = request.data.get('imp_id')
