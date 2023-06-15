@@ -226,17 +226,13 @@ class PointSerializer(serializers.ModelSerializer):
     """
     point_category = serializers.SerializerMethodField()
     
-    def get_point_category(self,obj):
+    def get_point_category(self, obj):
         return obj.point_type.title
     
     class Meta:
         model = Point
         fields = "__all__"
-        extra_kwargs = {
-            'user': {'read_only': True},
-            'point_category': {'read_only': True},
-            'point_type': {'read_only': True},
-        }
+        read_only_fields = ('user','point_category','point_type')
 
 
 
@@ -258,11 +254,8 @@ class SubscriptionInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscribe
         fields = "__all__"
-        extra_kwargs = {
-            'user': {'read_only': True},
-            'next_payment': {'read_only': True},
-        }
-
+        read_only_fields = ('user','next_payment')
+        
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
