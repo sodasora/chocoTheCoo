@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
+from .social import KakaoLogin,GoogleLogin,NaverLogin
 from .views import (
     UserAPIView,
     GetEmailAuthCodeAPIView,
@@ -121,4 +122,13 @@ urlpatterns = [
     path("points/charge/<str:order_id>/", PointChargeView.as_view(), name="point_charge_view"),
     # 상품 구매용 포인트 차감
     path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
+]
+
+urlpatterns += [
+    # 카카오 로그인
+    path("kakao/login/",KakaoLogin.as_view(), name='kakao-login'),
+    # 네이버 로그인
+    path("naver/login/",NaverLogin.as_view(), name='naver-login'),
+    # 구글 로그인
+    path("google/login/",GoogleLogin.as_view(), name='google-login'),
 ]
