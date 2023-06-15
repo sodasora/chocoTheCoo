@@ -16,6 +16,8 @@ urlpatterns = [
     path(
         "categories/<int:id>/", CategoryDetailAPIView.as_view(), name="category-detail"
     ),
+    # 특정 판매자의 상품 전체 조회
+    path("seller/<int:user_id>", ProductListAPIView.as_view(), name="seller-product-list"),
     # 상품 전체 조회
     path("", ProductListAPIView.as_view(), name="product-list"),
     # 상품 상세 조회
