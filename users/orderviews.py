@@ -51,15 +51,25 @@ class CartView(APIView):
 
     def get(self, request):
         """장바구니 목록 조회"""
-        cart = CartItem.objects.filter(user=request.user)
-        serializer = CartListSerializer(cart, many=True)
-        return Response(serializer.data)
+
+        try:  # url 쿼리 파라미터로 id가 전달되면 해당 값들만 조회
+            cart_ids = request.query_params.get("cart_id").split(",")
+            if cart_ids:
+                cart_items = CartItem.objects.filter(user=request.user, id__in=cart_ids)
+                serializer = CartListSerializer(cart_items, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        except AttributeError:  # 쿼리 파라미터가 없으면 .split에서 에러 / 전체 조회
+            cart = CartItem.objects.filter(user=request.user)
+            serializer = CartListSerializer(cart, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         """장바구니 추가"""
-        # 이미 존재하는 상품이면 개수 amount개 추가
-        try:
-            cart = CartItem.objects.get(product=request.data["product"], user=request.user)
+
+        try:  # 이미 존재하는 상품이면 개수 amount개 추가
+            cart = CartItem.objects.get(
+                product=request.data["product"], user=request.user
+            )
             cart.amount += request.data.get("amount")
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
