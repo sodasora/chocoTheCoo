@@ -5,19 +5,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .validated import ValidatedData
 from .cryption import AESAlgorithm
 from products.models import Product
-from django.contrib.auth.hashers import make_password
-
-
-class UserSerializerProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('nickname','profile_image','introduction')
-
-
-class UpdateUserDetailSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('email','postal_code','phone_number','password')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -57,9 +44,11 @@ class UserSerializer(serializers.ModelSerializer):
         """
         유저 오브 젝트 업데이트
         """
+
         user = super().update(instance, validated_data)
         customs_code = validated_data.get('customs_code')
-        user.password = make_password(user.password)
+        if validated_data.get('password') is not None:
+            user.set_password(user.password)
         user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
         user.save()
         return user
