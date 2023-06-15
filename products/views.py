@@ -10,6 +10,7 @@ from .serializers import (
     ReviewSerializer,
     ReviewDetailSerializer,
 )
+from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
 
 
@@ -30,7 +31,6 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
 
 class ProductListAPIView(generics.ListCreateAPIView):
     """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
-
     permission_classes = [IsAuthenticated]
     serializer_class = ProductListSerializer
 
