@@ -2,6 +2,7 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.http import JsonResponse
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -9,7 +10,7 @@ from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
-from .models import User, Delivery, Seller, Point, Subscribe
+from .models import User, Delivery, Seller, Point, Subscribe, Transaction
 from products.models import Product, Review
 from .validated import EmailService
 from .cryption import AESAlgorithm
@@ -653,14 +654,17 @@ class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
+    def post(self, request, *args, **kwargs):
+        try:
+            attendance_point = get_object_or_404(Point, user=self.request.user, point_type = 1, date=timezone.now().date())
+            return  Response({"message": "이미 존재"}, status.HTTP_400_BAD_REQUEST)
+        except:
+            return self.create(request, *args, **kwargs)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
-
-    def get_queryset(self):
-        queryset = Point.objects.filter(point_type=1, user=self.request.user, date=timezone.now().date())
-        return queryset
-
-
+    
+    
 """포인트 종류: 텍스트리뷰(2)"""
 class PointReviewView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -679,23 +683,26 @@ class PointPhotoView(generics.CreateAPIView):
         serializer.save(user=self.request.user, point_type_id=3, point=100)
 
 
-# """포인트 종류: 구매(4)"""
-# class PointBuyView(generics.CreateAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = PointSerializer
+"""포인트 종류: 구매(4)"""
+class PointBuyView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
     
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user, point_type_id=4)
-        
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=4)
 
-# """포인트 종류: 충전(5)"""
-# class PointChargeView(generics.CreateAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = PointSerializer
-    
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user, point_type_id=5)
-        
+
+"""포인트 종류: 충전(5)"""
+class PointChargeView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PointSerializer
+
+    def perform_create(self, serializer):
+        order_id = self.kwargs.get("order_id")
+        trans = get_object_or_404(Transaction, order_id = order_id)
+        point = trans.amount
+        serializer.save(user=self.request.user, point = point, point_type_id=5)
+
 
 """포인트 종류: 구독권이용료(6)"""
 class PointServiceView(generics.CreateAPIView):
@@ -705,6 +712,65 @@ class PointServiceView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=6, point=9900)
         
+
+"""포인트충전 결제후처리"""
+class PointCheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        amount = request.data.get('amount')
+        type = request.data.get('type')
+
+        try:
+            trans = Transaction.objects.create_new(
+                user=user,
+                amount=amount,
+                type=type
+            )
+        except:
+            trans = None
+
+        if trans is not None:
+            data = {
+                "works": True,
+                "merchant_id": trans
+            }
+            return JsonResponse(data)
+        else:
+            return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class PointImpAjaxView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        merchant_id = request.data.get('merchant_id')
+        imp_id = request.data.get('imp_id')
+        amount = request.data.get('amount')
+
+        try:
+            trans = Transaction.objects.get(
+                user=user,
+                order_id=merchant_id,
+                amount=amount
+            )
+        except:
+            trans = None
+
+        if trans is not None:
+            trans.transaction_id = imp_id
+            trans.success = True
+            trans.save()
+            
+            data = {
+                "works": True
+            }
+
+            return JsonResponse(data)
+        else:
+            return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 """구독"""

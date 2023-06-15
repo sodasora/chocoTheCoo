@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework import generics
 from .serializers import (
     ProductListSerializer,
@@ -9,9 +10,8 @@ from .serializers import (
     ReviewSerializer,
     ReviewDetailSerializer,
 )
-from rest_framework import status
-from .models import Product, Category, Review
 from rest_framework.permissions import IsAuthenticated
+from .models import Product, Category, Review
 
 
 class CategoryListAPIView(generics.ListCreateAPIView):
@@ -30,10 +30,19 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
-    """상품 전체 조회, 생성"""
-
-    queryset = Product.objects.all()
+    """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
+    permission_classes = [IsAuthenticated]
     serializer_class = ProductListSerializer
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("user_id")
+        # url에서 user_id 존재하면 필터링, 없으면 전체
+        if user_id:
+            queryset = Product.objects.filter(seller=user_id)
+        else:
+            queryset = Product.objects.all()
+        return queryset
+
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
