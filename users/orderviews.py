@@ -59,7 +59,7 @@ class CartView(APIView):
         """장바구니 추가"""
         # 이미 존재하는 상품이면 개수 amount개 추가
         try:
-            cart = CartItem.objects.get(product=request.data["product"])
+            cart = CartItem.objects.get(product=request.data["product"], user=request.user)
             cart.amount += request.data.get("amount")
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
