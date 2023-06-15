@@ -76,9 +76,8 @@ class User(AbstractBaseUser, CommonModel):
         blank=True,
     )
     introduction = models.CharField("소개",max_length=50,blank=True,null=True,default="아직 소개글이 없습니다.")
-
-    # 추가기능 : 핸드폰 번호 https://django-phonenumber-field.readthedocs.io/en/latest/reference.html
-    # phone_number
+    # 필수 입력 사항은 아니지만, 계정별 고유해야 한다.
+    phone_number = models.CharField('휴대폰 번호', max_length=30, blank=True, null=True, unique=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname", "password"]

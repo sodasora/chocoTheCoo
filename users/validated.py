@@ -1,6 +1,66 @@
-import random, re, string
+import random, re, string,json
+import hashlib, hmac, base64, os, requests, time
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+
+
+NAVER_SMS_ACCESS_KEY = os.environ.get('NAVER_SMS_ACCESS_KEY')
+NAVER_SMS_SECRET_KEY = os.environ.get('NAVER_SMS_SECRET_KEY')
+NAVER_SMS_PROJECT_ID = os.environ.get('NAVER_SMS_PROJECT_ID')
+
+# NAVER_SMS_ACCESS_KEY = 'o2ZfEnoLEvKRrBxOxmn0'
+# NAVER_SMS_SECRET_KEY = 'yzj1SvllPJNHJZy5yJKgaZY3rJDady58R06t51Fb'
+# NAVER_SMS_PROJECT_ID = 'ncp:sms:kr:309427584689:sms_auth'
+SENDING_URI = f'https://sens.apigw.ntruss.com/sms/v2/services/{NAVER_SMS_PROJECT_ID}/messages'
+URL = "https://sens.apigw.ntruss.com"
+URI = f'/sms/v2/services/{NAVER_SMS_PROJECT_ID}/messages'
+CALLING_NUMBER = os.environ.get('CALLING_NUMBER')
+
+
+def	make_signature(timestamp):
+    access_key = NAVER_SMS_ACCESS_KEY
+    secret_key = NAVER_SMS_SECRET_KEY
+    secret_key = bytes(secret_key, 'UTF-8')
+    method = "POST"
+    uri = URI
+    message = method + " " + uri + "\n" + timestamp + "\n" + access_key
+    message = bytes(message, 'UTF-8')
+    signingKey = base64.b64encode(hmac.new(secret_key, message, digestmod=hashlib.sha256).digest())
+    return signingKey
+
+
+# 네이버 SMS 인증
+class SmsSendView(APIView):
+    def send_sms(self, phone_number):
+        timestamp = str(int(time.time() * 1000))
+        header = {
+            "Content-Type": "application/json; charset=utf-8",
+            "x-ncp-apigw-timestamp": timestamp,
+            "x-ncp-iam-access-key": NAVER_SMS_ACCESS_KEY,
+            "x-ncp-apigw-signature-v2": make_signature(timestamp),
+        }
+        body = {
+            "type": "SMS",
+            "contentType": "COMM",
+            "countryCode": "82",
+            "from": '01031571180',
+            "content": "내용",
+            "messages": [
+                {
+                    "to": '01031571180',
+                }
+            ]
+        }
+
+        api_result = requests.post(
+            SENDING_URI,
+            headers=header,
+            data=json.dumps(body)
+        )
+        
 
 
 class EmailService:
@@ -8,7 +68,6 @@ class EmailService:
     이메일 발송 및 인증코드 만들기
     템플릿 경로 : .users/templates/email_template.html
     """
-
 
     @classmethod
     def get_authentication_code(cls):
@@ -45,7 +104,6 @@ class ValidatedData:
     데이터 검증 클래스
     https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/validate_test.py
     """
-
 
     @classmethod
     def validated_password(cls, password):

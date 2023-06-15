@@ -7,6 +7,7 @@ from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, Updat
 from .orderviews import (CartView, CartDetailView, BillView,
                         BillDetailView, OrderCreateView, OrderListView, OrderDetailView)
 from .social import KakaoLogin,GoogleLogin,NaverLogin
+from .validated import SmsSendView
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기

@@ -25,6 +25,7 @@ from .serializers import (
     GetReviewUserListInfo,
     UserDetailSerializer,
     SubscriptionInfoSerializer,
+    UserSerializerProfileSerializer,
 )
 from django.http import JsonResponse
 
@@ -192,29 +193,42 @@ class UserProfileAPIView(APIView):
 
     def put(self, request, user_id):
         """
+        사용자의 프로필 정보 수정
+        프로필 이미지, 닉네임, 자기 소개
+        """
+        user = get_object_or_404(User, id=user_id)
+        if request.user != user:
+            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, user_id):
+        """
         회원 정보 수정
+        비밀 번호, 이메일 수정
         """
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
         elif user.login_type != "일반" and request.data.get('password') is not None and request.data.get('eamil') is not None:
             return Response({"err": "소셜 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
-        elif request.data.get('password') or request.data.get('new_password'):
-            # 비밀 번호를 변경 하고자 할때 변경
-            if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
-                return Response({"err": "비밀번호를 변경하기위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-            elif not check_password(request.data.get('password'), user.password):
-                return Response({"err": "회원 정보에 저장된 비밀번호와 같지 않습니다."}, status=status.HTTP_409_CONFLICT)
-            else:
-                request.data['password'] = request.data['new_password']
+
+        if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
+            return Response({"err": "비밀번호를 변경하기위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        elif not check_password(request.data.get('password'), user.password):
+            return Response({"err": "회원 정보에 저장된 비밀번호와 같지 않습니다."}, status=status.HTTP_409_CONFLICT)
+        else:
+            request.data['password'] = request.data['new_password']
 
         serializer = UserSerializer(
             user, data=request.data, partial=True, context="update"
         )
         if serializer.is_valid():
             serializer.save()
-            user.login_attempts_count = 0
-            user.save()
             return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

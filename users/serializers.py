@@ -8,6 +8,18 @@ from products.models import Product
 from django.contrib.auth.hashers import make_password
 
 
+class UserSerializerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('nickname','profile_image','introduction')
+
+
+class UpdateUserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('email','postal_code','phone_number','password')
+
+
 class UserSerializer(serializers.ModelSerializer):
     """
      유저 회원가입, 업데이트 시리얼 라이저
