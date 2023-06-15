@@ -685,16 +685,6 @@ class PointBuyView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
-    def post(self, request, point, *args, **kwargs):
-        return self.create(request, point, *args, **kwargs)
-
-    def create(self, request, point, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(point, serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
     def perform_create(self, point, serializer):
         serializer.save(user=self.request.user, point = point, point_type_id=4)
 
@@ -703,17 +693,7 @@ class PointBuyView(generics.CreateAPIView):
 class PointChargeView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
-    
-    def post(self, request, point, *args, **kwargs):
-        return self.create(request, point, *args, **kwargs)
 
-    def create(self, request, point, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(point, serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
     def perform_create(self, point, serializer):
         serializer.save(user=self.request.user, point = point, point_type_id=5)
 
@@ -779,8 +759,6 @@ class PointImpAjaxView(APIView):
             trans.success = True
             trans.save()
             
-            PointChargeView.post(amount)
-
             data = {
                 "works": True
             }
