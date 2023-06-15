@@ -95,16 +95,19 @@ class CartDetailView(APIView):
 
 
 class OrderListView(ListAPIView):
-    """상품별 주문 목록 조회, 전체 주문 목록 조회"""
+    """상품별 주문 목록 조회, 판매자별 주문 목록 조회, 전체 주문 목록 조회"""
 
     permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
 
     def get_queryset(self):
         product_id = self.kwargs.get("product_id")
+        user_id = self.kwargs.get("user_id")
         # url에서 product_id 존재하면 필터링, 없으면 전체
         if product_id:
             queryset = OrderItem.objects.filter(product_id=product_id)
+        elif user_id:
+            queryset = OrderItem.objects.filter(seller=user_id)
         else:
             queryset = OrderItem.objects.all()
         return queryset
