@@ -3,7 +3,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, UpdateDeliveryAPIView, 
                     SellerAPIView, SellerPermissionAPIView, UserProfileAPIView, CustomTokenObtainPairView, 
                     PointView, PointStaticView, SubscribeView, ReviewListAPIView, WishListAPIView, PointAttendanceView,
-                    PointReviewView, PointPhotoView, PointServiceView)
+                    PointReviewView, PointPhotoView, PointServiceView,
+                    PointCheckoutView, PointImpAjaxView, PointBuyView, PointChargeView)
 from .orderviews import (CartView, CartDetailView, BillView,
                         BillDetailView, OrderCreateView, OrderListView, OrderDetailView)
 
@@ -59,4 +60,11 @@ urlpatterns = [
     path("review/<int:review_id>/", ReviewListAPIView.as_view(), name='review-list-API'),
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
     path("wish/<int:product_id>/", WishListAPIView.as_view(), name='wish-list-API'),
+    # 결제api
+    path("payment/checkout/", PointCheckoutView.as_view(), name='point_checkout'),
+    path("payment/validation/", PointImpAjaxView.as_view(), name='point_validation'),
+    # 포인트 충전
+    path("points/", PointChargeView.as_view(), name="point_charge_view"),
+    # 상품 구매용 포인트 차감
+    path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
 ]

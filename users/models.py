@@ -7,6 +7,7 @@ from .iamport import validation_prepare, get_transaction
 import hashlib
 import random
 import time
+from django.utils import timezone
 from django.db.models.signals import post_save
 
 
@@ -215,32 +216,41 @@ class TransactionManager(models.Manager):
     def create_new(self, user, amount, type, success=None, transaction_status=None):
         if not user:
             raise ValueError("유저가 확인되지 않습니다.")
-        short_hash = hashlib.sha1(str(random.random())).hexdigest()[:2]
-        time_hash = hashlib.sha1(str(int(time.time()))).hexdigest()[-3:]
+        
+        #암호화 => 유니크한 주문번호 생성
+        short_hash = hashlib.sha1(str(random.random()).encode()).hexdigest()[:2]
+        time_hash = hashlib.sha1(str(int(time.time())).encode()).hexdigest()[-3:]
         base = str(user.email).split("@")[0]
-        key = hashlib.sha1(short_hash + time_hash + base).hexdigest()[:10]
-        new_order_id = "%s" % (key)
+        key = hashlib.sha1((short_hash + base + time_hash).encode()).hexdigest()[:10]
+        new_order_id = str(key) #"%s" % (key)
 
         # 아임포트 결제 사전 검증 단계
         validation_prepare(new_order_id, amount)
 
         # 트랜젝션 저장
         new_trans = self.model(
-            user=user, order_id=new_order_id, amount=amount, type=type
+            user=user, 
+            order_id= new_order_id, 
+            amount=amount, 
+            type=type
         )
 
         if success is not None:
             new_trans.success = success
             new_trans.transaction_status = transaction_status
 
-        new_trans.save(using=self._db)
+        try:
+            new_trans.save()
+        except Exception as e:
+            print("저장 오류", e)
+
         return new_trans.order_id
 
-    # 생선된 트랜잭션 검증
-    def validation_trans(self, merchant_id):
-        result = get_transaction(merchant_id)
+    # 생성된 트랜잭션 검증
+    def validation_trans(self, imp_id):
+        result = get_transaction(imp_id)
 
-        if result["status"] != "paid":
+        if result["status"] == "paid":
             return result
         else:
             return None
@@ -260,10 +270,14 @@ class Transaction(CommonModel):
     )
     transaction_id = models.CharField(max_length=120, null=True, blank=True)
     order_id = models.CharField(max_length=120, unique=True)
-    amount = models.PositiveIntegerField(default=0)
+    amount = models.PositiveIntegerField(default=0) 
+    # 해외 payment쓸거면 DecimalField
+    # amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     transaction_status = models.CharField(max_length=220, null=True, blank=True)
     type = models.CharField(max_length=120)
+    
+    objects = TransactionManager()
 
     def __str__(self):
         return self.order_id
@@ -272,21 +286,21 @@ class Transaction(CommonModel):
         ordering = ["-created_at"]
 
 
-def new_trans_validation(sender, instance, created, *args, **kwargs):
+def new_trans_validation(sender, instance, *args, **kwargs):
     if instance.transaction_id:
         # 거래 후 아임포트에서 넘긴 결과
-        v_trans = Transaction.objects.validation_trans(merchant_id=instance.order_id)
+        import_trans = Transaction.objects.validation_trans(imp_id=instance.transaction_id)
 
-        res_merchant_id = v_trans["merchant_id"]
-        res_imp_id = v_trans["imp_id"]
-        res_amount = v_trans["amount"]
+        res_merchant_id = import_trans["merchant_id"]
+        res_imp_id = import_trans["imp_id"]
+        res_amount = import_trans["amount"]
 
         # 데이터베이스에 실제 결제된 정보가 있는지 체크
-        r_trans = Transaction.objects.filter(
+        local_trans = Transaction.objects.filter(
             order_id=res_merchant_id, transaction_id=res_imp_id, amount=res_amount
         ).exists()
 
-        if not v_trans or not r_trans:
+        if not import_trans or not local_trans:
             raise ValueError("비정상적인 거래입니다.")
 
 
