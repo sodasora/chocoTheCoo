@@ -6,7 +6,6 @@ from django.http import JsonResponse
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.http import HttpResponse
 from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
@@ -131,8 +130,13 @@ class UserAPIView(APIView):
         """
         비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
         """
+
         user = get_object_or_404(User, email=request.data["email"])
-        if user.auth_code == "":
+        if user.login_type != "일반":
+            return Response(
+                {"err": user.login_type}, status=status.HTTP_403_FORBIDDEN
+            )
+        elif user.auth_code == "":
             return Response(
                 {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
@@ -187,19 +191,23 @@ class UserProfileAPIView(APIView):
         new_serializer_data["total_point"] = total_point
         return JsonResponse(new_serializer_data, status=status.HTTP_200_OK)
 
-    def put(self, request, user_id):
+
+
+    def patch(self, request, user_id):
         """
         회원 정보 수정
         """
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        elif user.login_type != "일반" and request.data.get('password') is not None and request.data.get('eamil') is not None:
+            return Response({"err": "소셜 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
         elif request.data.get('password') or request.data.get('new_password'):
             # 비밀 번호를 변경 하고자 할때 변경
             if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
-                return Response({"err": "비밀번호를 변경하기위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                return Response({"err": "비밀 번호를 변경 하기 위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
             elif not check_password(request.data.get('password'), user.password):
-                return Response({"err": "회원 정보에 저장된 비밀번호와 같지 않습니다."}, status=status.HTTP_409_CONFLICT)
+                return Response({"err": "회원 정보에 저장된 비밀번호와 같지않습니다."}, status=status.HTTP_409_CONFLICT)
             else:
                 request.data['password'] = request.data['new_password']
 
@@ -314,7 +322,7 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             serializer = SellerSerializer(data=request.data)
             if serializer.is_valid():
@@ -325,7 +333,7 @@ class SellerAPIView(APIView):
                 )
             else:
                 return Response(
-                    {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
                 )
         except IntegrityError:
             return Response(
@@ -339,7 +347,7 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             serializer = SellerSerializer(
                 user.user_seller, data=request.data, partial=True
@@ -353,7 +361,7 @@ class SellerAPIView(APIView):
             return Response({"msg": "판매자 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
         else:
             return Response(
-                {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
     def delete(self, request):
@@ -363,9 +371,11 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
+            user.is_seller = False
             user.user_seller.delete()
+            user.save()
         except Seller.DoesNotExist:
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
@@ -644,7 +654,6 @@ class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
-    
     def post(self, request, *args, **kwargs):
         try:
             attendance_point = get_object_or_404(Point, user=self.request.user, point_type = 1, date=timezone.now().date())
@@ -652,16 +661,10 @@ class PointAttendanceView(generics.ListCreateAPIView):
         except:
             return self.create(request, *args, **kwargs)
     
-    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
     
     
-    def get_queryset(self):
-        queryset = Point.objects.filter(point_type=1, user=self.request.user, date=timezone.now().date())
-        return queryset
-
-
 """포인트 종류: 텍스트리뷰(2)"""
 class PointReviewView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -685,8 +688,8 @@ class PointBuyView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
-    def perform_create(self, point, serializer):
-        serializer.save(user=self.request.user, point = point, point_type_id=4)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=4)
 
 
 """포인트 종류: 충전(5)"""
@@ -694,7 +697,10 @@ class PointChargeView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
 
-    def perform_create(self, point, serializer):
+    def perform_create(self, serializer):
+        order_id = self.kwargs.get("order_id")
+        trans = get_object_or_404(Transaction, order_id = order_id)
+        point = trans.amount
         serializer.save(user=self.request.user, point = point, point_type_id=5)
 
 
@@ -739,7 +745,6 @@ class PointImpAjaxView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, *args, **kwargs):
-
         user = request.user
         merchant_id = request.data.get('merchant_id')
         imp_id = request.data.get('imp_id')

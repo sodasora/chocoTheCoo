@@ -8,13 +8,17 @@ from binascii import Error
 # 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES2.PY0
 
 class AESAlgorithm:
-    """ 암호화, 복호화 알고리즘 """
+    """
+    암호화, 복호화 알고리즘
+    """
     AES_KEY = os.environ.get('AES_KEY')
     AES_KEY = bytes(AES_KEY, 'utf-8')
 
     @classmethod
     def encrypt_all(cls, **kwargs):
-        """ 암호화 """
+        """
+        암호화
+        """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         BASIC_DATA = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number', 'company_img','orders',]
         data_dict = {}  # key값 특정
@@ -30,7 +34,9 @@ class AESAlgorithm:
 
     @classmethod
     def decrypt_all(cls, **kwargs):
-        """ 복호화 """
+        """
+        복호화
+        """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         data_dict = {}
         for key, value in kwargs.items():

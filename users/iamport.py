@@ -4,7 +4,6 @@ import json
 from django.conf import settings
 
 # get_access_token: 아임포트 서버에 접근할 수 있는 토큰을 발급
-# 토큰으로 유저가 결제한 정보를 가져옴
 def get_access_token():
     access_data = {
         'imp_key': settings.IAMPORT_KEY,
@@ -30,9 +29,7 @@ def validation_prepare(merchant_id, amount, *args, **kwargs):
             'merchant_uid': merchant_id,
             'amount': amount
         }
-
         url = "https://api.iamport.kr/payments/prepare"
-
         headers = {
             'Authorization': access_token
         }
@@ -52,15 +49,13 @@ def get_transaction(imp_id, *args, **kwargs):
 
     if access_token:
         url = "https://api.iamport.kr/payments/" + imp_id
-        
         headers = {
             'Authorization': access_token
         }
 
         req = requests.get(url, headers=headers)
         res = req.json()
-        print(res)
-
+        
         if res['code'] == 0:
             context = {
                 'imp_id': res['response']['imp_uid'],
