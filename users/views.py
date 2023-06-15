@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.http import HttpResponse
 from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
@@ -130,8 +129,13 @@ class UserAPIView(APIView):
         """
         비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
         """
+
         user = get_object_or_404(User, email=request.data["email"])
-        if user.auth_code == "":
+        if user.login_type != "일반":
+            return Response(
+                {"err": user.login_type}, status=status.HTTP_403_FORBIDDEN
+            )
+        elif user.auth_code == "":
             return Response(
                 {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
             )
@@ -193,6 +197,8 @@ class UserProfileAPIView(APIView):
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        elif user.login_type != "일반" and request.data.get('password') is not None and request.data.get('eamil') is not None:
+            return Response({"err": "소셜 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
         elif request.data.get('password') or request.data.get('new_password'):
             # 비밀 번호를 변경 하고자 할때 변경
             if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
@@ -313,7 +319,7 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             serializer = SellerSerializer(data=request.data)
             if serializer.is_valid():
@@ -324,7 +330,7 @@ class SellerAPIView(APIView):
                 )
             else:
                 return Response(
-                    {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
                 )
         except IntegrityError:
             return Response(
@@ -338,7 +344,7 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             serializer = SellerSerializer(
                 user.user_seller, data=request.data, partial=True
@@ -352,7 +358,7 @@ class SellerAPIView(APIView):
             return Response({"msg": "판매자 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
         else:
             return Response(
-                {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
     def delete(self, request):
@@ -362,9 +368,11 @@ class SellerAPIView(APIView):
         try:
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
         try:
+            user.is_seller = False
             user.user_seller.delete()
+            user.save()
         except Seller.DoesNotExist:
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST

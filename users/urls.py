@@ -6,6 +6,7 @@ from .views import (UserAPIView, GetEmailAuthCodeAPIView, DeliveryAPIView, Updat
                     PointReviewView, PointPhotoView, PointServiceView)
 from .orderviews import (CartView, CartDetailView, BillView,
                         BillDetailView, OrderCreateView, OrderListView, OrderDetailView)
+from .social import KakaoLogin,GoogleLogin,NaverLogin
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -59,4 +60,13 @@ urlpatterns = [
     path("review/<int:review_id>/", ReviewListAPIView.as_view(), name='review-list-API'),
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
     path("wish/<int:product_id>/", WishListAPIView.as_view(), name='wish-list-API'),
+]
+
+urlpatterns += [
+    # 카카오 로그인
+    path("kakao/login/",KakaoLogin.as_view(), name='kakao-login'),
+    # 네이버 로그인
+    path("naver/login/",NaverLogin.as_view(), name='naver-login'),
+    # 구글 로그인
+    path("google/login/",GoogleLogin.as_view(), name='google-login'),
 ]

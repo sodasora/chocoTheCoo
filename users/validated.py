@@ -13,7 +13,7 @@ class EmailService:
     @classmethod
     def get_authentication_code(cls):
         """
-        인증 코드 반환
+        랜덤 값 반환
         """
 
         random_value = string.ascii_letters + string.digits
