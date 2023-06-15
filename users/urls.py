@@ -120,7 +120,7 @@ urlpatterns = [
     path("payment/checkout/", PointCheckoutView.as_view(), name='point_checkout'),
     path("payment/validation/", PointImpAjaxView.as_view(), name='point_validation'),
     # 포인트 충전
-    path("points/", PointChargeView.as_view(), name="point_charge_view"),
+    path("points/charge/<str:order_id>/", PointChargeView.as_view(), name="point_charge_view"),
     # 상품 구매용 포인트 차감
     path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
 ]

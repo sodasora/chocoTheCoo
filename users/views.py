@@ -644,7 +644,6 @@ class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
-    
     def post(self, request, *args, **kwargs):
         try:
             attendance_point = get_object_or_404(Point, user=self.request.user, point_type = 1, date=timezone.now().date())
@@ -652,16 +651,10 @@ class PointAttendanceView(generics.ListCreateAPIView):
         except:
             return self.create(request, *args, **kwargs)
     
-    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
     
     
-    def get_queryset(self):
-        queryset = Point.objects.filter(point_type=1, user=self.request.user, date=timezone.now().date())
-        return queryset
-
-
 """포인트 종류: 텍스트리뷰(2)"""
 class PointReviewView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -685,8 +678,8 @@ class PointBuyView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
     
-    def perform_create(self, point, serializer):
-        serializer.save(user=self.request.user, point = point, point_type_id=4)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, point_type_id=4)
 
 
 """포인트 종류: 충전(5)"""
@@ -694,7 +687,10 @@ class PointChargeView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
 
-    def perform_create(self, point, serializer):
+    def perform_create(self, serializer):
+        order_id = self.kwargs.get("order_id")
+        trans = get_object_or_404(Transaction, order_id = order_id)
+        point = trans.amount
         serializer.save(user=self.request.user, point = point, point_type_id=5)
 
 

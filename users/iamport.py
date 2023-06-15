@@ -55,8 +55,7 @@ def get_transaction(imp_id, *args, **kwargs):
 
         req = requests.get(url, headers=headers)
         res = req.json()
-        print(res)
-
+        
         if res['code'] == 0:
             context = {
                 'imp_id': res['response']['imp_uid'],
