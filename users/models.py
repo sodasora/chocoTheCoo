@@ -78,6 +78,7 @@ class User(AbstractBaseUser, CommonModel):
     )
     introduction = models.CharField("소개",max_length=50,blank=True,null=True,default="아직 소개글이 없습니다.")
 
+
     # 추가기능 : 핸드폰 번호 https://django-phonenumber-field.readthedocs.io/en/latest/reference.html
     # phone_number
 
@@ -99,7 +100,7 @@ class User(AbstractBaseUser, CommonModel):
         return self.is_admin
 
 
-class Seller(models.Model):
+class Seller(CommonModel):
     """판매자 모델"""
 
     user = models.OneToOneField(
@@ -112,6 +113,7 @@ class Seller(models.Model):
     business_owner_name = models.CharField("대표자 성함", max_length=20)
     account_holder = models.CharField("예금주", max_length=20)
     contact_number = models.CharField("업체 연락처", max_length=20)
+    company_img = models.ImageField("업체 로고", upload_to="%Y/%m", blank=True, null=True)
 
     def __str__(self):
         """업체명"""
@@ -168,7 +170,7 @@ class Bill(CommonModel):
 
 class StatusCategory(models.Model):
     """상태 카테고리"""
-
+    '''결제대기(1) 주문확인중(2) 배송준비중(3) 발송완료(4) 배송완료(5) 구매확정(6)'''
     name = models.CharField("상태", max_length=20)
 
     def __str__(self):
