@@ -7,14 +7,13 @@ from rest_framework.generics import (
     RetrieveAPIView,
 )
 from rest_framework.views import APIView
-from products.models import Product
 from .models import CartItem, OrderItem, Bill, Delivery, StatusCategory
-from .serializers import DeliverySerializer
 from .orderserializers import (
     CartListSerializer,
     CartSerializer,
     CartDetailSerializer,
     OrderItemSerializer,
+    OrderCreateSerializer,
     OrderItemDetailSerializer,
     BillSerializer,
     BillCreateSerializer,
@@ -23,27 +22,10 @@ from .orderserializers import (
 )
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from .cryption import AESAlgorithm
-
-""" 
-#* 작동 잘되면 제네릭API로 바꾸겠습니다 -광운- 
-class CartView(ListCreateAPIView):
-    queryset = CartItem.objects.all()
-    serializer_class = CartSerializer
-
-class CartDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = CartItem.objects.all()
-    serializer_class = CartDetailSerializer
-
-class OrderView(ListCreateAPIView):
-    queryset = OrderItem.objects.all()
-    serializer_class = OrderItemSerializer
-
-class OrderDetailView(RetrieveDestroyAPIView):
-    queryset = OrderItem.objects.all()
-    serializer_class = OrderItemDetailSerializer
-"""
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .cryption import AESAlgorithm #* Bill 복호화에 사용해야함
+from django.db import transaction
+from config.permissions_ import IsDeliveryRegistered
 
 
 class CartView(APIView):
@@ -84,24 +66,32 @@ class CartView(APIView):
                 {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+    def delete(self, request):
+        try:
+            cart_ids = request.query_params.get("cart_id").split(",")
+            cart_items = CartItem.objects.filter(user=request.user, id__in=cart_ids)
+            if cart_items:
+                for cart in cart_items:
+                    cart.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        except AttributeError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
 class CartDetailView(APIView):
-    """장바구니 수량 변경, 삭제"""
+    """장바구니 수량 변경"""
 
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, cart_item_id):
-        cart = get_object_or_404(CartItem, pk=cart_item_id)
+        cart = get_object_or_404(CartItem, pk=cart_item_id, user=request.user)
         serializer = CartDetailSerializer(cart, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, cart_item_id):
-        cart = get_object_or_404(CartItem, pk=cart_item_id)
-        cart.delete()
-        return Response({"msg": "장바구니 삭제"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class OrderListView(ListAPIView):
@@ -126,18 +116,65 @@ class OrderListView(ListAPIView):
 class OrderCreateView(CreateAPIView):
     """주문 생성"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | IsDeliveryRegistered]
     queryset = OrderItem.objects.all()
-    serializer_class = OrderItemSerializer
+    serializer_class = OrderCreateSerializer
 
-    def perform_create(self, serializer):
-        product_id = self.request.data.get("product_id")
-        product = get_object_or_404(Product, pk=product_id)
-        bill_id = self.kwargs.get("bill_id")
-        bill = get_object_or_404(Bill, pk=bill_id)
-        serializer.save(
-            bill=bill, name=product.name, price=product.price, seller=product.seller
-        )
+    # @transaction.atomic()
+    # def create(self, request, *args, **kwargs):
+    #     bill_id = self.kwargs.get("bill_id")
+    #     bill = get_object_or_404(
+    #         Bill, id=bill_id, user=self.request.user, is_paid=False
+    #     )
+    #     try:
+    #         cart_ids = request.query_params.get("cart_id").split(",")
+    #     except AttributeError:
+    #         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    #     cart_objects = [get_object_or_404(CartItem, id=cart_id) for cart_id in cart_ids]
+
+    #     order_items = []
+    #     for cart in cart_objects:
+    #         order_item_data = {
+    #             "product_id": cart.product.id,
+    #             "amount": cart.amount,
+    #             "price": cart.product.price,
+    #             "name": cart.product.name,
+    #             "seller": cart.product.seller.id,
+    #         }
+    #         order_items.append(order_item_data)
+
+    #     serializer = self.get_serializer(data=order_items, many=True)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save(bill=bill)
+    #     return Response(status=status.HTTP_201_CREATED)
+
+    @transaction.atomic()
+    def create(self, request, *args, **kwargs):
+        try:
+            bill_id = self.kwargs.get("bill_id")
+            bill = get_object_or_404(
+                Bill, id=bill_id, user=self.request.user, is_paid=False
+            )
+            cart_ids = request.query_params.get("cart_id").split(",")
+        except AttributeError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        cart_objects = [get_object_or_404(CartItem, pk=cart_id) for cart_id in cart_ids]
+
+        order_items = []
+        for cart in cart_objects:
+            order_item_data = {
+                "product_id": cart.product.id,
+                "amount": cart.amount,
+                "price": cart.product.price,
+                "seller": cart.product.seller,
+                "bill_id": bill_id,
+            }
+            order_item = OrderItem(**order_item_data)
+            order_items.append(order_item)
+        OrderItem.objects.bulk_create(order_items)
+        return Response(status=status.HTTP_201_CREATED)
 
 
 class OrderDetailView(RetrieveUpdateAPIView):
@@ -151,7 +188,12 @@ class OrderDetailView(RetrieveUpdateAPIView):
 class BillView(ListCreateAPIView):
     """주문 내역 조회"""
 
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "GET":
+            self.permission_classes = [IsAuthenticated]
+        else:
+            self.permission_classes = [IsAuthenticated | IsDeliveryRegistered]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -177,7 +219,7 @@ class BillView(ListCreateAPIView):
 class BillDetailView(RetrieveAPIView):
     """주문 내역 상세 조회"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | IsDeliveryRegistered]
     serializer_class = BillDetailSerializer
 
     def get_queryset(self):
@@ -188,6 +230,6 @@ class BillDetailView(RetrieveAPIView):
 class StatusCategoryView(ListCreateAPIView):
     """주문 상태 생성, 목록 조회"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
     serializer_class = StatusCategorySerializer
     queryset = StatusCategory.objects.all()
