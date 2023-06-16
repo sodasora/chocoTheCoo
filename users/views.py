@@ -81,6 +81,7 @@ class UserAPIView(APIView):
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         new_dict = decrypt_result
 
+
         # 사용자의 배송정보 딕셔너리에 추가
         serializer = DeliverySerializer(user.deliveries_data, many=True)
         decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)

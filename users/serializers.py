@@ -8,7 +8,6 @@ from products.models import Product
 from datetime import datetime,timedelta
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     """
      유저 회원가입, 업데이트 시리얼 라이저
@@ -219,7 +218,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['email'] = user.email
-        token['is_seller'] = user.is_seller
 
         return token
 
@@ -302,8 +300,6 @@ class PointSerializer(serializers.ModelSerializer):
         model = Point
         fields = "__all__"
         read_only_fields = ('user','point_category','point_type')
-
-
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """

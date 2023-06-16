@@ -37,6 +37,7 @@ class AESAlgorithm:
         """
         복호화
         """
+
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         data_dict = {}
         for key, value in kwargs.items():
@@ -69,3 +70,5 @@ class AESAlgorithm:
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         cipher_data = cipher.encrypt(pad(data.encode(), AES.block_size))
         return base64.b64encode(cipher_data).decode()
+
+

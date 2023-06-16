@@ -44,7 +44,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, CommonModel):
-    """Base User model 정의"""
+    """
+    Base User model 정의
+    """
 
     LOGIN_TYPES = [
         ("normal", "일반"),
@@ -55,17 +57,15 @@ class User(AbstractBaseUser, CommonModel):
     email = models.EmailField("이메일 주소", max_length=100, unique=True)
     nickname = models.CharField("사용자 이름", max_length=20)
     password = models.CharField("비밀번호", max_length=128)
-    profile_image = models.ImageField(
-        "프로필 이미지", upload_to="%Y/%m", blank=True, null=True
-    )
-    auth_code = models.CharField("인증 코드", max_length=128, blank=True, null=True)
+    profile_image = models.ImageField("프로필 이미지", upload_to="%Y/%m", blank=True, null=True)
+    introduction = models.CharField("소개", max_length=50, blank=True, null=True, default="아직 소개글이 없습니다.")
     login_type = models.CharField(
         "로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal"
     )
     customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)  # 이메일 인증을 받을시 계정 활성화
+    is_active = models.BooleanField(default=False)  # 이메일 인증 && 핸드폰 인증 받으면 활성화
     is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
     product_wish_list = models.ManyToManyField(
         "products.Product", symmetrical=False, related_name="wish_lists", blank=True
@@ -76,9 +76,6 @@ class User(AbstractBaseUser, CommonModel):
         related_name="review_liking_people",
         blank=True,
     )
-    introduction = models.CharField("소개",max_length=50,blank=True,null=True,default="아직 소개글이 없습니다.")
-    # 필수 입력 사항은 아니지만, 계정별 고유해야 한다.
-    phone_number = models.CharField('휴대폰 번호', max_length=30, blank=True, null=True, unique=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname", "password"]
@@ -98,8 +95,31 @@ class User(AbstractBaseUser, CommonModel):
         return self.is_admin
 
 
+class PhoneVerification(CommonModel):
+    """
+    휴대폰 , 휴대폰 인증 모델
+    인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
+    """
+    user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE)
+    phone_number = models.CharField('휴대폰 번호', max_length=30, unique=True)
+    verification_numbers = models.CharField('인증 번호', max_length=4)
+    is_verified = models.BooleanField('인증 유무', default=False)
+
+
+class EmailVerification(CommonModel):
+    """
+    이메일 인증 모델
+    인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
+    """
+    user = models.OneToOneField("users.User", related_name="cell_phone", on_delete=models.CASCADE)
+    verification_code = models.CharField('인증 코드', max_length=4)
+    is_verified = models.BooleanField('인증 유무', default=False)
+
+
 class Seller(CommonModel):
-    """판매자 모델"""
+    """
+    판매자 모델
+    """
 
     user = models.OneToOneField(
         "users.User", related_name="user_seller", on_delete=models.CASCADE
@@ -215,24 +235,24 @@ class Point(CommonModel):
 class TransactionManager(models.Manager):
     # 새로운 트랜젝션 생성
     def create_new(self, user, amount, type, success=None, transaction_status=None):
-        
+
         if not user:
             raise ValueError("유저가 확인되지 않습니다.")
-        
-        #암호화 => 유니크한 주문번호 생성
+
+        # 암호화 => 유니크한 주문번호 생성
         short_hash = hashlib.sha1(str(random.random()).encode()).hexdigest()[:2]
         time_hash = hashlib.sha1(str(int(time.time())).encode()).hexdigest()[-3:]
         base = str(user.email).split("@")[0]
         key = hashlib.sha1((short_hash + base + time_hash).encode()).hexdigest()[:10]
-        new_order_id = str(key) # "%s" % (key)
+        new_order_id = str(key)  # "%s" % (key)
 
         # 아임포트 결제 사전 검증 단계
         validation_prepare(new_order_id, amount)
 
         new_trans = self.model(
-            user=user, 
-            order_id= new_order_id, 
-            amount=amount, 
+            user=user,
+            order_id=new_order_id,
+            amount=amount,
             type=type
         )
 
@@ -244,7 +264,7 @@ class TransactionManager(models.Manager):
             new_trans.save()
         except Exception as e:
             print("저장 오류", e)
-            
+
         return new_trans.order_id
 
     # 생성된 트랜잭션 검증
@@ -271,13 +291,13 @@ class Transaction(CommonModel):
     )
     transaction_id = models.CharField(max_length=120, null=True, blank=True)
     order_id = models.CharField(max_length=120, unique=True)
-    amount = models.PositiveIntegerField(default=0) 
+    amount = models.PositiveIntegerField(default=0)
     # 해외 payment 쓸거면 DecimalField으로 바꿔야함..!!
     # amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     transaction_status = models.CharField(max_length=220, null=True, blank=True)
     type = models.CharField(max_length=120)
-    
+
     objects = TransactionManager()
 
     def __str__(self):
@@ -302,6 +322,7 @@ def new_trans_validation(sender, instance, *args, **kwargs):
 
         if not import_trans or not local_trans:
             raise ValueError("비정상적인 거래입니다.")
+
 
 post_save.connect(new_trans_validation, sender=Transaction)
 
