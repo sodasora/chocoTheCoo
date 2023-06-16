@@ -31,7 +31,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
     def get_likes(self, obj):
         product_likes = User.objects.filter(product_wish_list=obj.id) # 조건(해당상품 찜 내역)에 맞는 쿼리셋
-        return sum(like.amount for like in product_likes)
+        return len(product_likes)
 
     # 평점(별점) Review table 에서 star 조회
     stars = serializers.SerializerMethodField()
