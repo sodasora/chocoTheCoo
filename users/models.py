@@ -211,6 +211,8 @@ class Point(CommonModel):
     point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
     point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
 
+    class Meta:
+        ordering = ["-created_at"]
 
 class TransactionManager(models.Manager):
     # 새로운 트랜젝션 생성
@@ -263,7 +265,7 @@ class TransactionManager(models.Manager):
         return super(TransactionManager, self).filter(user=user)[:num]
 
 
-class Transaction(CommonModel):
+class PayTransaction(CommonModel):
     """결제 정보가 담기는 모델"""
 
     user = models.ForeignKey(
@@ -290,20 +292,20 @@ class Transaction(CommonModel):
 def new_trans_validation(sender, instance, *args, **kwargs):
     # 거래 후 아임포트에서 넘긴 결과
     if instance.transaction_id:
-        import_trans = Transaction.objects.validation_trans(imp_id=instance.transaction_id)
+        import_trans = PayTransaction.objects.validation_trans(imp_id=instance.transaction_id)
         res_merchant_id = import_trans["merchant_id"]
         res_imp_id = import_trans["imp_id"]
         res_amount = import_trans["amount"]
 
         # 데이터베이스에 실제 결제된 정보가 있는지 체크
-        local_trans = Transaction.objects.filter(
+        local_trans = PayTransaction.objects.filter(
             order_id=res_merchant_id, transaction_id=res_imp_id, amount=res_amount
         ).exists()
 
         if not import_trans or not local_trans:
             raise ValueError("비정상적인 거래입니다.")
 
-post_save.connect(new_trans_validation, sender=Transaction)
+post_save.connect(new_trans_validation, sender=PayTransaction)
 
 
 class Subscribe(CommonModel):
