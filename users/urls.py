@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .social import KakaoLogin,GoogleLogin,NaverLogin
+from .social import KakaoLogin, GoogleLogin, NaverLogin
 from .views import (
     UserAPIView,
     GetEmailAuthCodeAPIView,
@@ -48,9 +48,13 @@ urlpatterns = [
         name="update-delivery",
     ),
     # 판매자 권한 신청 , 판매자 정보 수정 , 판매자 정보 삭제
-    path('seller/', SellerAPIView.as_view(), name='seller-view'),
+    path("seller/", SellerAPIView.as_view(), name="seller-view"),
     # 판매자 정보 조회 , 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)
-    path('seller/permissions/<int:user_id>/', SellerPermissionAPIView.as_view(), name='seller-view'),
+    path(
+        "seller/permissions/<int:user_id>/",
+        SellerPermissionAPIView.as_view(),
+        name="seller-view",
+    ),
     # 프로필 읽기, 회원정보 수정, 휴면 계정으로 전환
     path("profile/<int:user_id>/", UserProfileAPIView.as_view(), name="profile-view"),
     # SIMPLE JWT Token 발급
@@ -59,7 +63,9 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # 장바구니 조회
     path("carts/", CartView.as_view(), name="cart_view"),
-    # 장바구니 담기, 장바구니 수량 변경, 삭제
+    # 장바구니 삭제, 일괄삭제
+    path("carts/delete/", CartView.as_view(), name="cart_delete_view"),
+    # 장바구니 담기, 장바구니 수량 변경
     path(
         "carts/<int:cart_item_id>/", CartDetailView.as_view(), name="cart_detail_view"
     ),
@@ -91,9 +97,13 @@ urlpatterns = [
         name="order_create_view",
     ),
     # 전체 주문 목록 조회
-    path("orders/products/", OrderListView.as_view(), name='all_order_list_view'),
+    path("orders/products/", OrderListView.as_view(), name="all_order_list_view"),
     # 판매자별 주문 목록 조회
-    path("orders/products/seller/<int:user_id>/", OrderListView.as_view(), name='seller_order_list_view'),
+    path(
+        "orders/products/seller/<int:user_id>/",
+        OrderListView.as_view(),
+        name="seller_order_list_view",
+    ),
     # 상품별 주문 목록 조회
     path(
         "orders/products/<int:product_id>/",
@@ -107,7 +117,7 @@ urlpatterns = [
         "review/<int:review_id>/", ReviewListAPIView.as_view(), name="review-list-API"
     ),
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
-    path("wish/<int:product_id>/", WishListAPIView.as_view(), name='wish-list-API'),
+    path("wish/<int:product_id>/", WishListAPIView.as_view(), name="wish-list-API"),
     # 결제api
     path("payment/checkout/", PointCheckoutView.as_view(), name='point_checkout'),
     path("payment/validation/", PointImpAjaxView.as_view(), name='point_validation'),
@@ -117,9 +127,9 @@ urlpatterns = [
 
 urlpatterns += [
     # 카카오 로그인
-    path("kakao/login/",KakaoLogin.as_view(), name='kakao-login'),
+    path("kakao/login/", KakaoLogin.as_view(), name="kakao-login"),
     # 네이버 로그인
-    path("naver/login/",NaverLogin.as_view(), name='naver-login'),
+    path("naver/login/", NaverLogin.as_view(), name="naver-login"),
     # 구글 로그인
-    path("google/login/",GoogleLogin.as_view(), name='google-login'),
+    path("google/login/", GoogleLogin.as_view(), name="google-login"),
 ]
