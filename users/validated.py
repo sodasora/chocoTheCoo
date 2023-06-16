@@ -1,4 +1,4 @@
-import random, re, string,json
+import random, re, string, json
 import hashlib, hmac, base64, os, requests, time
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -14,47 +14,68 @@ URI = f'/sms/v2/services/{NAVER_SMS_PROJECT_ID}/messages'
 CALLING_NUMBER = os.environ.get('CALLING_NUMBER')
 
 
-def	make_signature(timestamp):
-    access_key = NAVER_SMS_ACCESS_KEY
-    secret_key = NAVER_SMS_SECRET_KEY
-    secret_key = bytes(secret_key, 'UTF-8')
-    method = "POST"
-    uri = URI
-    message = method + " " + uri + "\n" + timestamp + "\n" + access_key
-    message = bytes(message, 'UTF-8')
-    signingKey = base64.b64encode(hmac.new(secret_key, message, digestmod=hashlib.sha256).digest())
-    return signingKey
-
-
-# 네이버 SMS 인증
 class SmsSendView(APIView):
-    def send_sms(self, phone_number):
+    """
+    네이버 문자 발송 받기
+    """
+
+    @classmethod
+    def get_auth_numbers(cls):
+        """
+        4자리 숫자의 인증 번호 반환
+        """
+        return " ".join([str(random.randint(0, 9)) for _ in range(4)])
+
+    @classmethod
+    def make_signature(cls, timestamp):
+        """
+        네이버 클라우드 클랫폼 시그니쳐 생성
+        # https://api.ncloud-docs.com/docs/common-ncpapi
+        # HMAC 암호화 알고리즘은 HmacSHA256 사용
+        """
+        access_key = NAVER_SMS_ACCESS_KEY
+        secret_key = NAVER_SMS_SECRET_KEY
+        secret_key = bytes(secret_key, 'UTF-8')
+        method = "POST"
+        uri = URI
+        message = method + " " + uri + "\n" + timestamp + "\n" + access_key
+        message = bytes(message, 'UTF-8')
+        signing_key = base64.b64encode(hmac.new(secret_key, message, digestmod=hashlib.sha256).digest())
+        return signing_key
+
+    @classmethod
+    def send_sms(cls, phone_number, content):
+        """
+        메시지 발송
+        request
+         - phone_number : '-'를 제외한 숫자만 입력
+         - content : 80byte 를 넘지 않는 길이
+        """
         timestamp = str(int(time.time() * 1000))
         header = {
             "Content-Type": "application/json; charset=utf-8",
             "x-ncp-apigw-timestamp": timestamp,
             "x-ncp-iam-access-key": NAVER_SMS_ACCESS_KEY,
-            "x-ncp-apigw-signature-v2": make_signature(timestamp),
+            "x-ncp-apigw-signature-v2": cls.make_signature(timestamp),
         }
         body = {
             "type": "SMS",
             "contentType": "COMM",
             "countryCode": "82",
             "from": '01031571180',
-            "content": "내용",
+            "content": content,
             "messages": [
                 {
-                    "to": '01031571180',
+                    "to": phone_number,
                 }
             ]
         }
 
-        api_result = requests.post(
+        requests.post(
             SENDING_URI,
             headers=header,
             data=json.dumps(body)
         )
-        
 
 
 class EmailService:

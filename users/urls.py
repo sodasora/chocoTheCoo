@@ -22,7 +22,7 @@ from .views import (
     PointCheckoutView, 
     PointImpAjaxView, 
     PointBuyView, 
-    PointChargeView
+    PointChargeView,
 )
 from .orderviews import (
     CartView,

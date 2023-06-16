@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 from .models import (
     User,
     Seller,
-    Delivery,
     PointType,
     Point,
     StatusCategory,
@@ -16,19 +15,6 @@ from .models import (
     Bill,
     Subscribe
 )
-
-
-@admin.register(Seller)
-class SellerAdmin(admin.ModelAdmin):
-    list_display = [
-        "user",
-        "company_name",
-        "business_number",
-        "business_owner_name",
-        "contact_number",
-    ]
-    list_display_links = ["user", "company_name"]
-
 
 admin.site.register(PointType)
 admin.site.register(Point)
@@ -74,6 +60,7 @@ class UserAdmin(BaseUserAdmin):
     add_form = UserCreationForm
     list_display = ("email", "is_admin", "nickname")
     list_filter = ("is_admin", "is_active", "is_seller")
+    readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         (None, {"fields": ("email", "nickname")}),
         (
@@ -83,8 +70,9 @@ class UserAdmin(BaseUserAdmin):
                     "is_admin",
                     "is_active",
                     "is_seller",
-                    "profile_image",
                     "login_type",
+                    "created_at",
+                    "updated_at",
                 )
             },
         ),

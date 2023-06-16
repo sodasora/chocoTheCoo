@@ -219,7 +219,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['email'] = user.email
-        token['nickname'] = user.nickname
+        token['is_seller'] = user.is_seller
 
         return token
 
@@ -333,4 +333,4 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "nickname", "profile_image", "customs_code","introduction","login_type")
+        fields = ("id", "email", "nickname", "profile_image", "customs_code", "introduction", "login_type")
