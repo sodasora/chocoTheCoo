@@ -218,6 +218,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['email'] = user.email
+        token['is_seller'] = user.is_seller
+        try:
+            token['subscribe_data'] = user.subscribe_data.subscribe
+        except:
+            token['subscribe_data'] = False
 
         return token
 

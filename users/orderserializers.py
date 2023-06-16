@@ -1,4 +1,7 @@
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import (
+    ModelSerializer,
+    SerializerMethodField,
+)
 from users.models import CartItem, Bill, OrderItem, StatusCategory
 from products.models import Product
 
@@ -53,6 +56,16 @@ class CartDetailSerializer(ModelSerializer):
         model = CartItem
         fields = "__all__"
         read_only_fields = ("user", "product")
+
+
+class OrderCreateSerializer(ModelSerializer):
+    """
+    주문 목록 생성 시리얼라이저
+    """
+
+    class Meta:
+        model = OrderItem
+        fields = ("product_id", "amount", "price", "seller")
 
 
 class OrderItemSerializer(ModelSerializer):

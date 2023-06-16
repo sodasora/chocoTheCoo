@@ -50,3 +50,6 @@ class Review(CommonModel):
         (5, "⭐⭐⭐⭐⭐"),
     ]
     star = models.IntegerField("리뷰 별점", choices=STAR_CHOICES)
+    
+    class Meta:
+        ordering = ["-updated_at"]

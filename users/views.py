@@ -9,7 +9,7 @@ from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
-from .models import User, Delivery, Seller, Point, Subscribe, Transaction
+from .models import User, Delivery, Seller, Point, Subscribe, PayTransaction
 from products.models import Product, Review
 from .validated import EmailService
 from .cryption import AESAlgorithm
@@ -585,18 +585,18 @@ class PointStaticView(APIView):
 
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6)"""
+        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7)"""
         day_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 5])
-                .filter(date=date)
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[1,2,3,4,5])
+            .filter(date=date)
+            .aggregate(total=Sum("point"))
         )
         day_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[4, 6])
-                .filter(date=date)
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[6,7])
+            .filter(date=date)
+            .aggregate(total=Sum("point"))
         )
         plus_point = (
             day_plus_point["total"] if day_plus_point["total"] is not None else 0
@@ -607,15 +607,15 @@ class PointStaticView(APIView):
         day_total_point = plus_point - minus_point
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 5])
-                .filter(date__month=timezone.now().date().month)
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[1,2,3,4,5])
+            .filter(date__month=timezone.now().date().month)
+            .aggregate(total=Sum("point"))
         )
         month_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[4, 6])
-                .filter(date__month=timezone.now().date().month)
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[6,7])
+            .filter(date__month=timezone.now().date().month)
+            .aggregate(total=Sum("point"))
         )
         month_plus = (
             month_plus_point["total"] if month_plus_point["total"] is not None else 0
@@ -627,13 +627,13 @@ class PointStaticView(APIView):
 
         total_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 5])
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[1,2,3,4,5])
+            .aggregate(total=Sum("point"))
         )
         total_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[4, 6])
-                .aggregate(total=Sum("point"))
+            .filter(point_type__in=[6,7])
+            .aggregate(total=Sum("point"))
         )
         try:
             total_point = total_plus_point["total"] - total_minus_point["total"]
@@ -657,8 +657,6 @@ class PointStaticView(APIView):
 
 
 """포인트 종류: 출석(1)"""
-
-
 class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
@@ -674,68 +672,18 @@ class PointAttendanceView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
 
-
-"""포인트 종류: 텍스트리뷰(2)"""
-
-
-class PointReviewView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PointSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user, point_type_id=2, point=50)
-
-
-"""포인트 종류: 포토리뷰(3)"""
-
-
-class PointPhotoView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PointSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user, point_type_id=3, point=100)
-
-
-"""포인트 종류: 구매(4)"""
-
-
-class PointBuyView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PointSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user, point_type_id=4)
-
-
-"""포인트 종류: 충전(5)"""
-
-
-class PointChargeView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PointSerializer
-
-    def perform_create(self, serializer):
-        order_id = self.kwargs.get("order_id")
-        trans = get_object_or_404(Transaction, order_id=order_id)
-        point = trans.amount
-        serializer.save(user=self.request.user, point=point, point_type_id=5)
-
-
 """포인트 종류: 구독권이용료(6)"""
-
-
 class PointServiceView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
-
+    
+    @classmethod
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, point_type_id=6, point=9900)
+        serializer.save(user=self.request.user, point=9900, point_type_id=6)
+
 
 
 """포인트충전 결제후처리"""
-
-
 class PointCheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -745,7 +693,7 @@ class PointCheckoutView(APIView):
         type = request.data.get('type')
 
         try:
-            trans = Transaction.objects.create_new(
+            trans = PayTransaction.objects.create_new(
                 user=user,
                 amount=amount,
                 type=type
@@ -758,6 +706,7 @@ class PointCheckoutView(APIView):
                 "works": True,
                 "merchant_id": trans
             }
+        
             return JsonResponse(data)
         else:
             return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
@@ -773,7 +722,7 @@ class PointImpAjaxView(APIView):
         amount = request.data.get('amount')
 
         try:
-            trans = Transaction.objects.get(
+            trans = PayTransaction.objects.get(
                 user=user,
                 order_id=merchant_id,
                 amount=amount
@@ -782,22 +731,27 @@ class PointImpAjaxView(APIView):
             trans = None
 
         if trans is not None:
-            trans.transaction_id = imp_id
-            trans.success = True
-            trans.save()
-
-            data = {
-                "works": True
-            }
-
-            return JsonResponse(data)
+            try:
+                point_data = {"point" : trans.amount}
+                serializer = PointSerializer(data = point_data)
+                if serializer.is_valid():
+                    serializer.save(user=user, point_type_id=5)
+                    
+                trans.transaction_id = imp_id
+                trans.success = True
+                trans.save()
+                
+                data = {
+                    "works": True
+                }
+                return JsonResponse(data)
+            except:
+                return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 """구독"""
-
-
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -809,13 +763,17 @@ class SubscribeView(APIView):
 
     # 구독 최초 생성
     def post(self, request):
+        data = {"point":9900}
+        point_serializer = PointSerializer(data = data)
         serializer = SubscriptionSerializer(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid() and point_serializer.is_valid():
             newmonth = int(timezone.now().date().month) + 1
-            serializer.save(user=request.user,
-                            next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(
-                                timezone.now().date().day))
-            return Response({"message": "성공!"}, status=status.HTTP_200_OK)
+            try:
+                point_serializer.save(user=request.user, point_type_id=6)
+                serializer.save(user=request.user, next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(timezone.now().date().day))
+                return Response({"message": "성공!"}, status=status.HTTP_200_OK)
+            except:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
