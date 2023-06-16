@@ -6,6 +6,7 @@ django.setup()
 
 from .models import Point, Subscribe
 from .views import PointServiceView
+from .serializers import PointSerializer
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import F, Sum
@@ -40,7 +41,7 @@ def subscribe_check():
             
             # 구독료 9900원
             if total_point >= 9900:
-                PointServiceView.perform_create()
+                PointServiceView.perform_create(PointSerializer)
                 
                 subscribe_user.subscribe = True
                 subscribe_user.next_payment = F('next_payment')+datetime.timedelta(weeks = 4)

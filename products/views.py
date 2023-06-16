@@ -64,8 +64,8 @@ class ReviewView(generics.ListCreateAPIView):
         return queryset
 
 
-class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """리뷰 상세 조회, 수정, 삭제"""
+class ReviewDetailView(generics.RetrieveUpdateAPIView):
+    """리뷰 상세 조회, 수정"""
 
     serializer_class = ReviewDetailSerializer
 

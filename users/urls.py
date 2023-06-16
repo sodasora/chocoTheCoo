@@ -16,13 +16,8 @@ from .views import (
     ReviewListAPIView,
     WishListAPIView,
     PointAttendanceView,
-    PointReviewView,
-    PointPhotoView,
-    PointServiceView,
-    PointCheckoutView,
-    PointImpAjaxView,
-    PointBuyView,
-    PointChargeView,
+    PointCheckoutView, 
+    PointImpAjaxView, 
 )
 from .orderviews import (
     CartView,
@@ -83,12 +78,10 @@ urlpatterns = [
     path("points/<str:date>/", PointView.as_view(), name="point_date_view"),
     # 출석용 포인트
     path("attendance/", PointAttendanceView.as_view(), name="point_attendance_view"),
-    # 텍스트리뷰용
-    path("text/", PointReviewView.as_view(), name="point_review_view"),
-    # 포토리뷰용
-    path("photo/", PointPhotoView.as_view(), name="point_photo_view"),
-    # 구독권이용료
-    path("service/", PointServiceView.as_view(), name="point_service_view"),
+    # # 텍스트리뷰용
+    # path("text/", PointReviewView.as_view(), name="point_review_view"),
+    # # 포토리뷰용
+    # path("photo/", PointPhotoView.as_view(), name="point_photo_view"),
     # 구독
     path("subscribe/", SubscribeView.as_view(), name="subscribe_view"),
     # 주문 상태 생성
@@ -126,16 +119,10 @@ urlpatterns = [
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
     path("wish/<int:product_id>/", WishListAPIView.as_view(), name="wish-list-API"),
     # 결제api
-    path("payment/checkout/", PointCheckoutView.as_view(), name="point_checkout"),
-    path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
-    # 포인트 충전
-    path(
-        "points/charge/<str:order_id>/",
-        PointChargeView.as_view(),
-        name="point_charge_view",
-    ),
-    # 상품 구매용 포인트 차감
-    path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
+    path("payment/checkout/", PointCheckoutView.as_view(), name='point_checkout'),
+    path("payment/validation/", PointImpAjaxView.as_view(), name='point_validation'),
+    # # 상품 구매용 포인트 차감
+    # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
 ]
 
 urlpatterns += [
