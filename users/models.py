@@ -65,7 +65,7 @@ class User(AbstractBaseUser, CommonModel):
     customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)  # 이메일 인증 && 핸드폰 인증 받으면 활성화
+    is_active = models.BooleanField(default=False)
     is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
     product_wish_list = models.ManyToManyField(
         "products.Product", symmetrical=False, related_name="wish_lists", blank=True
@@ -111,8 +111,8 @@ class EmailVerification(CommonModel):
     이메일 인증 모델
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
-    user = models.OneToOneField("users.User", related_name="cell_phone", on_delete=models.CASCADE)
-    verification_code = models.CharField('인증 코드', max_length=4)
+    user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE)
+    verification_code = models.CharField('인증 코드', max_length=4,blank=True,null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
 
 
@@ -326,7 +326,7 @@ def new_trans_validation(sender, instance, *args, **kwargs):
             raise ValueError("비정상적인 거래입니다.")
 
 
-post_save.connect(new_trans_validation, sender=Transaction)
+post_save.connect(new_trans_validation, sender=PayTransaction)
 
 
 class Subscribe(CommonModel):

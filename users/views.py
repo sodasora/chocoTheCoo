@@ -7,12 +7,22 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.utils import IntegrityError
 from django.db.models import Sum
+from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
-from .models import User, Delivery, Seller, Point, Subscribe, PayTransaction
 from products.models import Product, Review
+from .validated import ValidatedData
 from .validated import EmailService
 from .cryption import AESAlgorithm
+from .models import (
+    User,
+    Delivery,
+    Seller,
+    Point,
+    Subscribe,
+    PayTransaction,
+    EmailVerification,
+                     )
 from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer,
@@ -25,8 +35,9 @@ from .serializers import (
     GetReviewUserListInfo,
     UserDetailSerializer,
     SubscriptionInfoSerializer,
+    EmailVerificationSerializer,
 )
-from django.http import JsonResponse
+
 
 
 class GetEmailAuthCodeAPIView(APIView):
@@ -42,15 +53,22 @@ class GetEmailAuthCodeAPIView(APIView):
         if user.login_type != 'normal':
             return Response({"err": "소셜 로그인 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
 
-        auth_code = EmailService.get_authentication_code()
-        user.auth_code = auth_code
-        user.save()
+        verification_code = EmailService.get_authentication_code()
+
+        try:
+            # 원투원 필드가 존재하면 인증 코드만 수정
+            email_verification = user.email_verification
+            email_verification.verification_code = verification_code
+        except EmailVerification.DoesNotExist:
+            # 원투원 필드가 존재하지 않으면 원투원 필드 생성
+            email_verification = EmailVerification(user=user, verification_code=verification_code)
+        email_verification.save()
 
         information = {
             "email": user.email,
             "context": {
                 'subject_message': "Choco The Coo has sent you a verification code",
-                'content_message': user.auth_code,
+                'content_message': verification_code,
             }
         }
         EmailService.message_forwarding(**information)
@@ -74,20 +92,16 @@ class UserAPIView(APIView):
             user = get_object_or_404(User, email=request.user.email)
         except AttributeError:
             return Response({"err": "로그인이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        # 일반 시리얼라이저(복호화 과정 포함)
-        # 사용자 정보 딕셔너리에 추가
+        # 사용자 정보
         serializer = UserDetailSerializer(user)
-        # data = User.objects.filter(user=user)
         decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
         new_dict = decrypt_result
-
 
         # 사용자의 배송정보 딕셔너리에 추가
         serializer = DeliverySerializer(user.deliveries_data, many=True)
         decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
         new_dict['delivery'] = decrypt_result
 
-        # 생략 가능(시리얼 라이저 메소드 필드 사용)
         try:
             # 사용자의 판매자 정보 딕셔너리에 추가
             serializer = SellerSerializer(user.user_seller)
@@ -119,18 +133,14 @@ class UserAPIView(APIView):
         회원 가입시 이메일 인증
         """
         user = get_object_or_404(User, email=request.data["email"])
-        if user.auth_code is None:
-            return Response(
-                {"mrr": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
-            )
-        elif not user.auth_code == request.data["auth_code"]:
-            return Response(
-                {"err": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        validate_result = ValidatedData.validated_email_verification_code(user,request.data.get('verification_code'))
+        if validate_result is not True:
+            return Response({"err": "유효성 검사 실패"}, status=validate_result)
         else:
             user.is_active = True
-            user.auth_code = None
+            user.email_verification.verification_code = None
             user.save()
+            user.email_verification.save()
             return Response({"msg": "인증 되었습니다."}, status=status.HTTP_200_OK)
 
     def patch(self, request):
@@ -139,28 +149,21 @@ class UserAPIView(APIView):
         """
 
         user = get_object_or_404(User, email=request.data["email"])
-        if user.login_type != "일반":
-            return Response(
-                {"err": user.login_type}, status=status.HTTP_403_FORBIDDEN
-            )
-        elif user.auth_code == "":
-            return Response(
-                {"msg": "먼저 인증코드를 발급받아주세요."}, status=status.HTTP_406_NOT_ACCEPTABLE
-            )
-        elif not user.auth_code == request.data["auth_code"]:
-            return Response(
-                {"err": "인증 코드가 올바르지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED
-            )
-        serializer = UserSerializer(user, data=request.data, partial=True, context="update")
-        if serializer.is_valid():
-            serializer.save()
-            user.auth_code = None
-            user.is_active = True
-            user.login_attempts_count = 0
-            user.save()
-            return Response({"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK)
+        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
+        if validate_result is not True:
+            return Response({"err": "유효성 검사 실패"}, status=validate_result)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer = UserSerializer(user, data=request.data, partial=True, context="update")
+            if serializer.is_valid():
+                serializer.save()
+                user.is_active = True
+                user.email_verification.verification_code = None
+                user.login_attempts_count = 0
+                user.save()
+                user.email_verification.save()
+                return Response({"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfileAPIView(APIView):

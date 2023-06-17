@@ -3,6 +3,10 @@ import hashlib, hmac, base64, os, requests, time
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from rest_framework.views import APIView
+from rest_framework import status
+from .models import EmailVerification
+from django.utils import timezone
+from datetime import timedelta
 
 NAVER_SMS_ACCESS_KEY = os.environ.get('NAVER_SMS_ACCESS_KEY')
 NAVER_SMS_SECRET_KEY = os.environ.get('NAVER_SMS_SECRET_KEY')
@@ -235,3 +239,33 @@ class ValidatedData:
             if not i(postal_code):
                 return False
         return True
+
+    @classmethod
+    def validated_email_verification_code(cls, user,request_verification_code):
+        """
+        이메일 인증 코드 유효성 검사
+        """
+
+        if user.login_type != "normal":
+            # 소셜 로그인일 경우 이메일 인증이 필요 없음을 알림
+            return status.HTTP_403_FORBIDDEN
+        try:
+            # 사용자에게 등록된 이메일 인증번호 불러오기
+            verification_code = user.email_verification.verification_code
+        except EmailVerification.DoesNotExist:
+            # 원투원 필드가 없을 경우 예외처리
+            return status.HTTP_406_NOT_ACCEPTABLE
+
+        if verification_code is None:
+            # 인증 코드를 발급받지 않았을 경우 예외 처리
+            return status.HTTP_406_NOT_ACCEPTABLE
+        elif not (timezone.now() - user.email_verification.updated_at) <= timedelta(minutes=5):
+            user.email_verification.verification_code = None
+            user.email_verification.save()
+            # 인증 유효 기간이 지났을 경우 예외 처리
+            return status.HTTP_408_REQUEST_TIMEOUT
+        elif not verification_code == request_verification_code:
+            # 사용자가 입력한 이메일 인증번호와, 등록된 이메일 인증번호가 일치하지 않을 경우 예외처리
+            return status.HTTP_409_CONFLICT
+        else:
+            return True
