@@ -100,7 +100,6 @@ class User(AbstractBaseUser, CommonModel):
 
 class Seller(CommonModel):
     """판매자 모델"""
-
     user = models.OneToOneField(
         "users.User", related_name="user_seller", on_delete=models.CASCADE
     )

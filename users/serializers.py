@@ -123,7 +123,7 @@ class SellerSerializer(serializers.ModelSerializer):
         seller_orders2 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(created_at__gte=start_of_month, created_at__lte=end_of_month) # 조건(구매확정:5,이번달)에 맞는 쿼리셋
         last_month_profits = sum(order.amount*order.price for order in seller_orders1)
         month_profits = sum(order.amount*order.price for order in seller_orders2)
-        return (month_profits-last_month_profits)/last_month_profits if last_month_profits else None
+        return f'({(month_profits-last_month_profits)/last_month_profits*100}%)' if last_month_profits else None
 
     # 이번달 수익
     month_profits = serializers.SerializerMethodField()
@@ -251,7 +251,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count','introduction')
+        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count','introduction', 'is_seller')
 
 
 class BriefUserInformation(serializers.ModelSerializer):
