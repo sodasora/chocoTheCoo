@@ -21,17 +21,17 @@ class CategoryListSerializer(serializers.ModelSerializer):
 # 상품
 class ProductListSerializer(serializers.ModelSerializer):
     
-    # 누적판매량 OrderItem table에서 amount 조회 + filter(order_status = 5 ) 5: 구매확정 
+    # 누적판매량 OrderItem table에서 amount 조회 + filter(order_status = 6 ) 6: 구매확정 
     sales = serializers.SerializerMethodField()
     def get_sales(self, obj):
-        product_sales = OrderItem.objects.filter(product_id=obj.id).filter(order_status=5) # 조건(구매확정)에 맞는 쿼리셋
+        product_sales = OrderItem.objects.filter(product_id=obj.id).filter(order_status=6) # 조건(구매확정)에 맞는 쿼리셋
         return sum(sale.amount for sale in product_sales)
     
     # 상품 찜(likes) 갯수 User table 에서 wish 조회
     likes = serializers.SerializerMethodField()
     def get_likes(self, obj):
         product_likes = User.objects.filter(product_wish_list=obj.id) # 조건(해당상품 찜 내역)에 맞는 쿼리셋
-        return len(product_likes)
+        return len(product_likes) if product_likes else 0
 
     # 평점(별점) Review table 에서 star 조회
     stars = serializers.SerializerMethodField()

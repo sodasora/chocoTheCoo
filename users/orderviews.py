@@ -7,7 +7,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
 )
 from rest_framework.views import APIView
-from .models import CartItem, OrderItem, Bill, Delivery, StatusCategory
+from .models import CartItem, OrderItem, Bill, Delivery, StatusCategory, Seller
 from .orderserializers import (
     CartListSerializer,
     CartSerializer,
@@ -107,7 +107,8 @@ class OrderListView(ListAPIView):
         if product_id:
             queryset = OrderItem.objects.filter(product_id=product_id)
         elif user_id:
-            queryset = OrderItem.objects.filter(seller=user_id)
+            seller = Seller.objects.get(user=user_id)
+            queryset = OrderItem.objects.filter(seller=seller.id)
         else:
             queryset = OrderItem.objects.all()
         return queryset
