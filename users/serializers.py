@@ -133,22 +133,18 @@ class SellerSerializer(serializers.ModelSerializer):
 
     # 지난달 대비 수익상승률
     month_growth_rate = serializers.SerializerMethodField()
-
     def get_month_growth_rate(self, obj):
-        current_date = datetime.now()  # 현재시간
-        start_of_last_month = current_date.replace(month=current_date.month - 1, day=1, hour=0, minute=0, second=0,
-                                                   microsecond=0)  # 지난달 시작일
-        end_of_last_month = start_of_last_month.replace(month=start_of_last_month.month + 1, day=1) - timedelta(
-            days=1)  # 지난달 종료일
-        seller_orders1 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(
-            created_at__gte=start_of_last_month, created_at__lte=end_of_last_month)  # 조건(구매확정:5,지난달)에 맞는 쿼리셋
-        start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)  # 당월 시작일
-        end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1)  # 당월 종료일
-        seller_orders2 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(
-            created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:5,이번달)에 맞는 쿼리셋
-        last_month_profits = sum(order.amount * order.price for order in seller_orders1)
-        month_profits = sum(order.amount * order.price for order in seller_orders2)
-        return (month_profits - last_month_profits) / last_month_profits if last_month_profits else None
+        current_date = datetime.now() # 현재시간
+        start_of_last_month = current_date.replace(month=current_date.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)# 지난달 시작일
+        end_of_last_month = start_of_last_month.replace(month=start_of_last_month.month + 1, day=1) - timedelta(days=1) # 지난달 종료일
+        seller_orders1 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(created_at__gte=start_of_last_month, created_at__lte=end_of_last_month) # 조건(구매확정:5,지난달)에 맞는 쿼리셋
+        start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0) # 당월 시작일
+        end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1) # 당월 종료일
+        seller_orders2 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(created_at__gte=start_of_month, created_at__lte=end_of_month) # 조건(구매확정:5,이번달)에 맞는 쿼리셋
+        last_month_profits = sum(order.amount*order.price for order in seller_orders1)
+        month_profits = sum(order.amount*order.price for order in seller_orders2)
+        return f'({(month_profits-last_month_profits)/last_month_profits*100}%)' if last_month_profits else None
+
 
     # 이번달 수익
     month_profits = serializers.SerializerMethodField()
@@ -316,6 +312,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+
         fields = (
         "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction')
 

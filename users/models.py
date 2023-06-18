@@ -224,8 +224,12 @@ class Point(CommonModel):
     point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
     point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.user.nickname + self.point_type.title + str(self.point)
+    
     class Meta:
         ordering = ["-created_at"]
+
 
 class TransactionManager(models.Manager):
     # 새로운 트랜젝션 생성
@@ -330,3 +334,6 @@ class Subscribe(CommonModel):
     )
     subscribe = models.BooleanField("구독여부", default=True, null=False)
     next_payment = models.DateField("다음결제일")
+
+    def __str__(self):
+        return str(self.user.nickname) + str(self.subscribe) + str(self.next_payment)

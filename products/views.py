@@ -12,6 +12,8 @@ from .serializers import (
 )
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
+from users.models import Seller
+from rest_framework.permissions import IsAuthenticated
 
 
 class CategoryListAPIView(generics.ListCreateAPIView):
@@ -34,11 +36,13 @@ class ProductListAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProductListSerializer
 
+
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
         # url에서 user_id 존재하면 필터링, 없으면 전체
         if user_id:
-            queryset = Product.objects.filter(seller=user_id)
+            seller = Seller.objects.get(user=user_id)
+            queryset = Product.objects.filter(seller=seller.id)
         else:
             queryset = Product.objects.all()
         return queryset
