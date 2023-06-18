@@ -335,6 +335,8 @@ class ValidatedData:
         """
         회원 정보 수정 접근 유효성 검사
         """
+        
+        
         if request.user != user:
             # 로그인을 하지 않았거나 올바르지 않은 경로로 접근
             return status.HTTP_401_UNAUTHORIZED
@@ -357,11 +359,21 @@ class ValidatedData:
         배송 정보 작성 유효성 검사
         """
         deliveries_cnt = Delivery.objects.filter(user=user).count()
-        if request.user != user:
-            return status.HTTP_401_UNAUTHORIZED
-        elif deliveries_cnt > 4:
-            return status.HTTP_400_BAD_REQUEST
-        elif request.data.get("postal_code") is not None:
-            return status.HTTP_422_UNPROCESSABLE_ENTITY
-        else:
-            return True
+        try:
+            if request.user != user:
+                # 로그인이 필요하거나 올바르지 않은 접근 방법
+                return status.HTTP_401_UNAUTHORIZED
+            elif user.phone_verification.is_verified is False:
+                # 핸드폰 인증을 받지 않았을 경우
+                return status.HTTP_402_PAYMENT_REQUIRED
+            elif deliveries_cnt > 4:
+                # 배송 정보를 다섯개 이상 등록 했을 경우
+                return status.HTTP_400_BAD_REQUEST
+            elif request.data.get("postal_code") is None:
+                # 우편 번호를 작성하지 않았을 경우
+                return status.HTTP_422_UNPROCESSABLE_ENTITY
+            else:
+                return True
+        except PhoneVerification.DoesNotExist:
+            # 핸드폰 번호를 등록하지 않았을 경우
+            return status.HTTP_402_PAYMENT_REQUIRED

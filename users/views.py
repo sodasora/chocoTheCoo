@@ -75,7 +75,7 @@ class PhoneVerificationAPIView(APIView):
     put : 인증 번호를 통한 핸드폰 인증
     """
 
-    def post(self, request):
+    def put(self, request):
         """
         휴대폰 정보 등록 및 수정
         인증 코드 발급 받기
@@ -101,7 +101,6 @@ class PhoneVerificationAPIView(APIView):
             serializer = PhoneVerificationSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user)
-                user.phone_verification.delete()
             else:
                 return Response(
                     {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -111,7 +110,7 @@ class PhoneVerificationAPIView(APIView):
             {"msg": "휴대폰 번호 등록 및 인증 코드 발급 완료"}, status=status.HTTP_200_OK
         )
 
-    def put(self, request):
+    def patch(self, request):
         """
         휴대폰 인증
         """

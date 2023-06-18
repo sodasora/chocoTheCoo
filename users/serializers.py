@@ -5,7 +5,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.generics import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.utils import timezone
-from django.http import JsonResponse
 from products.models import Product
 from django.db.models import Sum
 from datetime import datetime, timedelta
@@ -479,6 +478,7 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
         phone_verification.phone_number = AESAlgorithm.encrypt(numbers)
         phone_verification.verification_numbers = SmsSendView.get_auth_numbers()
         phone_verification.is_verified = False
+        # SmsSendView.send_sms(validated_data.get('phone_number'),phone_verification.verification_numbers)
         phone_verification.save()
 
     def create(self, validated_data):
