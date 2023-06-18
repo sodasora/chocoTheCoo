@@ -1,11 +1,20 @@
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
-from users.models import User, Delivery, Seller, Point, Subscribe, OrderItem
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .validated import ValidatedData
-from .cryption import AESAlgorithm
 from products.models import Product
 from datetime import datetime, timedelta
+from django.db.models import Sum
+from .validated import ValidatedData,SmsSendView
+from .cryption import AESAlgorithm
+from users.models import (
+    User,
+    Delivery,
+    Seller,
+    Point,
+    Subscribe,
+    OrderItem,
+    PhoneVerification,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -104,6 +113,13 @@ class DeliverySerializer(serializers.ModelSerializer):
         deliveries.save()
         return deliveries
 
+    def to_representation(self, instance):
+        """
+        배송지 모델  데이터 복호화
+        """
+        informations = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**informations)
+        return decrypt_result
 
 class SellerSerializer(serializers.ModelSerializer):
     """
@@ -224,6 +240,13 @@ class SellerSerializer(serializers.ModelSerializer):
         seller_information.save()
         return seller_information
 
+    def to_representation(self, instance):
+        """
+        판매자 모델 데이터 복호화
+        """
+        informations = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**informations)
+        return decrypt_result
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
@@ -265,9 +288,32 @@ class ReadUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = (
-        "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction')
+        fields = ("profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction')
 
+    def to_representation(self, instance):
+        """
+        프로필 정보에 포인트 합산 데이터 추가
+        """
+        informations = super().to_representation(instance)
+        total_plus_point = (
+            Point.objects.filter(user_id=informations.get('id'))
+                .filter(point_type_id__in=[1, 2, 3, 4, 5])
+                .aggregate(total=Sum("point"))
+        )
+        total_minus_point = (
+            Point.objects.filter(user_id=informations.get('id'))
+                .filter(point_type_id=6)
+                .aggregate(total=Sum("point"))
+        )
+        try:
+            total_point = total_plus_point["total"] - total_minus_point["total"]
+        except TypeError:
+            total_point = (
+                total_plus_point["total"]
+                if total_plus_point["total"] is not None else 0
+            )
+        informations["total_point"] = total_point
+        return informations
 
 class BriefUserInformation(serializers.ModelSerializer):
     """
@@ -345,21 +391,87 @@ class SubscriptionInfoSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'next_payment')
 
 
+class SellerInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Seller
+        exclude = ('created_at','updated_at')
+
+    def to_representation(self, instance):
+        """
+        판매자 모델  데이터 복호화
+        """
+        informations = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**informations)
+        return decrypt_result
+
 class UserDetailSerializer(serializers.ModelSerializer):
+    user_seller = SellerInformationSerializer()
+    deliveries_data = DeliverySerializer(many=True)
     """
     사용자 디테일 정보
     """
 
     class Meta:
         model = User
-        fields = ("id", "email", "nickname", "profile_image", "customs_code", "introduction", "login_type")
+        fields = ("id", "email", "nickname", "profile_image", "customs_code", "introduction", "login_type",'user_seller','deliveries_data')
+
+    def to_representation(self, instance):
+        """
+        User Model 데이터 복호화
+        """
+        informations = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**informations)
+        return decrypt_result
 
 
-class EmailVerificationSerializer(serializers.ModelSerializer):
+class PhoneVerificationSerializer(serializers.ModelSerializer):
     """
-    이메일 인증 정보
+    휴대폰 인증 정보
     """
 
     class Meta:
-        model = User
-        fields = "__all__"
+        model = PhoneVerification
+        exclude = ('user',)
+
+    def validate(self, element):
+        """
+         휴대폰 번호 유효성 검사
+         """
+        numbers = element['phone_number']
+        if not ValidatedData.validated_phone_number(numbers):
+            raise ValidationError("핸드폰 번호가 올바르지 않습니다.")
+        return element
+
+    def set_cell_phone_information(self,phone_verification,validated_data):
+        """
+        휴대폰 정보 암호화
+        사용자에게 인증 문자 메시지 발송
+        """
+
+        numbers = validated_data.get('phone_number')
+        phone_verification.phone_number = AESAlgorithm.encrypt(numbers)
+        phone_verification.verification_numbers = SmsSendView.get_auth_numbers()
+        phone_verification.is_verified = False
+        phone_verification.save()
+        print(phone_verification.verification_numbers)
+        # SmsSendView.send_sms(numbers, phone_verification.verification_numbers)
+
+    def create(self, validated_data):
+        """"
+        휴대폰 인증 원투원 필드 생성
+        휴대폰 번호 암호화
+        """
+
+        phone_verification = super().create(validated_data)
+        self.set_cell_phone_information(phone_verification, validated_data)
+        return phone_verification
+
+    def update(self, instance, validated_data):
+        """
+        휴대폰 인증 원투원 필드 업데이트
+        휴대폰 번호 복호화
+        """
+
+        phone_verification = super().update(instance, validated_data)
+        self.set_cell_phone_information(phone_verification, validated_data)
+        return phone_verification

@@ -102,7 +102,7 @@ class PhoneVerification(CommonModel):
     """
     user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE)
     phone_number = models.CharField('휴대폰 번호', max_length=30, unique=True)
-    verification_numbers = models.CharField('인증 번호', max_length=4)
+    verification_numbers = models.CharField('인증 번호', max_length=4, blank=True, null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
 
 
@@ -113,7 +113,6 @@ class EmailVerification(CommonModel):
     """
     user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE)
     verification_code = models.CharField('인증 코드', max_length=4,blank=True,null=True)
-    is_verified = models.BooleanField('인증 유무', default=False)
 
 
 class Seller(CommonModel):

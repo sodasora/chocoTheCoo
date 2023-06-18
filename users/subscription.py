@@ -71,20 +71,6 @@ class UserControlSystem:
     3. 비 활성화 기간 30일이 지난 계정 삭제
     """
 
-    @classmethod
-    def set_information(cls, email, message):
-        """
-        사용자에게 안내 메시지 이메일을 통해 전송
-        """
-        information = {
-            "email": email,
-            "context": {
-                'subject_message': "Choco The Cood에서 안내 메시지를 보냈습니다.",
-                'content_message': message,
-            }
-        }
-        EmailService.message_forwarding(**information)
-        return information
 
     @classmethod
     def delete_user_data(cls):
@@ -96,8 +82,9 @@ class UserControlSystem:
         for user in objects:
             created_at = (now - user.created_at).days
             if 2 <= created_at:
-                message = f'{user.email}님께서 가입하고서 {created_at}일 만큼 계정인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
-                cls.set_information(user.email, message)
+                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+                content_message = f'{user.email}님께서 가입하고서 {created_at}일 만큼 계정인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
+                EmailService.message_forwarding(user.email, subject_message, content_message)
                 user.delete()
 
     @classmethod
@@ -110,8 +97,9 @@ class UserControlSystem:
         for user in objects:
             last_login = (now - user.last_login).days
             if 30 <= last_login:
-                message = f'{user.email}님, {last_login}일 만큼 로그인 이력이 없어 계정을 비 활성화 했습니다.'
-                cls.set_information(user.email, message)
+                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+                content_message = f'{user.email}님, {last_login}일 만큼 로그인 이력이 없어 계정을 비 활성화 했습니다.'
+                EmailService.message_forwarding(user.email, subject_message, content_message)
                 user.delete()
 
     @classmethod
@@ -125,8 +113,9 @@ class UserControlSystem:
         for user in objects:
             day = (now - user.updated_at).days
             if 30 <= day:
-                message = f'{user.email}님, 휴면 계정으로 전환된지 {day}일 만큼 지나 계정을 삭제 했습니다.'
-                cls.set_information(user.email, message)
+                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+                content_message = f'{user.email}님, 휴면 계정으로 전환된지 {day}일 만큼 지나 계정을 삭제 했습니다.'
+                EmailService.message_forwarding(user.email, subject_message, content_message)
                 user.delete()
 
 

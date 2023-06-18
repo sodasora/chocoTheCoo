@@ -11,8 +11,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from products.models import Product, Review
-from .validated import ValidatedData
-from .validated import EmailService
+from .validated import ValidatedData, EmailService
 from .cryption import AESAlgorithm
 from .models import (
     User,
@@ -22,7 +21,8 @@ from .models import (
     Subscribe,
     PayTransaction,
     EmailVerification,
-                     )
+    PhoneVerification,
+)
 from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer,
@@ -35,9 +35,8 @@ from .serializers import (
     GetReviewUserListInfo,
     UserDetailSerializer,
     SubscriptionInfoSerializer,
-    EmailVerificationSerializer,
+    PhoneVerificationSerializer,
 )
-
 
 
 class GetEmailAuthCodeAPIView(APIView):
@@ -49,7 +48,7 @@ class GetEmailAuthCodeAPIView(APIView):
         """
         인증 코드 이메일 발송 및 DB 저장
         """
-        user = get_object_or_404(User, email=request.data["email"])
+        user = get_object_or_404(User, email=request.data.get("email"))
         if user.login_type != 'normal':
             return Response({"err": "소셜 로그인 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -64,16 +63,73 @@ class GetEmailAuthCodeAPIView(APIView):
             email_verification = EmailVerification(user=user, verification_code=verification_code)
         email_verification.save()
 
-        information = {
-            "email": user.email,
-            "context": {
-                'subject_message': "Choco The Coo has sent you a verification code",
-                'content_message': verification_code,
-            }
-        }
-        EmailService.message_forwarding(**information)
+        subject_message = 'Choco The Coo has sent a verification email'
+        content_message = verification_code
+        EmailService.message_forwarding(user.email, subject_message, content_message)
 
         return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
+
+
+class PhoneVerificationAPIView(APIView):
+    """
+    post : 핸드폰 번호 등록 및 인증 번호 발송
+    put : 인증 번호를 통한 핸드폰 인증
+    """
+
+    def post(self, request):
+        """
+        휴대폰 정보 등록 및 수정
+        인증 코드 발급 받기
+        requset
+         - access Token
+         - phone_number
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        try:
+            # 원투원 필드가 있다면 수정
+            serializer = PhoneVerificationSerializer(
+                user.phone_verification, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response(
+                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                )
+        except PhoneVerification.DoesNotExist:
+            # 원투원 필드가 없다면 생성
+            serializer = PhoneVerificationSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=user)
+                user.phone_verification.delete()
+            else:
+                return Response(
+                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                )
+
+        return Response(
+            {"msg": "휴대폰 번호 등록 및 인증 코드 발급 완료"}, status=status.HTTP_200_OK
+        )
+
+    def put(self, request):
+        """
+        휴대폰 인증
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        validated_result = ValidatedData.validated_phone_verification(user, request.data.get('verification_numbers'))
+        if validated_result is not True:
+            return Response(
+                {"err": "인증 번호 유효성 검사에 실패했습니다."}, validated_result
+            )
+        else:
+            user.phone_verification.verification_numbers = None
+            user.phone_verification.is_verified = True
+            user.phone_verification.save()
+            return Response(
+                {"msg": "휴대폰 인증에 성공 했습니다."}, status=status.HTTP_200_OK
+            )
 
 
 class UserAPIView(APIView):
@@ -88,30 +144,9 @@ class UserAPIView(APIView):
         """
         사용자 디테일 정보 불러오기  (복호화가 필요한 데이터 포함)
         """
-        try:
-            user = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        # 사용자 정보
+        user = get_object_or_404(User, pk=request.user.pk)
         serializer = UserDetailSerializer(user)
-        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-        new_dict = decrypt_result
-
-        # 사용자의 배송정보 딕셔너리에 추가
-        serializer = DeliverySerializer(user.deliveries_data, many=True)
-        decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
-        new_dict['delivery'] = decrypt_result
-
-        try:
-            # 사용자의 판매자 정보 딕셔너리에 추가
-            serializer = SellerSerializer(user.user_seller)
-            decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-            new_dict['seller'] = decrypt_result
-        except Seller.DoesNotExist:
-            # 판매자 정보 없으면 넘어감
-            pass
-
-        return JsonResponse(new_dict, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
         """
@@ -133,8 +168,9 @@ class UserAPIView(APIView):
         회원 가입시 이메일 인증
         """
         user = get_object_or_404(User, email=request.data["email"])
-        validate_result = ValidatedData.validated_email_verification_code(user,request.data.get('verification_code'))
+        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
         if validate_result is not True:
+            # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response({"err": "유효성 검사 실패"}, status=validate_result)
         else:
             user.is_active = True
@@ -148,9 +184,10 @@ class UserAPIView(APIView):
         비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
         """
 
-        user = get_object_or_404(User, email=request.data["email"])
+        user = get_object_or_404(User, email=request.data.get("email"))
         validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
         if validate_result is not True:
+            # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response({"err": "유효성 검사 실패"}, status=validate_result)
         else:
             serializer = UserSerializer(user, data=request.data, partial=True, context="update")
@@ -177,52 +214,22 @@ class UserProfileAPIView(APIView):
         """
         마이페이지 정보 읽어오기
         """
+
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        total_plus_point = (
-            Point.objects.filter(user_id=user.id)
-                .filter(point_type_id__in=[1, 2, 3, 4, 5])
-                .aggregate(total=Sum("point"))
-        )
-        total_minus_point = (
-            Point.objects.filter(user_id=user.id)
-                .filter(point_type_id=6)
-                .aggregate(total=Sum("point"))
-        )
-        try:
-            total_point = total_plus_point["total"] - total_minus_point["total"]
-        except TypeError:
-            total_point = (
-                total_plus_point["total"]
-                if total_plus_point["total"] is not None
-                else 0
-            )
-        new_serializer_data = dict(serializer.data)
-        new_serializer_data["total_point"] = total_point
-        return JsonResponse(new_serializer_data, status=status.HTTP_200_OK)
+        return Response(serializer.data,status=status.HTTP_200_OK)
 
     def patch(self, request, user_id):
         """
         회원 정보 수정
         """
-        user = get_object_or_404(User, id=user_id)
-        if request.user != user:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
-        elif user.login_type != "일반" and request.data.get('password') is not None and request.data.get(
-                'eamil') is not None:
-            return Response({"err": "소셜 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
-        elif request.data.get('password') or request.data.get('new_password'):
-            # 비밀 번호를 변경 하고자 할때 변경
-            if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
-                return Response({"err": "비밀 번호를 변경 하기 위한 정보가 부족합니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-            elif not check_password(request.data.get('password'), user.password):
-                return Response({"err": "회원 정보에 저장된 비밀번호와 같지않습니다."}, status=status.HTTP_409_CONFLICT)
-            else:
-                request.data['password'] = request.data['new_password']
 
-        serializer = UserSerializer(
-            user, data=request.data, partial=True, context="update"
-        )
+        user = get_object_or_404(User, id=user_id)
+        validated_result = ValidatedData.validated_updated_user_information(user,request)
+        if validated_result is not True:
+            return Response({"err":"유효성 검사 실패"}, status=validated_result)
+
+        serializer = UserSerializer(user, data=request.data, partial=True, context="update")
         if serializer.is_valid():
             serializer.save()
             user.login_attempts_count = 0
@@ -235,6 +242,7 @@ class UserProfileAPIView(APIView):
         """
         휴면 계정으로 전환
         """
+
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
             return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -328,10 +336,7 @@ class SellerAPIView(APIView):
         """
         판매자 정보 저장 및 권한 신청
         """
-        try:
-            user = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        user = get_object_or_404(User, pk=request.user.pk)
         try:
             serializer = SellerSerializer(data=request.data)
             if serializer.is_valid():
@@ -353,10 +358,9 @@ class SellerAPIView(APIView):
         """
         판매자 정보 수정
         """
-        try:
-            user = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = get_object_or_404(User, pk=request.user.pk)
+
         try:
             serializer = SellerSerializer(
                 user.user_seller, data=request.data, partial=True
@@ -377,10 +381,8 @@ class SellerAPIView(APIView):
         """
         판매자 정보 삭제
         """
-        try:
-            user = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+        user = get_object_or_404(User, pk=request.user.pk)
+
         try:
             user.is_seller = False
             user.user_seller.delete()
@@ -410,32 +412,25 @@ class SellerPermissionAPIView(APIView):
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-        decrypt_result = AESAlgorithm.decrypt_all(**serializer.data)
-        return JsonResponse(decrypt_result, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, user_id):
         """
         판매자 권한 승인
         """
-        try:
-            admin = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        admin = get_object_or_404(User, pk=request.user.pk)
         if not admin.is_admin:
             return Response(
                 {"err": "올바른 접근 방법이 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
         user = get_object_or_404(User, id=user_id)
         user.is_seller = True
-        information = {
-            "email": user.email,
-            "context": {
-                'subject_message': "관리자가 판매자 권한을 승인 했습니다.",
-                'content_message': "사용자분께서 이제 판매자로서 활동하실 수 있습니다.",
-            }
-        }
-        EmailService.message_forwarding(**information)
         user.save()
+
+        subject_message = '관리자가 판매자 권한을 승인 했습니다.'
+        content_message = "사용자분께서 이제 판매자로서 활동하실 수 있습니다."
+        EmailService.message_forwarding(user.email, subject_message, content_message)
+
         return Response({"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT)
 
     def delete(self, request, user_id):
@@ -445,24 +440,16 @@ class SellerPermissionAPIView(APIView):
          - admin accesstoken
          - "msg" : "거절 사유"
         """
-        try:
-            admin = get_object_or_404(User, email=request.user.email)
-        except AttributeError:
-            return Response({"err": "로그인이 필요 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        admin = get_object_or_404(User, pk=request.user.pk)
         if not admin.is_admin:
             return Response(
                 {"err": "올바른 접근 방법이 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED
             )
         user = get_object_or_404(User, id=user_id)
         try:
-            information = {
-                "email": user.email,
-                "context": {
-                    'subject_message': "관리자가 판매자 권한을 거절 했습니다.",
-                    'content_message': request.data.get('msg'),
-                }
-            }
-            EmailService.message_forwarding(**information)
+            subject_message = '관리자가 판매자 권한을 거절 했습니다.'
+            content_message = request.data.get('msg')
+            EmailService.message_forwarding(user.email, subject_message, content_message)
             user.user_seller.delete()
             return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
         except Seller.DoesNotExist:
@@ -591,15 +578,15 @@ class PointStaticView(APIView):
         """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7)"""
         day_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[1,2,3,4,5])
-            .filter(date=date)
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .filter(date=date)
+                .aggregate(total=Sum("point"))
         )
         day_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[6,7])
-            .filter(date=date)
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[6, 7])
+                .filter(date=date)
+                .aggregate(total=Sum("point"))
         )
         plus_point = (
             day_plus_point["total"] if day_plus_point["total"] is not None else 0
@@ -610,15 +597,15 @@ class PointStaticView(APIView):
         day_total_point = plus_point - minus_point
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[1,2,3,4,5])
-            .filter(date__month=timezone.now().date().month)
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .filter(date__month=timezone.now().date().month)
+                .aggregate(total=Sum("point"))
         )
         month_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[6,7])
-            .filter(date__month=timezone.now().date().month)
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[6, 7])
+                .filter(date__month=timezone.now().date().month)
+                .aggregate(total=Sum("point"))
         )
         month_plus = (
             month_plus_point["total"] if month_plus_point["total"] is not None else 0
@@ -630,13 +617,13 @@ class PointStaticView(APIView):
 
         total_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[1,2,3,4,5])
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .aggregate(total=Sum("point"))
         )
         total_minus_point = (
             Point.objects.filter(user_id=request.user.id)
-            .filter(point_type__in=[6,7])
-            .aggregate(total=Sum("point"))
+                .filter(point_type__in=[6, 7])
+                .aggregate(total=Sum("point"))
         )
         try:
             total_point = total_plus_point["total"] - total_minus_point["total"]
@@ -660,6 +647,8 @@ class PointStaticView(APIView):
 
 
 """포인트 종류: 출석(1)"""
+
+
 class PointAttendanceView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
@@ -675,18 +664,22 @@ class PointAttendanceView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
 
+
 """포인트 종류: 구독권이용료(6)"""
+
+
 class PointServiceView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PointSerializer
-    
+
     @classmethod
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, point=9900, point_type_id=6)
 
 
-
 """포인트충전 결제후처리"""
+
+
 class PointCheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -709,7 +702,7 @@ class PointCheckoutView(APIView):
                 "works": True,
                 "merchant_id": trans
             }
-        
+
             return JsonResponse(data)
         else:
             return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
@@ -735,15 +728,15 @@ class PointImpAjaxView(APIView):
 
         if trans is not None:
             try:
-                point_data = {"point" : trans.amount}
-                serializer = PointSerializer(data = point_data)
+                point_data = {"point": trans.amount}
+                serializer = PointSerializer(data=point_data)
                 if serializer.is_valid():
                     serializer.save(user=user, point_type_id=5)
-                    
+
                 trans.transaction_id = imp_id
                 trans.success = True
                 trans.save()
-                
+
                 data = {
                     "works": True
                 }
@@ -755,6 +748,8 @@ class PointImpAjaxView(APIView):
 
 
 """구독"""
+
+
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -766,14 +761,16 @@ class SubscribeView(APIView):
 
     # 구독 최초 생성
     def post(self, request):
-        data = {"point":9900}
-        point_serializer = PointSerializer(data = data)
+        data = {"point": 9900}
+        point_serializer = PointSerializer(data=data)
         serializer = SubscriptionSerializer(data=request.data)
         if serializer.is_valid() and point_serializer.is_valid():
             newmonth = int(timezone.now().date().month) + 1
             try:
                 point_serializer.save(user=request.user, point_type_id=6)
-                serializer.save(user=request.user, next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(timezone.now().date().day))
+                serializer.save(user=request.user,
+                                next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(
+                                    timezone.now().date().day))
                 return Response({"message": "성공!"}, status=status.HTTP_200_OK)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
