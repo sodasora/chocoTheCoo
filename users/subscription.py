@@ -78,14 +78,12 @@ class UserControlSystem:
         가입하고서 2일동안 계정 인증을 받지 않았고, 로그인 기록이 없는 유저 데이터 삭제
         """
         now = timezone.now()
-        objects = User.objects.filter(last_login=None).filter(is_active=False)
+        objects = User.objects.filter(last_login=None).filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=2), now))
         for user in objects:
-            created_at = (now - user.created_at).days
-            if 2 <= created_at:
-                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-                content_message = f'{user.email}님께서 가입하고서 {created_at}일 만큼 계정인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
-                EmailService.message_forwarding(user.email, subject_message, content_message)
-                user.delete()
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님께서 가입하고서 2일 이상 계정 인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.delete()
 
     @classmethod
     def account_deactivation(cls):
@@ -93,14 +91,13 @@ class UserControlSystem:
         마지막 로그인 기록이 30일 이상 지난 사용자의 계정 비 활성화
         """
         now = timezone.now()
-        objects = User.objects.exclude(last_login=None).filter(is_active=True)
+        objects = User.objects.exclude(last_login=None).filter(is_active=True).filter(last_login__range=(now - timezone.timedelta(days=30), now))
         for user in objects:
-            last_login = (now - user.last_login).days
-            if 30 <= last_login:
-                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-                content_message = f'{user.email}님, {last_login}일 만큼 로그인 이력이 없어 계정을 비 활성화 했습니다.'
-                EmailService.message_forwarding(user.email, subject_message, content_message)
-                user.delete()
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님, 30일 이상 로그인 이력이 없어 계정을 비 활성화 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.is_active = False
+            user.delete()
 
     @classmethod
     def delete_inactive_accounts(cls):
@@ -109,14 +106,12 @@ class UserControlSystem:
         """
 
         now = timezone.now()
-        objects = User.objects.filter(is_active=False)
+        objects = User.objects.filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=90), now))
         for user in objects:
-            day = (now - user.updated_at).days
-            if 30 <= day:
-                subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-                content_message = f'{user.email}님, 휴면 계정으로 전환된지 {day}일 만큼 지나 계정을 삭제 했습니다.'
-                EmailService.message_forwarding(user.email, subject_message, content_message)
-                user.delete()
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님, 휴면 계정으로 전환된지 90일 만큼 지나 계정을 삭제 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.delete()
 
 
 # 매일 자정마다 작업 실행

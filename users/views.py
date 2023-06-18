@@ -75,6 +75,19 @@ class PhoneVerificationAPIView(APIView):
     put : 인증 번호를 통한 핸드폰 인증
     """
 
+    def post(self,request):
+        now = timezone.now()
+        objects = User.objects.filter(last_login=None).filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=2), now))
+        for user in objects:
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님께서 가입하고서 2일 이상 계정 인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.delete()
+
+        return Response(
+            {"msg": "테스트"}, status=status.HTTP_200_OK
+        )
+
     def put(self, request):
         """
         휴대폰 정보 등록 및 수정
