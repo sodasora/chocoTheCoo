@@ -7,7 +7,7 @@ import random, re, string, json
 import hashlib, hmac, base64, os, requests, time
 from django.utils import timezone
 from datetime import timedelta
-from .models import EmailVerification,PhoneVerification
+from .models import EmailVerification,PhoneVerification,Delivery
 
 NAVER_SMS_ACCESS_KEY = os.environ.get('NAVER_SMS_ACCESS_KEY')
 NAVER_SMS_SECRET_KEY = os.environ.get('NAVER_SMS_SECRET_KEY')
@@ -234,7 +234,8 @@ class ValidatedData:
         return True
 
     @classmethod
-    def validated_deliveries(cls, **kwargs):
+
+    def validated_postal_code(cls,**kwargs):
         """
         우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
         """
@@ -331,6 +332,9 @@ class ValidatedData:
 
     @classmethod
     def validated_updated_user_information(cls,user,request):
+        """
+        회원 정보 수정 접근 유효성 검사
+        """
         if request.user != user:
             # 로그인을 하지 않았거나 올바르지 않은 경로로 접근
             return status.HTTP_401_UNAUTHORIZED
@@ -346,3 +350,18 @@ class ValidatedData:
                 return status.HTTP_409_CONFLICT
             else:
                 return True
+
+    @classmethod
+    def validated_deliveries(cls, user,request):
+        """
+        배송 정보 작성 유효성 검사
+        """
+        deliveries_cnt = Delivery.objects.filter(user=user).count()
+        if request.user != user:
+            return status.HTTP_401_UNAUTHORIZED
+        elif deliveries_cnt > 4:
+            return status.HTTP_400_BAD_REQUEST
+        elif request.data.get("postal_code") is not None:
+            return status.HTTP_422_UNPROCESSABLE_ENTITY
+        else:
+            return True

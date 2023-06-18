@@ -9,10 +9,8 @@ from django.db.utils import IntegrityError
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.utils import timezone
-from django.contrib.auth.hashers import check_password
 from products.models import Product, Review
 from .validated import ValidatedData, EmailService
-from .cryption import AESAlgorithm
 from .models import (
     User,
     Delivery,
@@ -36,6 +34,7 @@ from .serializers import (
     UserDetailSerializer,
     SubscriptionInfoSerializer,
     PhoneVerificationSerializer,
+    FollowSerializer,
 )
 
 
@@ -171,13 +170,17 @@ class UserAPIView(APIView):
         validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
-            return Response({"err": "유효성 검사 실패"}, status=validate_result)
+            return Response(
+                {"err": "유효성 검사 실패"}, status=validate_result
+            )
         else:
             user.is_active = True
             user.email_verification.verification_code = None
             user.save()
             user.email_verification.save()
-            return Response({"msg": "인증 되었습니다."}, status=status.HTTP_200_OK)
+            return Response(
+                {"msg": "인증 되었습니다."}, status=status.HTTP_200_OK
+            )
 
     def patch(self, request):
         """
@@ -188,7 +191,9 @@ class UserAPIView(APIView):
         validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
-            return Response({"err": "유효성 검사 실패"}, status=validate_result)
+            return Response(
+                {"err": "유효성 검사 실패"}, status=validate_result
+            )
         else:
             serializer = UserSerializer(user, data=request.data, partial=True, context="update")
             if serializer.is_valid():
@@ -198,9 +203,13 @@ class UserAPIView(APIView):
                 user.login_attempts_count = 0
                 user.save()
                 user.email_verification.save()
-                return Response({"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK)
+                return Response(
+                    {"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK
+                )
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class UserProfileAPIView(APIView):
@@ -217,7 +226,9 @@ class UserProfileAPIView(APIView):
 
         user = get_object_or_404(User, id=user_id)
         serializer = ReadUserSerializer(user)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(
+            serializer.data, status=status.HTTP_200_OK
+        )
 
     def patch(self, request, user_id):
         """
@@ -227,16 +238,22 @@ class UserProfileAPIView(APIView):
         user = get_object_or_404(User, id=user_id)
         validated_result = ValidatedData.validated_updated_user_information(user,request)
         if validated_result is not True:
-            return Response({"err":"유효성 검사 실패"}, status=validated_result)
+            return Response(
+                {"err":"유효성 검사 실패"}, status=validated_result
+            )
 
         serializer = UserSerializer(user, data=request.data, partial=True, context="update")
         if serializer.is_valid():
             serializer.save()
             user.login_attempts_count = 0
             user.save()
-            return Response({"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
+            return Response(
+                {"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     def delete(self, request, user_id):
         """
@@ -245,10 +262,14 @@ class UserProfileAPIView(APIView):
 
         user = get_object_or_404(User, id=user_id)
         if request.user != user:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
         user.is_active = False
         user.save()
-        return Response({"msg": "휴면 계정으로 전환 되었습니다."}, status=status.HTTP_200_OK)
+        return Response(
+            {"msg": "휴면 계정으로 전환 되었습니다."}, status=status.HTTP_200_OK
+        )
 
 
 class DeliveryAPIView(APIView):
@@ -263,31 +284,31 @@ class DeliveryAPIView(APIView):
         """
         user = get_object_or_404(User, id=user_id)
         serializer = DeliverySerializer(user.deliveries_data, many=True)
-        decrypt_result = AESAlgorithm.decrypt_deliveries(serializer.data)
-        return JsonResponse(decrypt_result, status=status.HTTP_200_OK)
+        return Response(
+            serializer.data,status=status.HTTP_200_OK
+        )
 
     def post(self, request, user_id):
         """
         배송 정보 추가
         """
         user = get_object_or_404(User, id=user_id)
-        if request.user != user:
-            return Response({"err": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
-        deliveries_cnt = Delivery.objects.filter(user=user).count()
-        if deliveries_cnt > 4:
+        validated_result = ValidatedData.validated_deliveries(user,request)
+        if validated_result is not True:
             return Response(
-                {"err": "배송 정보는 다섯개 까지 등록할 수 있습니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"err": "유효성 검사 실패"}, status=validated_result
+            ) 
+
+        serializer = DeliverySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(
+                {"msg": "배송 정보가 등록되었습니다."}, status=status.HTTP_200_OK
             )
-        if request.data.get("postal_code") is not None:
-            serializer = DeliverySerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=user)
-                return Response({"msg": "배송 정보가 등록되었습니다."}, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
-                )
-        return Response({"msg": "주소지 정보가 올바르지 않습니다."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        else:
+            return Response(
+                {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
 
 
 class UpdateDeliveryAPIView(APIView):
@@ -391,7 +412,9 @@ class SellerAPIView(APIView):
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class SellerPermissionAPIView(APIView):
@@ -412,7 +435,9 @@ class SellerPermissionAPIView(APIView):
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            serializer.data, status=status.HTTP_200_OK
+        )
 
     def patch(self, request, user_id):
         """
@@ -431,7 +456,9 @@ class SellerPermissionAPIView(APIView):
         content_message = "사용자분께서 이제 판매자로서 활동하실 수 있습니다."
         EmailService.message_forwarding(user.email, subject_message, content_message)
 
-        return Response({"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT
+        )
 
     def delete(self, request, user_id):
         """
@@ -451,44 +478,20 @@ class SellerPermissionAPIView(APIView):
             content_message = request.data.get('msg')
             EmailService.message_forwarding(user.email, subject_message, content_message)
             user.user_seller.delete()
-            return Response({"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"msg": "판매자 정보를 삭제 했습니다."}, status=status.HTTP_204_NO_CONTENT
+            )
         except Seller.DoesNotExist:
-            return Response({"err": "판매자 정보가 없습니다."}, status=status.HTTP_410_GONE)
+            return Response(
+                {"err": "판매자 정보가 없습니다."}, status=status.HTTP_410_GONE
+            )
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     POST : 로그인 , access token 발급
     """
-
     serializer_class = CustomTokenObtainPairSerializer
-
-    def post(self, request, *args, **kwargs):
-        user = get_object_or_404(User, email=request.data.get("email"))
-        if user.is_active is False:
-            return Response({"msg": "휴면 계정입니다."}, status=status.HTTP_204_NO_CONTENT)
-        elif user.login_attempts_count >= 5:
-            return Response({'msg': "비밀 번호 입력 회수가 초과 되었습니다."}, status=status.HTTP_424_FAILED_DEPENDENCY)
-        try:
-            if check_password(request.data.get("password"), user.password):
-                user.login_attempts_count = 0
-                user.last_login = timezone.now()
-                user.save()
-
-                response = super().post(request, *args, **kwargs)
-                refresh_token = response.data["refresh"]
-                access_token = response.data["access"]
-                data_dict = {
-                    "refresh": refresh_token,
-                    "access": access_token,
-                }
-                return Response(data_dict, status=status.HTTP_200_OK)
-            else:
-                user.login_attempts_count += 1
-                user.save()
-                return Response(5 - user.login_attempts_count, status=status.HTTP_401_UNAUTHORIZED)
-        except TypeError:
-            return Response({"err": "입력값이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class WishListAPIView(APIView):
@@ -533,6 +536,7 @@ class ReviewListAPIView(APIView):
         """
         리뷰를 좋아요 등록한 사용자 정보들 불러오기
         """
+        
         review = get_object_or_404(Review, id=review_id)
         serializer = GetReviewUserListInfo(review)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -541,6 +545,7 @@ class ReviewListAPIView(APIView):
         """
         리뷰 좋아요 등록 및 취소
         """
+        
         user = get_object_or_404(User, email=request.user.email)
         review = get_object_or_404(Review, id=review_id)
         if review in user.review_like.all():
@@ -555,9 +560,41 @@ class ReviewListAPIView(APIView):
             )
 
 
+class FollowAPIView(APIView):
+    """
+    GET : 유저를 팔로우 하는 사람 정보 불러오기
+    POST : 팔로우 등록 및 취소
+    """
+
+    def get(self, request, user_id):
+        """
+        다른 사용자(로그인한 유저 x)를 팔로우 하고 있는 유저 목록 뽑아오기
+        """
+
+        owner = get_object_or_404(User, id=user_id)
+        serializer = FollowSerializer(owner)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, user_id):
+        """
+        사용자를 팔로우, 언팔로우
+        """
+        
+        user = get_object_or_404(User, pk=request.user.pk)
+        owner = get_object_or_404(Review, id=user_id)
+        if owner in user.follower.all():
+            user.follower.remove(owner)
+            return Response(
+                {"msg": "Unfollow"}, status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            user.follower.add(owner)
+            return Response(
+                {"msg": "Follow"}, status=status.HTTP_201_CREATED
+            )
+
+
 """포인트"""
-
-
 # 날짜별 포인트 보기
 class PointView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
