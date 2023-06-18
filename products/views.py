@@ -47,6 +47,8 @@ class ProductListAPIView(generics.ListCreateAPIView):
             queryset = Product.objects.all()
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(seller=self.request.user.user_seller)
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -66,6 +68,10 @@ class ReviewView(generics.ListCreateAPIView):
         product_id = self.kwargs.get("product_id")
         queryset = Review.objects.filter(product_id=product_id)
         return queryset
+    
+    def perform_create(self, serializer):
+        product = Product.objects.get(id=self.kwargs.get("product_id"))
+        serializer.save(user=self.request.user, product = product)
 
 
 class ReviewDetailView(generics.RetrieveUpdateAPIView):
