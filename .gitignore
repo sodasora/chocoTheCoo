@@ -136,9 +136,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
+.env/
 venv/
-ENV/
+.env/
 env.bak/
 venv.bak/
 
@@ -472,7 +472,7 @@ $RECYCLE.BIN/
 
 # migrations
 */migrations/*
-!/migrations/__init__.py
+!*/migrations/__init__.py
 
 #gitmessage
 .gitmessage.txt
