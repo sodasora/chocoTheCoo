@@ -128,34 +128,31 @@ class OrderCreateView(CreateAPIView):
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
         # bill이 생성되었는지 확인, 생성되지 않았다면 400
-        try:
-            bill_id = self.kwargs.get("bill_id")
-            bill = get_object_or_404(
-                Bill, id=bill_id, user=self.request.user, is_paid=False
-            )
-        except AttributeError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
-        cart_ids = request.query_params.get("cart_id").split(",")
-        cart_objects = CartItem.objects.filter(pk__in=cart_ids)
-        total_buy_price = sum(
-            [(cart.product.price * cart.amount) for cart in cart_objects]
+        bill_id = self.kwargs.get("bill_id")
+        bill = get_object_or_404(
+            Bill, id=bill_id, user=self.request.user, is_paid=False
         )
 
-        # 유저 포인트 차감 및 적립하기, 포인트가 부족하면 403
+        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
+        try:
+            cart_ids = request.query_params.get("cart_id").split(",")
+            cart_objects = CartItem.objects.filter(pk__in=cart_ids)
+            total_buy_price = sum(
+                [(cart.product.price * cart.amount) for cart in cart_objects]
+            )
+        except AttributeError:  # url params 오류
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # 유저 포인트 차감 및 적립하기
         try:
             OrderPointCreate(request.user, total_buy_price)
-        except PermissionDenied:
+        except PermissionDenied:  # 포인트 부족
             bill.delete()
             return Response(status=status.HTTP_403_FORBIDDEN)
-        # except TypeError:
-        #     bill.delete()
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        # orderitem 객체 리스트 생성
         try:
             is_paid = StatusCategory.objects.get(pk=2)
-            # orderitem 객체 리스트 생성
             order_items = []
             for cart in cart_objects:
                 order_item_data = {
@@ -178,6 +175,9 @@ class OrderCreateView(CreateAPIView):
         except IntegrityError:
             bill.delete()
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        # statusCategory가 생성되지 않았음.
+        except StatusCategory.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     #     order_items = []
     #     for cart in cart_objects:
@@ -209,14 +209,12 @@ def OrderPointCreate(user: object, total_buy_price: int):
         .aggregate(total=Sum("point"))
     ).get("total", 0) or 0
 
-    buy_point_subtract = total_buy_price
-
-    if total_plus_point < (buy_point_subtract + total_minus_point):
+    if total_plus_point < (total_buy_price + total_minus_point):
         raise PermissionDenied("결제를 위한 포인트가 부족합니다")
 
-    buy_point_earn = ceil(buy_point_subtract / 20)
+    buy_point_earn = ceil(total_buy_price / 20)
 
-    Point.objects.create(user=user, point_type_id=7, point=buy_point_subtract)
+    Point.objects.create(user=user, point_type_id=7, point=total_buy_price)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
 
 
