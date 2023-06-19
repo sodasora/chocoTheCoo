@@ -107,7 +107,7 @@ class BillSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return min(temp)
+            return StatusCategory.objects.get(id=min(temp)).name
 
     def get_thumbnail_name(self, obj):
         try:

@@ -11,10 +11,10 @@ from rest_framework.generics import (
     ListAPIView,
     RetrieveUpdateAPIView,
     RetrieveAPIView,
+    UpdateAPIView,
 )
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller
 from .orderserializers import (
     BillCreateSerializer,
@@ -32,24 +32,28 @@ from .cryption import AESAlgorithm  # * Bill 복호화에 사용해야함
 from config.permissions_ import IsDeliveryRegistered
 
 
-class CartView(APIView):
+class CartView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+    queryset = CartItem.objects.all()
 
-    def get(self, request):
-        """장바구니 목록 조회"""
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CartSerializer
+        else:
+            return CartListSerializer
 
+    def get_queryset(self):
+        queryset = CartItem.objects.filter(user=self.request.user).order_by(
+            "-created_at"
+        )
         try:  # url 쿼리 파라미터로 id가 전달되면 해당 값들만 조회
-            cart_ids = request.query_params.get("cart_id").split(",")
-            if cart_ids:
-                cart_items = CartItem.objects.filter(user=request.user, id__in=cart_ids)
-                serializer = CartListSerializer(cart_items, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+            cart_id = self.request.query_params.get("cart_id").split(",")
+            queryset = queryset.filter(id__in=cart_id)
+            return queryset
         except AttributeError:  # 쿼리 파라미터가 없으면 .split에서 에러 / 전체 조회
-            cart = CartItem.objects.filter(user=request.user)
-            serializer = CartListSerializer(cart, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return queryset
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """장바구니 추가"""
 
         try:  # 이미 존재하는 상품이면 개수 amount개 추가
@@ -59,43 +63,29 @@ class CartView(APIView):
             cart.amount += request.data.get("amount")
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
-        except CartItem.DoesNotExist:
-            serializer = CartSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(
-                    {"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_201_CREATED
-                )
-            return Response(
-                {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
+        except CartItem.DoesNotExist: # 그냥 장바구니 추가
+            return super().post(request, *args, **kwargs)
 
-    def delete(self, request):
-        try:
-            cart_ids = request.query_params.get("cart_id").split(",")
-            cart_items = CartItem.objects.filter(user=request.user, id__in=cart_ids)
-            if cart_items:
-                for cart in cart_items:
-                    cart.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status=status.HTTP_404_NOT_FOUND)
-        except AttributeError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        cart_items = self.get_queryset()
+        if cart_items.exists():
+            cart_items.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class CartDetailView(APIView):
+class CartDetailView(UpdateAPIView):
     """장바구니 수량 변경"""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = CartDetailSerializer
 
-    def patch(self, request, cart_item_id):
-        cart = get_object_or_404(CartItem, pk=cart_item_id, user=request.user)
-        serializer = CartDetailSerializer(cart, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        return CartItem.objects.filter(user=self.request.user)
 
 
 class OrderListView(ListAPIView):
@@ -128,64 +118,58 @@ class OrderCreateView(CreateAPIView):
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
         # bill이 생성되었는지 확인, 생성되지 않았다면 400
+        bill_id = self.kwargs.get("bill_id")
+        bill = get_object_or_404(
+            Bill, id=bill_id, user=self.request.user, is_paid=False
+        )
+
+        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
         try:
-            bill_id = self.kwargs.get("bill_id")
-            bill = get_object_or_404(
-                Bill, id=bill_id, user=self.request.user, is_paid=False
+            cart_ids = request.query_params.get("cart_id").split(",")
+            cart_objects = CartItem.objects.filter(pk__in=cart_ids)
+            total_buy_price = sum(
+                [(cart.product.price * cart.amount) for cart in cart_objects]
             )
-        except AttributeError:
+        except AttributeError:  # url params 오류
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        cart_ids = request.query_params.get("cart_id").split(",")
-        print("cart_ids : ", cart_ids)
-
-        # 유저 포인트 차감 및 적립하기, 포인트가 부족하면 403
+        # 유저 포인트 차감 및 적립하기
         try:
-            OrderPointCreate(user=request.user, cart_ids=cart_ids)
-        except PermissionDenied:
+            OrderPointCreate(request.user, total_buy_price)
+        except PermissionDenied:  # 포인트 부족
             bill.delete()
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
-        cart_objects = CartItem.objects.filter(pk__in=cart_ids)
-        print("cart_objects : ", cart_objects)
-
+        # orderitem 객체 리스트 생성
         try:
-            # orderitem 객체 리스트 생성
+            is_paid = StatusCategory.objects.get(pk=2)
             order_items = []
             for cart in cart_objects:
                 order_item_data = {
+                    "name": cart.product.name,
                     "product_id": cart.product.id,
                     "amount": cart.amount,
                     "price": cart.product.price,
                     "seller": cart.product.seller,
                     "bill_id": bill_id,
+                    "order_status": is_paid,
                 }
                 order_item = OrderItem(**order_item_data)
                 order_items.append(order_item)
             # bulk_create로 장바구니 => 주문상품으로 옮겨줌. 성공시 201
             OrderItem.objects.bulk_create(order_items)
+            bill.is_paid = True
+            bill.save()
             return Response(status=status.HTTP_201_CREATED)
 
         # NotNull Constraints Failed.
         # cart또는 product가 정상적인 상태로 저장되지 않았음.
-        # 400이 아니라 사실 서버문제 ㅠㅠ
         except IntegrityError:
             bill.delete()
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    # @transaction.atomic()
-    # def create(self, request, *args, **kwargs):
-    #     bill_id = self.kwargs.get("bill_id")
-    #     bill = get_object_or_404(
-    #         Bill, id=bill_id, user=self.request.user, is_paid=False
-    #     )
-    #     try:
-    #         cart_ids = request.query_params.get("cart_id").split(",")
-    #     except AttributeError:
-    #         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    #     cart_objects = [get_object_or_404(CartItem, id=cart_id) for cart_id in cart_ids]
+        # statusCategory가 생성되지 않았음.
+        except StatusCategory.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     #     order_items = []
     #     for cart in cart_objects:
@@ -204,32 +188,25 @@ class OrderCreateView(CreateAPIView):
     #     return Response(status=status.HTTP_201_CREATED)
 
 
-def OrderPointCreate(cart_ids: list, user: object):
+def OrderPointCreate(user: object, total_buy_price: int):
     """주문 상품 포인트 생성"""
     total_plus_point = (
         Point.objects.filter(user_id=user.id)
         .filter(point_type__in=[1, 2, 3, 4, 5])
         .aggregate(total=Sum("point"))
-    ).get("total")
+    ).get("total", 0) or 0
     total_minus_point = (
         Point.objects.filter(user_id=user.id)
         .filter(point_type__in=[6, 7])
         .aggregate(total=Sum("point"))
-    ).get("total")
-    buy_point_subtract = (
-        CartItem.objects.filter(pk__in=cart_ids).aggregate(
-            total_price=Sum("product__price")
-        )
-    ).get("total_price")
-    if total_plus_point < (buy_point_subtract + total_minus_point):
+    ).get("total", 0) or 0
+
+    if total_plus_point < (total_buy_price + total_minus_point):
         raise PermissionDenied("결제를 위한 포인트가 부족합니다")
 
-    buy_point_earn = ceil(buy_point_subtract / 20)
+    buy_point_earn = ceil(total_buy_price / 20)
 
-    print("사용한 포인트 :", buy_point_subtract)
-    print("얻은 포인트 :", buy_point_earn)
-
-    Point.objects.create(user=user, point_type_id=7, point=buy_point_subtract)
+    Point.objects.create(user=user, point_type_id=7, point=total_buy_price)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
 
 
@@ -268,7 +245,7 @@ class BillView(ListCreateAPIView):
         )
 
     def get_queryset(self):
-        queryset = Bill.objects.filter(user=self.request.user)
+        queryset = Bill.objects.filter(user=self.request.user).order_by("-created_at")
         return queryset
 
 

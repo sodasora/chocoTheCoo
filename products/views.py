@@ -32,9 +32,9 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
 
 class ProductListAPIView(generics.ListCreateAPIView):
     """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
+
     permission_classes = [IsAuthenticated]
     serializer_class = ProductListSerializer
-
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
@@ -69,10 +69,9 @@ class ReviewView(generics.ListCreateAPIView):
         queryset = Review.objects.filter(product_id=product_id)
         return queryset
 
-    
     def perform_create(self, serializer):
         product = Product.objects.get(id=self.kwargs.get("product_id"))
-        serializer.save(user=self.request.user, product = product)
+        serializer.save(user=self.request.user, product=product)
 
 
 
