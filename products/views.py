@@ -15,7 +15,6 @@ from .models import Product, Category, Review
 from users.models import Seller
 from rest_framework.permissions import IsAuthenticated
 
-
 class CategoryListAPIView(generics.ListCreateAPIView):
     """카테고리 조회, 생성"""
 
@@ -47,10 +46,13 @@ class ProductListAPIView(generics.ListCreateAPIView):
             queryset = Product.objects.all()
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(seller=self.request.user.user_seller)
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
+    permission_classes = [IsAuthenticated]
 
     serializer_class = ProductDetailSerializer
     queryset = Product.objects.all()
@@ -66,6 +68,12 @@ class ReviewView(generics.ListCreateAPIView):
         product_id = self.kwargs.get("product_id")
         queryset = Review.objects.filter(product_id=product_id)
         return queryset
+
+    
+    def perform_create(self, serializer):
+        product = Product.objects.get(id=self.kwargs.get("product_id"))
+        serializer.save(user=self.request.user, product = product)
+
 
 
 class ReviewDetailView(generics.RetrieveUpdateAPIView):
@@ -85,3 +93,4 @@ class MyReviewView(generics.ListAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     lookup_field = "user_id"
+

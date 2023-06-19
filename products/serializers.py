@@ -43,6 +43,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+        read_only_fields = ('seller',)
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -69,10 +70,11 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = "__all__"
-        read_only_fields = ('product_name', 'product_star')
+        read_only_fields = ('product_name', 'product_star', 'user', 'product')
 
 
 class ReviewDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = "__all__"
+        read_only_fields = ('product_name', 'product_star', 'user', 'product')
