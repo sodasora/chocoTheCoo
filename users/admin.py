@@ -6,7 +6,6 @@ from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
 from .models import (
     User,
-    Seller,
     PointType,
     Point,
     StatusCategory,
@@ -14,16 +13,13 @@ from .models import (
     CartItem,
     Bill,
     Subscribe,
-    PhoneVerification,
-    EmailVerification,
 )
 
 admin.site.register(PointType)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
-admin.site.register(PhoneVerification)
-admin.site.register(EmailVerification)
+
 
 class UserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput)

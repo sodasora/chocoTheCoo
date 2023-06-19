@@ -37,12 +37,12 @@ class UserSerializer(serializers.ModelSerializer):
          """
         if self.context == 'create':
             verification_result = ValidatedData.validated_user_data(**element)
-            if not verification_result:
-                raise ValidationError("입력값이 올바르지 않습니다.")
+            if verification_result is not True:
+                raise ValidationError(verification_result[1])
         elif self.context == 'update':
             verification_result = ValidatedData.update_validated_user_data(**element)
-            if not verification_result:
-                raise ValidationError("입력값이 올바르지 않습니다.")
+            if verification_result is not True:
+                raise ValidationError(verification_result[1])
         return element
 
     def create(self, validated_data):

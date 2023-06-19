@@ -4,6 +4,7 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from datetime import date
 from config.models import CommonModel
 from .iamport import validation_prepare, get_transaction
+from .validated import ValidatedData
 import hashlib
 import random
 import time
@@ -15,12 +16,10 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, nickname, password=None):
         """관리자 계정 생성"""
-        if not password:
-            raise ValueError("관리자 계정의 비밀번호는 필수 입력 사항 입니다.")
-        elif not nickname:
-            raise ValueError("사용자 별명은 필수 입력 사항 입니다.")
-        elif not email:
-            raise ValueError("사용자 이메일은 필수 입력 사항 입니다.")
+
+        validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
+        if validated_result is not True:
+            raise ValueError(validated_result[1])
         user = self.model(
             email=self.normalize_email(email),
             nickname=nickname,

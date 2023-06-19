@@ -118,7 +118,7 @@ class PhoneVerificationAPIView(APIView):
         validated_result = ValidatedData.validated_phone_verification(user, request.data.get('verification_numbers'))
         if validated_result is not True:
             return Response(
-                {"err": "인증 번호 유효성 검사에 실패했습니다."}, validated_result
+                {"err": validated_result[1]}, status=status.HTTP_400_BAD_REQUEST
             )
         else:
             user.phone_verification.verification_numbers = None
@@ -169,7 +169,7 @@ class UserAPIView(APIView):
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response(
-                {"err": "유효성 검사 실패"}, status=validate_result
+                {"err": validate_result[1]}, status=status.HTTP_400_BAD_REQUEST
             )
         else:
             user.is_active = True
@@ -190,7 +190,7 @@ class UserAPIView(APIView):
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response(
-                {"err": "유효성 검사 실패"}, status=validate_result
+                {"err": validate_result[1]}, status=status.HTTP_400_BAD_REQUEST
             )
         else:
             serializer = UserSerializer(user, data=request.data, partial=True, context="update")
