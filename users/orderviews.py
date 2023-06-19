@@ -154,6 +154,7 @@ class OrderCreateView(CreateAPIView):
         #     return Response(status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            is_paid = StatusCategory.objects.get(pk=2)
             # orderitem 객체 리스트 생성
             order_items = []
             for cart in cart_objects:
@@ -164,7 +165,7 @@ class OrderCreateView(CreateAPIView):
                     "price": cart.product.price,
                     "seller": cart.product.seller,
                     "bill_id": bill_id,
-                    "order_status": 2,
+                    "order_status": is_paid,
                 }
                 order_item = OrderItem(**order_item_data)
                 order_items.append(order_item)
