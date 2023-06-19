@@ -16,8 +16,9 @@ from .views import (
     ReviewListAPIView,
     WishListAPIView,
     PointAttendanceView,
-    PointCheckoutView,
+    PointCheckoutView, 
     PointImpAjaxView,
+    PhoneVerificationAPIView,
 )
 from .orderviews import (
     CartView,
@@ -121,6 +122,8 @@ urlpatterns = [
     path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
     # # 상품 구매용 포인트 차감
     # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
+    path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
+
 ]
 
 urlpatterns += [

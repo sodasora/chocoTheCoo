@@ -32,4 +32,5 @@ urlpatterns = [
     ),
     # 유저의 리뷰 간단조회
     path("mypage/reviews/<int:user_id>/", MyReviewView.as_view(), name="myreview_view"),
+    #상품 검색
 ]
