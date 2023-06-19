@@ -136,30 +136,35 @@ class OrderCreateView(CreateAPIView):
         except AttributeError:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
         cart_ids = request.query_params.get("cart_id").split(",")
-        print("cart_ids : ", cart_ids)
+        cart_objects = CartItem.objects.filter(pk__in=cart_ids)
+        total_buy_price = sum(
+            [(cart.product.price * cart.amount) for cart in cart_objects]
+        )
 
         # 유저 포인트 차감 및 적립하기, 포인트가 부족하면 403
         try:
-            OrderPointCreate(user=request.user, cart_ids=cart_ids)
+            OrderPointCreate(request.user, total_buy_price)
         except PermissionDenied:
             bill.delete()
             return Response(status=status.HTTP_403_FORBIDDEN)
-
-        # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
-        cart_objects = CartItem.objects.filter(pk__in=cart_ids)
-        print("cart_objects : ", cart_objects)
+        # except TypeError:
+        #     bill.delete()
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # orderitem 객체 리스트 생성
             order_items = []
             for cart in cart_objects:
                 order_item_data = {
+                    "name": cart.product.name,
                     "product_id": cart.product.id,
                     "amount": cart.amount,
                     "price": cart.product.price,
                     "seller": cart.product.seller,
                     "bill_id": bill_id,
+                    "order_status": 2,
                 }
                 order_item = OrderItem(**order_item_data)
                 order_items.append(order_item)
@@ -169,23 +174,9 @@ class OrderCreateView(CreateAPIView):
 
         # NotNull Constraints Failed.
         # cart또는 product가 정상적인 상태로 저장되지 않았음.
-        # 400이 아니라 사실 서버문제 ㅠㅠ
         except IntegrityError:
             bill.delete()
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    # @transaction.atomic()
-    # def create(self, request, *args, **kwargs):
-    #     bill_id = self.kwargs.get("bill_id")
-    #     bill = get_object_or_404(
-    #         Bill, id=bill_id, user=self.request.user, is_paid=False
-    #     )
-    #     try:
-    #         cart_ids = request.query_params.get("cart_id").split(",")
-    #     except AttributeError:
-    #         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    #     cart_objects = [get_object_or_404(CartItem, id=cart_id) for cart_id in cart_ids]
 
     #     order_items = []
     #     for cart in cart_objects:
@@ -204,30 +195,25 @@ class OrderCreateView(CreateAPIView):
     #     return Response(status=status.HTTP_201_CREATED)
 
 
-def OrderPointCreate(cart_ids: list, user: object):
+def OrderPointCreate(user: object, total_buy_price: int):
     """주문 상품 포인트 생성"""
     total_plus_point = (
         Point.objects.filter(user_id=user.id)
         .filter(point_type__in=[1, 2, 3, 4, 5])
         .aggregate(total=Sum("point"))
-    ).get("total")
+    ).get("total", 0) or 0
     total_minus_point = (
         Point.objects.filter(user_id=user.id)
         .filter(point_type__in=[6, 7])
         .aggregate(total=Sum("point"))
-    ).get("total")
-    buy_point_subtract = (
-        CartItem.objects.filter(pk__in=cart_ids).aggregate(
-            total_price=Sum("product__price")
-        )
-    ).get("total_price")
+    ).get("total", 0) or 0
+
+    buy_point_subtract = total_buy_price
+
     if total_plus_point < (buy_point_subtract + total_minus_point):
         raise PermissionDenied("결제를 위한 포인트가 부족합니다")
 
     buy_point_earn = ceil(buy_point_subtract / 20)
-
-    print("사용한 포인트 :", buy_point_subtract)
-    print("얻은 포인트 :", buy_point_earn)
 
     Point.objects.create(user=user, point_type_id=7, point=buy_point_subtract)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
