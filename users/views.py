@@ -75,19 +75,6 @@ class PhoneVerificationAPIView(APIView):
     put : 인증 번호를 통한 핸드폰 인증
     """
 
-    def post(self,request):
-        now = timezone.now()
-        objects = User.objects.filter(last_login=None).filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=2), now))
-        for user in objects:
-            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-            content_message = f'{user.email}님께서 가입하고서 2일 이상 계정 인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
-            EmailService.message_forwarding(user.email, subject_message, content_message)
-            user.delete()
-
-        return Response(
-            {"msg": "테스트"}, status=status.HTTP_200_OK
-        )
-
     def put(self, request):
         """
         휴대폰 정보 등록 및 수정
@@ -118,7 +105,6 @@ class PhoneVerificationAPIView(APIView):
                 return Response(
                     {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
                 )
-
         return Response(
             {"msg": "휴대폰 번호 등록 및 인증 코드 발급 완료"}, status=status.HTTP_200_OK
         )
@@ -157,7 +143,7 @@ class UserAPIView(APIView):
         """
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = UserDetailSerializer(user)
-        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         """
@@ -253,6 +239,8 @@ class UserProfileAPIView(APIView):
             return Response(
                 {"err":"유효성 검사 실패"}, status=validated_result
             )
+        elif request.data.get('password') is not None:
+            request.data['password'] = request.data.get('new_password')
 
         serializer = UserSerializer(user, data=request.data, partial=True, context="update")
         if serializer.is_valid():

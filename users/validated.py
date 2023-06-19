@@ -91,13 +91,10 @@ class EmailService:
     """
 
     @classmethod
-    def set_information(cls,email,subject_message,content_message):
+    def set_information(cls,subject_message,content_message):
         information = {
-            "email": email,
-            "context": {
-                'subject_message': subject_message,
-                'content_message': content_message,
-            }
+            'subject_message': subject_message,
+            'content_message': content_message,
         }
         return information
 
@@ -120,8 +117,7 @@ class EmailService:
         """
 
         title = "Choco The Coo"
-
-        context = cls.set_information(email,subject_message, content_message)
+        context = cls.set_information(subject_message, content_message)
         content = render_to_string('email_template.html', context)
 
         mail = EmailMessage(title, content, to=[email])
@@ -335,8 +331,7 @@ class ValidatedData:
         """
         회원 정보 수정 접근 유효성 검사
         """
-        
-        
+
         if request.user != user:
             # 로그인을 하지 않았거나 올바르지 않은 경로로 접근
             return status.HTTP_401_UNAUTHORIZED
@@ -350,8 +345,8 @@ class ValidatedData:
                 return status.HTTP_422_UNPROCESSABLE_ENTITY
             elif not check_password(request.data.get('password'), user.password):
                 return status.HTTP_409_CONFLICT
-            else:
-                return True
+
+        return True
 
     @classmethod
     def validated_deliveries(cls, user,request):

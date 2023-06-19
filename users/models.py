@@ -7,7 +7,6 @@ from .iamport import validation_prepare, get_transaction
 import hashlib
 import random
 import time
-from django.utils import timezone
 from django.db.models.signals import post_save
 
 
@@ -76,7 +75,7 @@ class User(AbstractBaseUser, CommonModel):
     objects = UserManager()
 
     def __str__(self):
-        return self.nickname
+        return self.email
 
     def has_perm(self, perm, obj=None):
         return True
@@ -95,7 +94,7 @@ class PhoneVerification(CommonModel):
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
     user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE)
-    phone_number = models.CharField('휴대폰 번호', max_length=30, unique=True)
+    phone_number = models.CharField('휴대폰 번호', max_length=30)
     verification_numbers = models.CharField('인증 번호', max_length=4, blank=True, null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
 

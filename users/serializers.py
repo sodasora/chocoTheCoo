@@ -475,7 +475,8 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
         phone_verification.phone_number = AESAlgorithm.encrypt(numbers)
         phone_verification.verification_numbers = SmsSendView.get_auth_numbers()
         phone_verification.is_verified = False
-        # SmsSendView.send_sms(validated_data.get('phone_number'),phone_verification.verification_numbers)
+        message = f'Choco The Coo에서 인증 번호를 발송 했습니다. [{phone_verification.verification_numbers}]'
+        SmsSendView.send_sms(validated_data.get('phone_number'),message)
         phone_verification.save()
 
     def create(self, validated_data):
@@ -532,11 +533,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
         information = super().to_representation(instance)
         customs_code = information.get('customs_code')
         if customs_code is not None:
-            customs_code = AESAlgorithm.encrypt(customs_code)
+            customs_code = AESAlgorithm.decrypt(customs_code)
             information['customs_code'] = customs_code
         phone_number = information.get('phone_number')
         if phone_number is not None:
-            phone_number = AESAlgorithm.encrypt(phone_number)
+            phone_number = AESAlgorithm.decrypt(phone_number)
             information['phone_number'] = phone_number
-
         return information
