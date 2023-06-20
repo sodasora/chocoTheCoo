@@ -30,6 +30,7 @@ from .orderviews import (
     OrderDetailView,
     StatusCategoryView,
 )
+from .subscription import SubscribecheckView
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -123,7 +124,9 @@ urlpatterns = [
     # # 상품 구매용 포인트 차감
     # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
     path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
-
+    
+    # 스케줄링
+    path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]
 
 urlpatterns += [
