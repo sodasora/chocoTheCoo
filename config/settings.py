@@ -33,8 +33,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    #부트스트랩
-    'django_bootstrap5',
     # local apps
     'users',
     'products',
