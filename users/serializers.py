@@ -259,7 +259,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         user = get_object_or_404(User, email=attrs.get("email"))
         try:
-            if user.is_active is False:
+            if user.login_type is not 'normal':
+                raise ValidationError(f'{user.login_type}로 가입된 소셜 게정입니다.')
+            elif user.is_active is False:
                 raise ValidationError("휴면 계정입니다.")
             elif user.login_attempts_count >= 5:
                 raise ValidationError("비밀 번호 입력 회수가 초과 되었습니다.")
@@ -282,6 +284,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['email'] = user.email
+        token['nickname'] = user.nickname
         token['is_seller'] = user.is_seller
         try:
             token['subscribe_data'] = user.subscribe_data.subscribe

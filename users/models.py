@@ -12,7 +12,9 @@ from django.db.models.signals import post_save
 
 
 class UserManager(BaseUserManager):
-    """커스텀 유저 매니저"""
+    """
+    커스텀 유저 매니저
+    """
 
     def create_user(self, email, nickname, password=None):
         """관리자 계정 생성"""

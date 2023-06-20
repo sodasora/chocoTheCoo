@@ -35,7 +35,7 @@ urlpatterns = [
     # 회원 가입 비밀번호 찾기
     path("", UserAPIView.as_view(), name="user_view"),
     # 인증 코드 발급 받기
-    path("get/auth_code/", GetEmailAuthCodeAPIView.as_view(), name="deliveries_view"),
+    path("get/auth_code/", GetEmailAuthCodeAPIView.as_view(), name="email_verification_code"),
     # 배송 정보 추가
     path(
         "create/delivery/<int:user_id>/",
