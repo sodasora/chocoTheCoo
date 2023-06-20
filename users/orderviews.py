@@ -28,7 +28,6 @@ from .orderserializers import (
     OrderItemSerializer,
     StatusCategorySerializer,
 )
-from .cryption import AESAlgorithm  # * Bill 복호화에 사용해야함
 from config.permissions_ import IsDeliveryRegistered
 
 
@@ -63,7 +62,7 @@ class CartView(ListCreateAPIView):
             cart.amount += request.data.get("amount")
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
-        except CartItem.DoesNotExist: # 그냥 장바구니 추가
+        except CartItem.DoesNotExist:  # 그냥 장바구니 추가
             return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
@@ -171,21 +170,10 @@ class OrderCreateView(CreateAPIView):
         except StatusCategory.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-    #     order_items = []
-    #     for cart in cart_objects:
-    #         order_item_data = {
-    #             "product_id": cart.product.id,
-    #             "amount": cart.amount,
-    #             "price": cart.product.price,
-    #             "name": cart.product.name,
-    #             "seller": cart.product.seller.id,
-    #         }
-    #         order_items.append(order_item_data)
-
+    #     order_items.append(order_item_data)
     #     serializer = self.get_serializer(data=order_items, many=True)
     #     serializer.is_valid(raise_exception=True)
     #     serializer.save(bill=bill)
-    #     return Response(status=status.HTTP_201_CREATED)
 
 
 def OrderPointCreate(user: object, total_buy_price: int):
