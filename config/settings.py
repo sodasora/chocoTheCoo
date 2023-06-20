@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
+from environ import Env
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,13 +27,16 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'channels',
+    'daphne',
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    
+    # local apps
     'users',
     'products',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -67,7 +71,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
+ASGI_APPLICATION  = 'config.asgi.application'
 
 
 DATABASES = {
@@ -76,6 +80,32 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+env = Env()
+# env_path = BASE_DIR / ".env"
+# if env_path.exists():
+#     with env_path.open(encoding="utf8") as f:
+#         env.read_env(f, overwrite=True)
+
+
+# django channels layer
+if "CHANNEL_LAYER_REDIS_URL" in env:
+    channel_layer_redis = env.db_url("CHANNEL_LAYER_REDIS_URL")
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [
+                    {
+                        "host": channel_layer_redis["HOST"],
+                        "port": channel_layer_redis.get("PORT") or 6379,
+                        "password": channel_layer_redis["PASSWORD"],
+                    }
+                ]
+            }
+        }
+    }
 
 
 
@@ -93,7 +123,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 LANGUAGE_CODE = 'ko-kr'
 

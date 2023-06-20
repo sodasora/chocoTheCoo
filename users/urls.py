@@ -30,6 +30,7 @@ from .orderviews import (
     OrderDetailView,
     StatusCategoryView,
 )
+from .subscription import SubscribecheckView
 
 urlpatterns = [
     # 회원 가입 비밀번호 찾기
@@ -67,9 +68,7 @@ urlpatterns = [
     # 장바구니 삭제, 일괄삭제
     path("carts/delete/", CartView.as_view(), name="cart_delete_view"),
     # 장바구니 담기, 장바구니 수량 변경
-    path(
-        "carts/<int:cart_item_id>/", CartDetailView.as_view(), name="cart_detail_view"
-    ),
+    path("carts/<int:pk>/", CartDetailView.as_view(), name="cart_detail_view"),
     # 포인트 보기
     path(
         "points/<str:date>/statistic/",
@@ -120,12 +119,14 @@ urlpatterns = [
     # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
     path("wish/<int:product_id>/", WishListAPIView.as_view(), name="wish-list-API"),
     # 결제api
-    path("payment/checkout/", PointCheckoutView.as_view(), name='point_checkout'),
-    path("payment/validation/", PointImpAjaxView.as_view(), name='point_validation'),
+    path("payment/checkout/", PointCheckoutView.as_view(), name="point_checkout"),
+    path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
     # # 상품 구매용 포인트 차감
     # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
     path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
-
+    
+    # 스케줄링
+    path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]
 
 urlpatterns += [
