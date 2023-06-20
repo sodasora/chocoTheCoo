@@ -141,6 +141,7 @@ class UserAPIView(APIView):
         """
         사용자 디테일 정보 불러오기  (복호화가 필요한 데이터 포함)
         """
+
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = UserDetailSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)

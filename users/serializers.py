@@ -256,10 +256,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
 
     @classmethod
-    def validate(self, attrs):
+    def validate(cls, attrs):
         user = get_object_or_404(User, email=attrs.get("email"))
         try:
-            if user.login_type is not 'normal':
+            if user.login_type != 'normal':
                 raise ValidationError(f'{user.login_type}로 가입된 소셜 게정입니다.')
             elif user.is_active is False:
                 raise ValidationError("휴면 계정입니다.")
@@ -271,7 +271,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise ValidationError(f'비밀번호가 올바르지 않습니다. 남은 로그인 시도 회수 {5 - user.login_attempts_count}')
             else:
                 user.login_attempts_count = 0
-                user.last_login = timezone.now()
                 user.save()
                 refresh = RefreshToken.for_user(user)
                 access_token = CustomTokenObtainPairSerializer.get_token(user)

@@ -1,10 +1,11 @@
 from rest_framework.test import APITestCase
-from django.urls import reverse
 from datetime import timedelta
 import users.models
 import users.validated
 from unittest.mock import patch
 from django.utils import timezone
+from django.urls import reverse
+
 
 
 class SignupAPIViewTest(APITestCase):
@@ -14,7 +15,7 @@ class SignupAPIViewTest(APITestCase):
 
     def member_registration_failure_test(self, information, status_code):
         """
-        회원 가입 실패 테스트
+        회원 가입 테스트
         """
 
         url = reverse("user_view")
@@ -67,11 +68,11 @@ class SignupAPIViewTest(APITestCase):
             self.member_registration_failure_test(information, stats_code)
 
 
-class EmailVerificationTest(APITestCase):
-    """
-    이메일 인증 테스트
-    """
 
+class EmailVerificationAndLoginTest(APITestCase):
+    """
+    이메일 인증, 로그인 테스트
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -80,18 +81,22 @@ class EmailVerificationTest(APITestCase):
         setUpTestData : 클래스에서 한 번만 실행되고 정의
         """
         # 테스트 유저
-        cls.data = {'email': 'test@naver.com', "nickanme": "testUser", 'password': 'Test123456!'}
+        cls.user_data = {'email': 'test@naver.com', "nickanme": "testUser", 'password': 'Test123456!'}
         cls.user = users.models.User.objects.create_user('test@naver.com', "testUser", 'Test123456!')
+        cls.user = users.models.User.objects.get(pk=cls.user.pk)
 
         # 인증 받지 못한 테스트 유저
         cls.another_user_data = {'email': 'anotherUser@email.com', 'nickname': 'another', 'password': 'Test123456!'}
         cls.another_user = users.models.User.objects.create_user('anotherUser@email.com', 'another', 'Test123456!')
+        cls.another_user = users.models.User.objects.get(pk=cls.another_user.pk)
+
 
         # 소셜 로그인 유저
         cls.kakao_user_data = {'email': 'kakaoUser@email.com', 'nickname': 'kakao', 'password': 'Test123456!'}
         cls.kakao_user = users.models.User.objects.create_user('kakaoUser@email.com', 'kakao', 'Test123456!')
         cls.kakao_user.login_type = 'kakao'
         cls.kakao_user.save()
+        cls.kakao_user = users.models.User.objects.get(pk=cls.kakao_user.pk)
 
     def setUp(self):
         """
@@ -100,7 +105,7 @@ class EmailVerificationTest(APITestCase):
         """
 
         url = reverse("email_verification_code")
-        email = self.data.get('email')
+        email = self.user_data.get('email')
         request = {
             "email": email
         }
@@ -112,7 +117,7 @@ class EmailVerificationTest(APITestCase):
         이메일 인증을 받지 않은 상태로 로그인 테스트
         """
 
-        response = self.client.post(reverse('login'), self.data)
+        response = self.client.post(reverse('login'), self.user_data)
         self.assertEqual(response.status_code, 400)
 
     def email_verification(self, request, status_code):
@@ -174,5 +179,43 @@ class EmailVerificationTest(APITestCase):
             }
             self.email_verification(request, 400)
 
-# class LoginTest(APITestCase):
-#
+    def login_test(self, information, status_code):
+        """
+        로그인 테스트
+        """
+
+        url = reverse("login")
+        response = self.client.post(url, information)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_login(self):
+        """
+        로그인 유효성 검사 테스트 케이스
+        """
+
+        self.user.is_active = True
+        # 이메일 인증 과정 생략
+        self.user.save()
+        test_cases = [
+            ({"email": self.user_data.get('email'), "password": self.user_data.get('password')}, 200),
+            # 로그인 성공 테스트
+            ({"email": 'unregistered_email@test.com', "password": '123'}, 404),
+            # 로그인 실패 테스트 - 가입하지 않은 회원
+            ({"email": self.user_data.get('email'), "password": '123'}, 400),
+            # 로그인 실패 테스트 - 비밀 번호 틀림 (5 회 반복)
+            ({"email": self.user_data.get('email'), "password": self.user_data.get('password')}, 400),
+            # 로그인 실패 테스트 - 비밀 번호 5회 이상 틀려, 계정 비 활성화 됨
+            ({"email": self.another_user_data.get('email'), "password": self.another_user_data.get('password')}, 400),
+            # 로그인 실패 테스트 - 이메일 인증을 받지 않아, 활성화 되지 않은 사용자
+            ({"email": self.kakao_user_data.get('email'), "password": self.kakao_user_data.get('password')}, 400),
+            # 로그인 실패 테스트 - 소셜 계정 사용자가 일반 로그인 경로로 접근 했을 경우
+        ]
+
+        for information, stats_code in test_cases:
+            if information.get('email') == 'test@naver.com' and information.get('password') == '123':
+                # 비밀번호 틀린 테스트 케이스의 경우 5회 반복
+                for i in range(5):
+                    self.login_test(information, stats_code)
+            else:
+                self.login_test(information, stats_code)
+
