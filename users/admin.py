@@ -12,6 +12,7 @@ from .models import (
     OrderItem,
     CartItem,
     Bill,
+    Seller,
     Subscribe,
 )
 
@@ -94,4 +95,5 @@ admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)
 admin.site.register(OrderItem)
 admin.site.register(Bill)
+admin.site.register(Seller)
 admin.site.register(CartItem)
