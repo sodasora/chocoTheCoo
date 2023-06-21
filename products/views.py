@@ -22,6 +22,15 @@ from .models import Product, Category, Review
 from users.models import Seller
 from rest_framework.permissions import IsAuthenticated
 from config.permissions_ import IsApprovedSeller, IsReadOnly
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Count, Q
+
+
+# 페이지네이션
+class PostingPagination(PageNumberPagination):
+    page_size = 8
+    page_size_query_param = "page_size"
+    max_page_size = 10000
 
 
 class CategoryListAPIView(ListCreateAPIView):
@@ -44,15 +53,37 @@ class ProductListAPIView(ListCreateAPIView):
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
+    pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
-        # url에서 user_id 존재하면 필터링, 없으면 전체
         if user_id:
             seller = get_object_or_404(Seller, user=user_id)
             queryset = Product.objects.filter(seller=seller.id)
         else:
             queryset = Product.objects.all()
+
+        keyword = self.request.query_params.get("search", None)
+        ordering = self.request.query_params.get("ordering", None)
+        category_name = self.request.query_params.get("category", None)
+
+        if keyword is not None:
+            queryset = queryset.filter(
+                Q(name__contains=keyword) | Q(content__contains=keyword)
+            )
+        if category_name is not None:
+            queryset = queryset.filter(category__name=category_name)
+
+        if ordering == "recent":
+            queryset = queryset.order_by("-created_at")
+        elif ordering == "popularity":
+            queryset = queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
+                "-num_wishlists"
+            )
+        elif ordering == "expensive":
+            queryset = queryset.order_by("-price")
+
+        # url에서 user_id 존재하면 필터링, 없으면 전체
         return queryset
 
     def perform_create(self, serializer):
