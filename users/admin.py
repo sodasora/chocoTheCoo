@@ -12,7 +12,6 @@ from .models import (
     OrderItem,
     CartItem,
     Bill,
-    Seller,
     Subscribe,
     Seller,
 )
@@ -21,7 +20,6 @@ admin.site.register(PointType)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
-admin.site.register(Seller)
 
 
 class UserCreationForm(forms.ModelForm):
