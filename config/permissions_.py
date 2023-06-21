@@ -14,37 +14,33 @@ class IsReadOnly(BasePermission):
 # Seller 신청 O, 승인여부 상관없음
 # ex) 판매자 마이페이지 조회 등
 class IsSeller(BasePermission):
+    message = "No Seller object related to User."
+
     def has_permission(self, request, view):
-        if hasattr(request.user, "user_seller"):
-            return True
-        else:
-            raise PermissionDenied(detail="No Seller object related to User.")
+        return hasattr(request.user, "user_seller")
 
 
 # Seller 신청 O, 승인됨
 # ex) 상품 등록 등
 class IsApprovedSeller(BasePermission):
+    message = "User's is_seller is False(not approved)."
+
     def has_permission(self, request, view):
-        if bool(request.user.is_seller):
-            return True
-        else:
-            raise PermissionDenied(detail="User's is_seller is False(not approved).")
+        return bool(request.user.is_seller)
 
 
 # 배송정보가 등록된 유저만 사용가능
 # ex) 상품 구매 등
 class IsDeliveryRegistered(BasePermission):
+    message = "No Delivery object related to User."
+
     def has_permission(self, request, view):
-        if hasattr(request.user, "deliveries_data"):
-            return True
-        else:
-            raise PermissionDenied(detail="No Delivery object related to User.")
+        return hasattr(request.user, "deliveries_data")
 
 
 # 통관번호가 등록된 유저만 사용가능
 class IsPCCRegistered(BasePermission):
+    message = "Only Seller can access this resource"
+
     def has_permission(self, request, view):
-        if bool(request.user.customs_code):
-            return True
-        else:
-            raise PermissionDenied(detail="Only Seller can access this resource")
+        return bool(request.user.customs_code)
