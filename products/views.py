@@ -1,7 +1,14 @@
 from rest_framework.views import APIView
+from rest_framework.generics import (
+    get_object_or_404,
+    ListCreateAPIView,
+    RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView,
+    RetrieveUpdateAPIView,
+    ListAPIView,
+)
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import generics
 from .serializers import (
     ProductListSerializer,
     CategoryDetailSerializer,
@@ -14,15 +21,26 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
 from users.models import Seller
 from rest_framework.permissions import IsAuthenticated
+from config.permissions_ import IsApprovedSeller, IsReadOnly
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Count, Q
 
-class CategoryListAPIView(generics.ListCreateAPIView):
+
+# 페이지네이션
+class PostingPagination(PageNumberPagination):
+    page_size = 8
+    page_size_query_param = "page_size"
+    max_page_size = 10000
+
+
+class CategoryListAPIView(ListCreateAPIView):
     """카테고리 조회, 생성"""
 
     queryset = Category.objects.all()
     serializer_class = CategoryListSerializer
 
 
-class CategoryDetailAPIView(generics.RetrieveAPIView):
+class CategoryDetailAPIView(RetrieveAPIView):
     """카테고리 상세 조회"""
 
     queryset = Category.objects.all()
@@ -30,36 +48,62 @@ class CategoryDetailAPIView(generics.RetrieveAPIView):
     lookup_field = "id"
 
 
-class ProductListAPIView(generics.ListCreateAPIView):
+class ProductListAPIView(ListCreateAPIView):
     """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
+    pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
-        # url에서 user_id 존재하면 필터링, 없으면 전체
         if user_id:
-            seller = Seller.objects.get(user=user_id)
+            seller = get_object_or_404(Seller, user=user_id)
             queryset = Product.objects.filter(seller=seller.id)
         else:
             queryset = Product.objects.all()
+
+        keyword = self.request.query_params.get("search", None)
+        ordering = self.request.query_params.get("ordering", None)
+        category_name = self.request.query_params.get("category", None)
+
+        if keyword is not None:
+            queryset = queryset.filter(
+                Q(name__contains=keyword) | Q(content__contains=keyword)
+            )
+        if category_name is not None:
+            queryset = queryset.filter(category__name=category_name)
+
+        if ordering == "recent":
+            queryset = queryset.order_by("-created_at")
+        elif ordering == "popularity":
+            queryset = queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
+                "-num_wishlists"
+            )
+        elif ordering == "expensive":
+            queryset = queryset.order_by("-price")
+
+        # url에서 user_id 존재하면 필터링, 없으면 전체
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user.user_seller)
+        seller = get_object_or_404(Seller, user=self.request.user)
+        serializer.save(seller=seller)
 
 
-class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
-    permission_classes = [IsAuthenticated]
 
+    permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductDetailSerializer
     queryset = Product.objects.all()
-    lookup_field = "id"
+
+    def perform_update(self, serializer):
+        seller = get_object_or_404(Seller, user=self.request.user)
+        serializer.save(seller=seller)
 
 
-class ReviewView(generics.ListCreateAPIView):
+class ReviewView(ListCreateAPIView):
     """리뷰 조회, 생성"""
 
     serializer_class = ReviewSerializer
@@ -74,8 +118,7 @@ class ReviewView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user, product=product)
 
 
-
-class ReviewDetailView(generics.RetrieveUpdateAPIView):
+class ReviewDetailView(RetrieveUpdateAPIView):
     """리뷰 상세 조회, 수정"""
 
     serializer_class = ReviewDetailSerializer
@@ -86,10 +129,9 @@ class ReviewDetailView(generics.RetrieveUpdateAPIView):
         return queryset
 
 
-class MyReviewView(generics.ListAPIView):
+class MyReviewView(ListAPIView):
     """내 리뷰 조회"""
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     lookup_field = "user_id"
-

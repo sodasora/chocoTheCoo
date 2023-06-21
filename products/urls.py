@@ -17,11 +17,11 @@ urlpatterns = [
         "categories/<int:id>/", CategoryDetailAPIView.as_view(), name="category-detail"
     ),
     # 특정 판매자의 상품 전체 조회
-    path("seller/<int:user_id>", ProductListAPIView.as_view(), name="seller-product-list"),
+    path("seller/<int:user_id>/", ProductListAPIView.as_view(), name="seller-product-list"),
     # 상품 전체 조회
     path("", ProductListAPIView.as_view(), name="product-list"),
     # 상품 상세 조회
-    path("<int:id>/", ProductDetailAPIView.as_view(), name="product-detail"),
+    path("<int:pk>/", ProductDetailAPIView.as_view(), name="product-detail"),
     # 리뷰 조회, 생성
     path("<int:product_id>/reviews/", ReviewView.as_view(), name="review_view"),
     # 리뷰 상세 조회, 수정, 삭제

@@ -19,8 +19,8 @@ class ChatViewSet(ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK) 
     
     # 특정 방의 요청이 'retrive' 오면 채팅방의 채팅 보여주기
-    def retrieve(self, request, pk=None): # pk = room_id
-        room = get_object_or_404(ChatRoom, pk=pk)
+    def retrieve(self, request, room_id=None): # pk = room_id
+        room = get_object_or_404(ChatRoom, pk=room_id)
         self.check_object_permissions(request, room)
         RoomMessage.objects.filter(room_id=room.id).exclude(author_id = request.user.id).update(
             is_read=True
@@ -31,18 +31,25 @@ class ChatViewSet(ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK) 
 
 
-# 채팅방 생성(삭제)
+# 채팅방 생성(삭제), 특정 채팅방 정보 보여주기
 class ChatRoomView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, room_id):
+        room = get_object_or_404(ChatRoom, id=room_id)
+        serializer = ChatRoomSerializer(room)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
     def post(self, request):
         serializer = ChatRoomSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(author = request.user)
             return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, room_id):
-        room = get_object_or_404(ChatRoom, room_id=room_id)
+        room = get_object_or_404(ChatRoom, id=room_id)
         if request.user == room.author:
             room.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
