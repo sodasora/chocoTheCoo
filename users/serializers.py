@@ -35,14 +35,9 @@ class UserSerializer(serializers.ModelSerializer):
         """
          email,password,username 검사
          """
-        if self.context == 'create':
-            verification_result = ValidatedData.validated_user_data(**element)
-            if verification_result is not True:
-                raise ValidationError(verification_result[1])
-        elif self.context == 'update':
-            verification_result = ValidatedData.update_validated_user_data(**element)
-            if verification_result is not True:
-                raise ValidationError(verification_result[1])
+        verification_result = ValidatedData.validated_user_data(**element)
+        if verification_result is not True:
+            raise ValidationError(verification_result[1])
         return element
 
     def create(self, validated_data):
@@ -54,18 +49,155 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
+class UserUpdatePasswordSerializer(serializers.ModelSerializer):
+    """
+    비밀번호 수정
+    """
+    new_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('password', 'new_password')
+
+    def validate(self, attrs):
+        """
+        비밀번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.user_password_update_validation(self.instance, attrs)
+        if verification_result is not True:
+            raise ValidationError(verification_result[1])
+        attrs['password'] = attrs['new_password']
+        return attrs
+
     def update(self, instance, validated_data):
         """
-        유저 오브 젝트 업데이트
+        비밀번호 최신화 및 암호화
+        """
+
+        user = super().update(instance, validated_data)
+        user.set_password(user.password)
+        user.login_attempts_count = 0
+        user.save()
+        return user
+
+
+class UserPasswordResetSerializer(serializers.ModelSerializer):
+    """
+    비밀번호 재 설정 (찾기 기능)
+    """
+    verification_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('password', 'verification_code', 'email')
+        extra_kwargs = {"email": {"read_only": True}, }
+
+    def validate(self, attrs):
+        """
+        비밀번호 데이터 검증
+        """
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'normal')
+        if verification_result is not True:
+            # 이메일 인증 코드 검증
+            raise ValidationError(verification_result[1])
+
+        if ValidatedData.validated_password(attrs.get('password')) is not True:
+            # 비밀번호  검증
+            raise ValidationError('비밀번호는 영 대소문자, 숫자, 특수문자가 필요합니다.')
+        return attrs
+
+    def update(self, instance, validated_data):
+        """
+        비밀번호 재 설정 및 암호화, 로그인 시도 횟수 초기화, 계정 활성화
+        """
+
+        user = super().update(instance, validated_data)
+        user.set_password(user.password)
+        user.is_active = True
+        user.login_attempts_count = 0
+        user.save()
+        user.email_verification.verification_code = None
+        user.email_verification.save()
+        return user
+
+
+class UserUpdateEmailSerializer(serializers.ModelSerializer):
+    """
+    이메일 정보 수정
+    """
+
+    verification_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('email', 'verification_code')
+
+    def validate(self, attrs):
+        """
+        이메일 정보 검증
+        """
+
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'change')
+        if verification_result is not True:
+            # 이메일 인증 코드 유효성 검사
+            raise ValidationError(verification_result[1])
+        if not ValidatedData.validated_email(attrs.get('email')):
+            # 이메일 형식 유효성 검사
+            raise ValidationError('이메일 형식이 올바르지 않습니다.')
+        else:
+            return attrs
+
+
+class UserUpdateCustomsCodeSerializer(serializers.ModelSerializer):
+    """
+    통관 번호 수정
+    """
+
+    class Meta:
+        model = User
+        fields = ('customs_code',)
+
+    def validate(self, attrs):
+        """
+        통관 번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.validated_customs_code(attrs.get('customs_code'))
+        if verification_result is not True:
+            raise ValidationError('통관 번호 정보가 올바르지 않습니다.')
+        return attrs
+
+    def update(self, instance, validated_data):
+        """
+        통관 번호 최신화 및 암호화
         """
 
         user = super().update(instance, validated_data)
         customs_code = validated_data.get('customs_code')
-        if validated_data.get('password') is not None:
-            user.set_password(user.password)
-        user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
+        user.customs_code = AESAlgorithm.encrypt(customs_code)
         user.save()
         return user
+
+
+class UserUpdateProfileSerializer(serializers.ModelSerializer):
+    """
+    프로필 정보 수정
+    """
+    class Meta:
+        model = User
+        fields = ('nickname', 'introduction', 'profile_image')
+
+    def validate(self, attrs):
+        """
+        통관 번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.validated_nickname(attrs.get('nickname'))
+        if verification_result is not True:
+            raise ValidationError('닉네임 정보가 올바르지 않습니다.')
+        return attrs
 
 
 class DeliverySerializer(serializers.ModelSerializer):

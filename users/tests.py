@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.urls import reverse
 
 
-
 class SignupAPIViewTest(APITestCase):
     """
     회원 가입 테스트
@@ -104,7 +103,7 @@ class EmailVerificationAndLoginTest(APITestCase):
         setUp : 메서드가 실행될 때 마다 한 번씩 실행
         """
 
-        url = reverse("email_verification_code")
+        url = reverse("email_authentication")
         email = self.user_data.get('email')
         request = {
             "email": email
@@ -142,7 +141,6 @@ class EmailVerificationAndLoginTest(APITestCase):
         except users.models.User.DoesNotExist:
             # 가입 되지 않은 유형의 테스트 케이스일 경우
             pass
-
 
     def test_email_verification(self):
         """
@@ -202,9 +200,7 @@ class EmailVerificationAndLoginTest(APITestCase):
             ({"email": 'unregistered_email@test.com', "password": '123'}, 404),
             # 로그인 실패 테스트 - 가입하지 않은 회원
             ({"email": self.user_data.get('email'), "password": '123'}, 400),
-            # 로그인 실패 테스트 - 비밀 번호 틀림 (5 회 반복)
-            ({"email": self.user_data.get('email'), "password": self.user_data.get('password')}, 400),
-            # 로그인 실패 테스트 - 비밀 번호 5회 이상 틀려, 계정 비 활성화 됨
+            # 로그인 실패 테스트 - 비밀 번호 틀림
             ({"email": self.another_user_data.get('email'), "password": self.another_user_data.get('password')}, 400),
             # 로그인 실패 테스트 - 이메일 인증을 받지 않아, 활성화 되지 않은 사용자
             ({"email": self.kakao_user_data.get('email'), "password": self.kakao_user_data.get('password')}, 400),
@@ -212,10 +208,43 @@ class EmailVerificationAndLoginTest(APITestCase):
         ]
 
         for information, stats_code in test_cases:
-            if information.get('email') == 'test@naver.com' and information.get('password') == '123':
-                # 비밀번호 틀린 테스트 케이스의 경우 5회 반복
-                for i in range(5):
-                    self.login_test(information, stats_code)
-            else:
-                self.login_test(information, stats_code)
+            self.login_test(information, stats_code)
 
+
+    def password_reset(self,information,status_code):
+        """
+        비밀번호 찾기, 재설정 기능 테스트
+        사용자가 자신의 비밀번호를 기억하지 못해서 비밀번호를 재 설정하고자 할때
+        """
+
+        url = reverse("user_view")
+        response = self.client.patch(url, information)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_password_reset(self):
+
+        [self.login_test({"email": self.user_data.get('email'), "password": '123'}, 400) for _ in range(5)]
+        self.assertEqual(self.user.is_active,False)
+        # 비밀 번호 5회 틀린 경우 계정 비 활성화
+
+        self.login_test({"email": self.user_data.get('email'), "password": self.user_data.get('password')}, 400)
+        # 5회 이상 틀린경우 올바른 비밀 번호로 로그인 시도할경우, 재설정 이전에 로그인 할 수 없음
+
+        test_cases = [
+            ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": "DoesNotExist"}, 400),
+            # 비밀번호 재 설정 테스트 (실패) - 잘못된 인증 코드로 접근
+            ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": self.user.email_verification.verification_code}, 200),
+            # 비밀번호 재 설정 테스트 (성공)
+            ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": self.user.email_verification.verification_code}, 400),
+            # 비밀번호 재 설정 테스트 (실패) - 같은 인증 코드로 중복 시도
+            ({"email": "DoesNotExist", "password": "DoesNotExist", "verification_code": "DoesNotExist"}, 404),
+            # 비밀번호 재 설정 테스트 (실패)  - 이메일 정보를 잘못 기입한 경우 또는 가입 하지 않은 이메일 정보
+
+
+        ]
+
+        for information, stats_code in test_cases:
+            self.password_reset(information, stats_code)
+            if stats_code == 200:
+                is_active = users.models.User.objects.get(email=information.get('email')).is_active
+                self.assertEqual(is_active, True)

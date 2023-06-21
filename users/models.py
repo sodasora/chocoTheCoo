@@ -59,9 +59,7 @@ class User(AbstractBaseUser, CommonModel):
     password = models.CharField("비밀번호", max_length=128)
     profile_image = models.ImageField("프로필 이미지", upload_to="%Y/%m", blank=True, null=True)
     introduction = models.CharField("소개", max_length=50, blank=True, null=True, default="아직 소개글이 없습니다.")
-    login_type = models.CharField(
-        "로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal"
-    )
+    login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
     customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     is_admin = models.BooleanField(default=False)
@@ -94,7 +92,8 @@ class PhoneVerification(CommonModel):
     휴대폰 , 휴대폰 인증 모델
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
-    user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE)
+
+    user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE, primary_key=True)
     phone_number = models.CharField('휴대폰 번호', max_length=30)
     verification_numbers = models.CharField('인증 번호', max_length=4, blank=True, null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
@@ -105,8 +104,16 @@ class EmailVerification(CommonModel):
     이메일 인증 모델
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
-    user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE)
-    verification_code = models.CharField('인증 코드', max_length=4,blank=True,null=True)
+
+    user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE, primary_key=True)
+    verification_code = models.CharField('인증 코드', max_length=30, blank=True, null=True)
+    AUTHENTICATION_TYPE = [
+        # normal : 회원 인증, 비밀 번호 재 설정
+        ("normal", "일반"),
+        # change : 이메일 변경 신청
+        ("change", "변경"),
+    ]
+    authentication_type = models.CharField("인증 유형", max_length=20, choices=AUTHENTICATION_TYPE, default="normal")
 
 
 class Seller(CommonModel):
@@ -114,9 +121,7 @@ class Seller(CommonModel):
     판매자 모델
     """
 
-    user = models.OneToOneField(
-        "users.User", related_name="user_seller", on_delete=models.CASCADE
-    )
+    user = models.OneToOneField("users.User", related_name="user_seller", on_delete=models.CASCADE, primary_key=True)
     company_name = models.CharField("업체명", max_length=20, unique=True)
     business_number = models.CharField("사업자 등록 번호", max_length=20)
     bank_name = models.CharField("은행 이름", max_length=20)
