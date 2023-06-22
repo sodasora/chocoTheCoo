@@ -76,7 +76,6 @@ urlpatterns = [
     path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
     # # 상품 구매용 포인트 차감
     # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
-    path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
     # 스케줄링
     path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]
@@ -92,6 +91,8 @@ urlpatterns += [
     path("update/information/", UpdateUserInformationAPIView.as_view(), name="update_information"),
     # 이메일 인증
     path("get/auth_code/", EmailAuthenticationAPIView.as_view(), name="email_authentication"),
+    # 핸드폰 인증
+    path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
     # 프로필 읽기, 회원정보 수정, 휴면 계정으로 전환
     path("profile/<int:user_id>/", UserProfileAPIView.as_view(), name="profile-view"),
     # SIMPLE JWT Token 발급
