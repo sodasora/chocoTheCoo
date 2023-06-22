@@ -59,7 +59,7 @@ class CartView(ListCreateAPIView):
             cart = CartItem.objects.get(
                 product=request.data["product"], user=request.user
             )
-            cart.amount += request.data.get("amount")
+            cart.amount += int(request.data.get("amount"))
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
         except CartItem.DoesNotExist:  # 그냥 장바구니 추가

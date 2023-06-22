@@ -59,9 +59,8 @@ class ProductListAPIView(ListCreateAPIView):
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
         if user_id:
-            seller = get_object_or_404(Seller, user=user_id)
-            queryset = Product.objects.filter(seller=seller.pk)
-
+            # seller = get_object_or_404(Seller, user=user_id)
+            queryset = Product.objects.filter(seller=user_id)
         else:
             queryset = Product.objects.all()
 
