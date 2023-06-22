@@ -101,7 +101,7 @@ class OrderListView(ListAPIView):
             queryset = OrderItem.objects.filter(product_id=product_id)
         elif user_id:
             seller = Seller.objects.get(user=user_id)
-            queryset = OrderItem.objects.filter(seller=seller.id)
+            queryset = OrderItem.objects.filter(seller=seller.pk)
         else:
             queryset = OrderItem.objects.all()
         return queryset

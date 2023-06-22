@@ -36,6 +36,7 @@ class Review(CommonModel):
         "products.Product",
         models.CASCADE,
         verbose_name="상품",
+        related_name="product_reviews"
     )
     title = models.CharField("리뷰제목", max_length=20)
     content = models.TextField(
