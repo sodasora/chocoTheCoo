@@ -149,6 +149,13 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
         else:
             return attrs
 
+    def update(self, instance, validated_data):
+        user = super().update(instance, validated_data)
+        user.email = validated_data.get('email')
+        user.save()
+        user.email_verification.verification_code = None
+        user.email_verification.save()
+        return user
 
 class UserUpdateCustomsCodeSerializer(serializers.ModelSerializer):
     """
