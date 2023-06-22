@@ -16,6 +16,7 @@ from .serializers import (
     ProductDetailSerializer,
     ReviewSerializer,
     ReviewDetailSerializer,
+    GetProductDetailSerializer,
 )
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
@@ -59,7 +60,7 @@ class ProductListAPIView(ListCreateAPIView):
         user_id = self.kwargs.get("user_id")
         if user_id:
             seller = get_object_or_404(Seller, user=user_id)
-            queryset = Product.objects.filter(seller=seller.id)
+            queryset = Product.objects.filter(seller=seller.pk)
         else:
             queryset = Product.objects.all()
 
@@ -91,8 +92,15 @@ class ProductListAPIView(ListCreateAPIView):
         serializer.save(seller=seller)
 
 
+
 class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
-    """상품 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
+    """ 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return GetProductDetailSerializer
+        else:
+            return ProductDetailSerializer
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductDetailSerializer
