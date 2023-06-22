@@ -35,53 +35,78 @@ from .serializers import (
     SubscriptionInfoSerializer,
     PhoneVerificationSerializer,
     FollowSerializer,
+    UserUpdateCustomsCodeSerializer,
+    UserUpdateProfileSerializer,
+    UserUpdateEmailSerializer,
+    UserUpdatePasswordSerializer,
+    UserPasswordResetSerializer,
 )
 
 
-class GetEmailAuthCodeAPIView(APIView):
+class EmailAuthenticationAPIView(APIView):
     """
-    이메일 인증코드 발송
+    이메일 인증 기능 API
     """
 
-    def put(self, request):
+    def post(self, request):
         """
         인증 코드 이메일 발송 및 DB 저장
         """
         user = get_object_or_404(User, email=request.data.get("email"))
-        if user.login_type != 'normal':
-            return Response({"err": "소셜 로그인 계정 입니다."}, status=status.HTTP_403_FORBIDDEN)
+        email_delivery_result = EmailService.send_email_verification_code(user, user.email, 'normal')
+        if email_delivery_result is not True:
+            return Response({"err": email_delivery_result[1]}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
-        verification_code = EmailService.get_authentication_code()
+    def put(self, request):
+        """
+        이메일 인증
+        """
 
-        try:
-            # 원투원 필드가 존재하면 인증 코드만 수정
-            email_verification = user.email_verification
-            email_verification.verification_code = verification_code
-        except EmailVerification.DoesNotExist:
-            # 원투원 필드가 존재하지 않으면 원투원 필드 생성
-            email_verification = EmailVerification(user=user, verification_code=verification_code)
-        email_verification.save()
+        user = get_object_or_404(User, email=request.data["email"])
+        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'), 'normal')
+        if validate_result is not True:
+            # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
+            return Response(
+                {"err": validate_result[1]}, status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            user.is_active = True
+            user.email_verification.verification_code = None
+            user.save()
+            user.email_verification.save()
+            return Response(
+                {"msg": "인증 되었습니다."}, status=status.HTTP_200_OK
+            )
 
-        subject_message = 'Choco The Coo has sent a verification email'
-        content_message = verification_code
-        EmailService.message_forwarding(user.email, subject_message, content_message)
+    def patch(self, request):
+        """
+        비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
+        """
 
-        return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
+        user = get_object_or_404(User, email=request.data.get('email'))
+        serializer = UserPasswordResetSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PhoneVerificationAPIView(APIView):
     """
-    post : 핸드폰 번호 등록 및 인증 번호 발송
-    put : 인증 번호를 통한 핸드폰 인증
+    휴대폰 인증 API
     """
 
     def put(self, request):
         """
         휴대폰 정보 등록 및 수정
         인증 코드 발급 받기
-        requset
-         - access Token
-         - phone_number
         """
 
         user = get_object_or_404(User, pk=request.user.pk)
@@ -131,16 +156,14 @@ class PhoneVerificationAPIView(APIView):
 
 class UserAPIView(APIView):
     """
-    GET : 사용자 디테일 정보 불러오기
-    POST : 회원가입
-    PUT : 이메일 인증
-    PATCH : 비밀번호 재 설정 (비밀번호 찾기 기능)
+    사용자 정보 API
     """
 
     def get(self, request):
         """
         사용자 디테일 정보 불러오기  (복호화가 필요한 데이터 포함)
         """
+
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = UserDetailSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -149,7 +172,7 @@ class UserAPIView(APIView):
         """
         회원 가입
         """
-        serializer = UserSerializer(data=request.data, context="create")
+        serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -162,91 +185,13 @@ class UserAPIView(APIView):
 
     def put(self, request):
         """
-        회원 가입시 이메일 인증
-        """
-        user = get_object_or_404(User, email=request.data["email"])
-        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
-        if validate_result is not True:
-            # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
-            return Response(
-                {"err": validate_result[1]}, status=status.HTTP_400_BAD_REQUEST
-            )
-        else:
-            user.is_active = True
-            user.email_verification.verification_code = None
-            user.save()
-            user.email_verification.save()
-            return Response(
-                {"msg": "인증 되었습니다."}, status=status.HTTP_200_OK
-            )
-
-    def patch(self, request):
-        """
-        비밀번호 재 설정(찾기 기능) or 휴면 계정 활성화 신청 응답
+        비밀 번호 정보 수정
         """
 
-        user = get_object_or_404(User, email=request.data.get("email"))
-        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'))
-        if validate_result is not True:
-            # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
-            return Response(
-                {"err": validate_result[1]}, status=status.HTTP_400_BAD_REQUEST
-            )
-        else:
-            serializer = UserSerializer(user, data=request.data, partial=True, context="update")
-            if serializer.is_valid():
-                serializer.save()
-                user.is_active = True
-                user.email_verification.verification_code = None
-                user.login_attempts_count = 0
-                user.save()
-                user.email_verification.save()
-                return Response(
-                    {"msg": "비밀번호를 재 설정 했습니다."}, status=status.HTTP_200_OK
-                )
-            else:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
-
-
-class UserProfileAPIView(APIView):
-    """
-    GET : 마이페이지 정보 읽기
-    PUT : 회원 정보 수정
-    DELETE : 휴면 계정으로 전환
-    """
-
-    def get(self, request, user_id):
-        """
-        마이페이지 정보 읽어오기
-        """
-
-        user = get_object_or_404(User, id=user_id)
-        serializer = ReadUserSerializer(user)
-        return Response(
-            serializer.data, status=status.HTTP_200_OK
-        )
-
-    def patch(self, request, user_id):
-        """
-        회원 정보 수정
-        """
-
-        user = get_object_or_404(User, id=user_id)
-        validated_result = ValidatedData.validated_updated_user_information(user,request)
-        if validated_result is not True:
-            return Response(
-                {"err":"유효성 검사 실패"}, status=validated_result
-            )
-        elif request.data.get('password') is not None:
-            request.data['password'] = request.data.get('new_password')
-
-        serializer = UserSerializer(user, data=request.data, partial=True, context="update")
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = UserUpdatePasswordSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            user.login_attempts_count = 0
-            user.save()
             return Response(
                 {"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK
             )
@@ -255,20 +200,103 @@ class UserProfileAPIView(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-    def delete(self, request, user_id):
+    def patch(self, request):
+        """
+        통관 번호 수정
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = UserUpdateCustomsCodeSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"msg": "통관 번호를 수정 했습니다."}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+    def delete(self, request):
         """
         휴면 계정으로 전환
         """
 
-        user = get_object_or_404(User, id=user_id)
-        if request.user != user:
-            return Response(
-                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        user = get_object_or_404(User, pk=request.user.pk)
         user.is_active = False
         user.save()
         return Response(
             {"msg": "휴면 계정으로 전환 되었습니다."}, status=status.HTTP_200_OK
+        )
+
+
+class UpdateUserInformationAPIView(APIView):
+    """
+    변경 이메일로 인증 메일 발송, 프로필 , 통관 번호 수정
+    """
+
+    def post(self, request):
+        """
+        이메일 변경 신청시, 해당 이메일로 인증 코드 발급
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        email_delivery_result = EmailService.send_email_verification_code(user, request.data.get('email'), 'change')
+        if email_delivery_result is not True:
+            return Response({"err": email_delivery_result[1]}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
+
+    def put(self,request):
+        """
+        이메일 정보 수정
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = UserUpdateEmailSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"msg": "회원 정보를 수정 했습니다."}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def patch(self, request):
+        """
+        프로필 정보 수정
+        """
+
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = UserUpdateProfileSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"msg": "프로필 정보를 수정 했습니다."}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class UserProfileAPIView(APIView):
+    """
+    프로필 정보 읽기
+    """
+
+    def get(self, request, user_id):
+        """
+        마이페이지의 프로필 정보 읽어오기
+        """
+
+        user = get_object_or_404(User, id=user_id)
+        serializer = ReadUserSerializer(user)
+        return Response(
+            serializer.data, status=status.HTTP_200_OK
         )
 
 
@@ -282,22 +310,24 @@ class DeliveryAPIView(APIView):
         """
         배송 정보들 읽기
         """
+
         user = get_object_or_404(User, id=user_id)
         serializer = DeliverySerializer(user.deliveries_data, many=True)
         return Response(
-            serializer.data,status=status.HTTP_200_OK
+            serializer.data, status=status.HTTP_200_OK
         )
 
     def post(self, request, user_id):
         """
         배송 정보 추가
         """
+
         user = get_object_or_404(User, id=user_id)
-        validated_result = ValidatedData.validated_deliveries(user,request)
+        validated_result = ValidatedData.validated_deliveries(user, request)
         if validated_result is not True:
             return Response(
                 {"err": "유효성 검사 실패"}, status=validated_result
-            ) 
+            )
 
         serializer = DeliverySerializer(data=request.data)
         if serializer.is_valid():
@@ -536,7 +566,7 @@ class ReviewListAPIView(APIView):
         """
         리뷰를 좋아요 등록한 사용자 정보들 불러오기
         """
-        
+
         review = get_object_or_404(Review, id=review_id)
         serializer = GetReviewUserListInfo(review)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -545,7 +575,7 @@ class ReviewListAPIView(APIView):
         """
         리뷰 좋아요 등록 및 취소
         """
-        
+
         user = get_object_or_404(User, email=request.user.email)
         review = get_object_or_404(Review, id=review_id)
         if review in user.review_like.all():
@@ -579,7 +609,7 @@ class FollowAPIView(APIView):
         """
         사용자를 팔로우, 언팔로우
         """
-        
+
         user = get_object_or_404(User, pk=request.user.pk)
         owner = get_object_or_404(Review, id=user_id)
         if owner in user.follower.all():
@@ -595,6 +625,8 @@ class FollowAPIView(APIView):
 
 
 """포인트"""
+
+
 # 날짜별 포인트 보기
 class PointView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
