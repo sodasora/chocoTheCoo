@@ -87,7 +87,12 @@ class GetProductDetailSerializer(serializers.ModelSerializer):
 
     def get_product_information(self, obj):
         # 다른 시리얼 라이저 데이터 불러오기
-        return ProductListSerializer(obj).data
+        new_dict = {
+            "sales": ProductListSerializer(obj).data.get('sales'),
+            "likes": ProductListSerializer(obj).data.get('likes'),
+            "stars": ProductListSerializer(obj).data.get('stars'),
+        }
+        return new_dict
 
     class Meta:
         model = Product
