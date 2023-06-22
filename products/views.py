@@ -18,6 +18,7 @@ from .serializers import (
     ReviewDetailSerializer,
     GetProductDetailSerializer,
 )
+from users.serializers import PointSerializer
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
 from users.models import Seller
@@ -25,7 +26,7 @@ from rest_framework.permissions import IsAuthenticated
 from config.permissions_ import IsApprovedSeller, IsReadOnly
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Count, Q
-
+from math import ceil
 
 # 페이지네이션
 class PostingPagination(PageNumberPagination):
@@ -66,6 +67,7 @@ class ProductListAPIView(ListCreateAPIView):
 
         keyword = self.request.query_params.get("search", None)
         ordering = self.request.query_params.get("ordering", None)
+        category = self.request.query_params.get("category", None)
         category = self.request.query_params.get("category", None)
 
         if keyword is not None:
@@ -120,6 +122,15 @@ class ReviewView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         product = Product.objects.get(id=self.kwargs.get("product_id"))
+        if self.request.data.get("image"):
+            data = {"point":ceil(product.price*0.05)}
+            point_serializer = PointSerializer(data = data)
+            point_serializer.save(user=self.request.user, point_type_id=3)
+        else:
+            data = {"point":ceil(product.price*0.01)}
+            point_serializer = PointSerializer(data = data)
+            point_serializer.save(user=self.request.user, point_type_id=2)
+
         serializer.save(user=self.request.user, product=product)
 
 
@@ -132,6 +143,7 @@ class ReviewDetailView(RetrieveUpdateAPIView):
         product_id = self.kwargs.get("product_id")
         queryset = Review.objects.filter(product_id=product_id)
         return queryset
+
 
 
 class MyReviewView(ListAPIView):

@@ -17,6 +17,7 @@ from .models import (
 )
 
 admin.site.register(PointType)
+# admin.site.register(Seller)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
