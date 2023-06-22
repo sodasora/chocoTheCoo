@@ -1,6 +1,4 @@
 from rest_framework import serializers
-from users.serializers import BriefUserInformation
-
 import users.models
 from products.models import Product, Category, Review
 from users.models import OrderItem, User
@@ -51,13 +49,19 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class GetReviewUserListInfo(serializers.ModelSerializer):
     """
-    리뷰 좋아요 유저들 정보 불러오기
+
     """
-    review_liking_people = users.serializers.BriefUserInformation(many=True)
+
     review_liking_people_count = serializers.SerializerMethodField()
+    user_profile_image = serializers.SerializerMethodField()
 
     def get_review_liking_people_count(self, obj):
         return obj.review_liking_people.count()
+
+    def get_user_profile_image(self, obj):
+        if obj.user.profile_image:
+            return str(obj.user.profile_image)
+        return None
 
     class Meta:
         model = Review
@@ -79,6 +83,11 @@ class GetProductDetailSerializer(serializers.ModelSerializer):
     """
     seller = SimpleSellerInformation()
     product_reviews = GetReviewUserListInfo(many=True)
+    product_information = serializers.SerializerMethodField()
+
+    def get_product_information(self, obj):
+        # 다른 시리얼 라이저 데이터 불러오기
+        return ProductListSerializer(obj).data
 
     class Meta:
         model = Product
