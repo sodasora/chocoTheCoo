@@ -125,6 +125,29 @@ class EmailService:
         mail.content_subtype = "html"
         mail.send()
 
+    @classmethod
+    def send_email_verification_code(cls, user, email, mod):
+        if user.login_type != 'normal':
+            # 소셜 계정으로 가입된 사용자일 경우 예외 처리
+            return [False, '소셜 계정으로 가입된 이메일 입니다.']
+        elif ValidatedData.validated_email(email) is not True:
+            return [False, '이메일 형식이 올바르지 않습니다.']
+
+        verification_code = cls.get_authentication_code()
+        try:
+            # 원투원 필드가 존재하면 인증 코드만 수
+            email_verification = user.email_verification
+            email_verification.verification_code = verification_code
+        except users.models.EmailVerification.DoesNotExist:
+            # 원투원 필드가 존재하지 않으면 원투원 필드 생성
+            email_verification = users.models.EmailVerification(user=user, verification_code=verification_code)
+        email_verification.authentication_type = mod
+        email_verification.save()
+
+        subject_message = 'Choco The Coo has sent a verification email'
+        content_message = verification_code
+        EmailService.message_forwarding(email, subject_message, content_message)
+        return True
 
 class ValidatedData:
     """
@@ -165,7 +188,6 @@ class ValidatedData:
         """
         이메일 검증
         """
-
         if email is None:
             return False
         email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
@@ -269,7 +291,7 @@ class ValidatedData:
         return True
 
     @classmethod
-    def validated_email_verification_code(cls, user, request_verification_code):
+    def validated_email_verification_code(cls, user, request_verification_code, mod):
         """
         이메일 인증 코드 유효성 검사
         """
@@ -282,22 +304,24 @@ class ValidatedData:
             verification_code = user.email_verification.verification_code
         except users.models.EmailVerification.DoesNotExist:
             # 원투원 필드가 없을 경우 예외처리
-            return [False,'인증 코드를 발급 받아 주세요.']
+            return [False, '인증 코드를 발급 받아 주세요.']
 
         if verification_code is None:
             # 인증 코드를 발급받지 않았을 경우 예외 처리
-            return [False,'인증 코드를 발급 받아 주세요.']
+            return [False, '인증 코드를 발급 받아 주세요.']
+        elif user.email_verification.authentication_type != mod:
+            # 발급 받은 유형의 인증 코드를 다른 용도로 사용할 경우
+            return [False, '현재 발급 받은 인증 코드 유형이 올바르지 않습니다.']
         elif not (timezone.now() - user.email_verification.updated_at) <= timedelta(minutes=5):
+            # 인증 유효 기간이 지났을 경우 예외 처리
             user.email_verification.verification_code = None
             user.email_verification.save()
-            # 인증 유효 기간이 지났을 경우 예외 처리
-            return [False,'인증 코드 유효 기간이 만료되었습니다.']
+            return [False, '인증 코드 유효 기간이 만료되었습니다.']
         elif not verification_code == request_verification_code:
             # 사용자가 입력한 이메일 인증번호와, 등록된 이메일 인증번호가 일치하지 않을 경우 예외처리
-            return [False,'인증 코드가 일치하지 않습니다.']
+            return [False, '인증 코드가 일치하지 않습니다.']
         else:
             return True
-
 
     @classmethod
     def validated_phone_verification(cls, user, request_verification_numbers):
@@ -327,29 +351,6 @@ class ValidatedData:
             return True
 
     @classmethod
-    def validated_updated_user_information(cls, user, request):
-        """
-        회원 정보 수정 접근 유효성 검사
-        """
-
-        if request.user != user:
-            # 로그인을 하지 않았거나 올바르지 않은 경로로 접근
-            return status.HTTP_401_UNAUTHORIZED
-        elif user.login_type != "normal" and request.data.get('password') is not None and request.data.get(
-                'eamil') is not None:
-            # 소셜 로그인 계정이 이메일 또는 비밀번호를 변경 하고자 하는 경우
-            return status.HTTP_403_FORBIDDEN
-        elif request.data.get('password') or request.data.get('new_password'):
-            # 비밀 번호를 변경 하고자 할때 변경
-            if not (request.data.get('password') is not None and request.data.get('new_password') is not None):
-                # 둘중 하나의 값이 빈 값일 경우
-                return status.HTTP_422_UNPROCESSABLE_ENTITY
-            elif not check_password(request.data.get('password'), user.password):
-                return status.HTTP_409_CONFLICT
-
-        return True
-
-    @classmethod
     def validated_deliveries(cls, user, request):
         """
         배송 정보 작성 유효성 검사
@@ -374,3 +375,25 @@ class ValidatedData:
             # 핸드폰 번호를 등록하지 않았을 경우
             return status.HTTP_402_PAYMENT_REQUIRED
 
+    @classmethod
+    def user_password_update_validation(cls, instance, attrs):
+        """
+        비밀 번호 수정 유효성 검사
+        """
+        password = attrs.get('password')
+        new_password = attrs.get('new_password')
+        if instance.login_type != "normal":
+            return [False, '소셜 계정으로 가입된 사용자 입니다.']
+        elif not check_password(password, instance.password):
+            return [False, '입력하신 비밀번호가 사용자의 비밀번호와 일치하지 않습니다.']
+        elif not cls.validated_password(new_password):
+            return [False, '비밀번호는 영 대소문자, 숫자, 특수문자가 필요합니다.']
+        else:
+            return True
+
+    @classmethod
+    def user_email_update_validation(cls, instance, attrs):
+        """
+        이메일 정보 수정 유효성 검사
+        """
+        pass

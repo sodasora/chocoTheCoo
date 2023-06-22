@@ -1,4 +1,5 @@
 from rest_framework import serializers
+import users.models
 from products.models import Product, Category, Review
 from users.models import OrderItem, User
 
@@ -46,7 +47,60 @@ class ProductListSerializer(serializers.ModelSerializer):
         read_only_fields = ('seller',)
 
 
+class GetReviewUserListInfo(serializers.ModelSerializer):
+    """
+
+    """
+
+    review_liking_people_count = serializers.SerializerMethodField()
+    user_profile_image = serializers.SerializerMethodField()
+
+    def get_review_liking_people_count(self, obj):
+        return obj.review_liking_people.count()
+
+    def get_user_profile_image(self, obj):
+        if obj.user.profile_image:
+            return str(obj.user.profile_image)
+        return None
+
+    class Meta:
+        model = Review
+        fields = "__all__"
+
+
+class SimpleSellerInformation(serializers.ModelSerializer):
+    """
+    간단한 판매자 정보 리스트
+    """
+    class Meta:
+        model = users.models.Seller
+        fields = ('company_img','company_name','user','business_owner_name','contact_number')
+
+
+class GetProductDetailSerializer(serializers.ModelSerializer):
+    """
+    상품 상세 조회
+    """
+    seller = SimpleSellerInformation()
+    product_reviews = GetReviewUserListInfo(many=True)
+    product_information = serializers.SerializerMethodField()
+
+    def get_product_information(self, obj):
+        # 다른 시리얼 라이저 데이터 불러오기
+        new_dict = {
+            "sales": ProductListSerializer(obj).data.get('sales'),
+            "likes": ProductListSerializer(obj).data.get('likes'),
+            "stars": ProductListSerializer(obj).data.get('stars'),
+        }
+        return new_dict
+
+    class Meta:
+        model = Product
+        fields = "__all__"
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Product
         fields = "__all__"

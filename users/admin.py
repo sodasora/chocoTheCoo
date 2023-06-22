@@ -12,8 +12,8 @@ from .models import (
     OrderItem,
     CartItem,
     Bill,
-    Seller,
     Subscribe,
+    Seller,
 )
 
 admin.site.register(PointType)

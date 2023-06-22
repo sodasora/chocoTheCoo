@@ -35,14 +35,9 @@ class UserSerializer(serializers.ModelSerializer):
         """
          email,password,username 검사
          """
-        if self.context == 'create':
-            verification_result = ValidatedData.validated_user_data(**element)
-            if verification_result is not True:
-                raise ValidationError(verification_result[1])
-        elif self.context == 'update':
-            verification_result = ValidatedData.update_validated_user_data(**element)
-            if verification_result is not True:
-                raise ValidationError(verification_result[1])
+        verification_result = ValidatedData.validated_user_data(**element)
+        if verification_result is not True:
+            raise ValidationError(verification_result[1])
         return element
 
     def create(self, validated_data):
@@ -54,18 +49,162 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
+class UserUpdatePasswordSerializer(serializers.ModelSerializer):
+    """
+    비밀번호 수정
+    """
+    new_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('password', 'new_password')
+
+    def validate(self, attrs):
+        """
+        비밀번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.user_password_update_validation(self.instance, attrs)
+        if verification_result is not True:
+            raise ValidationError(verification_result[1])
+        attrs['password'] = attrs['new_password']
+        return attrs
+
     def update(self, instance, validated_data):
         """
-        유저 오브 젝트 업데이트
+        비밀번호 최신화 및 암호화
+        """
+
+        user = super().update(instance, validated_data)
+        user.set_password(user.password)
+        user.login_attempts_count = 0
+        user.save()
+        return user
+
+
+class UserPasswordResetSerializer(serializers.ModelSerializer):
+    """
+    비밀번호 재 설정 (찾기 기능)
+    """
+    verification_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('password', 'verification_code', 'email')
+        extra_kwargs = {"email": {"read_only": True}, }
+
+    def validate(self, attrs):
+        """
+        비밀번호 데이터 검증
+        """
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'normal')
+        if verification_result is not True:
+            # 이메일 인증 코드 검증
+            raise ValidationError(verification_result[1])
+
+        if ValidatedData.validated_password(attrs.get('password')) is not True:
+            # 비밀번호  검증
+            raise ValidationError('비밀번호는 영 대소문자, 숫자, 특수문자가 필요합니다.')
+        return attrs
+
+    def update(self, instance, validated_data):
+        """
+        비밀번호 재 설정 및 암호화, 로그인 시도 횟수 초기화, 계정 활성화
+        """
+
+        user = super().update(instance, validated_data)
+        user.set_password(user.password)
+        user.is_active = True
+        user.login_attempts_count = 0
+        user.save()
+        user.email_verification.verification_code = None
+        user.email_verification.save()
+        return user
+
+
+class UserUpdateEmailSerializer(serializers.ModelSerializer):
+    """
+    이메일 정보 수정
+    """
+
+    verification_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('email', 'verification_code')
+
+    def validate(self, attrs):
+        """
+        이메일 정보 검증
+        """
+
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'change')
+        if verification_result is not True:
+            # 이메일 인증 코드 유효성 검사
+            raise ValidationError(verification_result[1])
+        if not ValidatedData.validated_email(attrs.get('email')):
+            # 이메일 형식 유효성 검사
+            raise ValidationError('이메일 형식이 올바르지 않습니다.')
+        else:
+            return attrs
+
+    def update(self, instance, validated_data):
+        user = super().update(instance, validated_data)
+        user.email = validated_data.get('email')
+        user.save()
+        user.email_verification.verification_code = None
+        user.email_verification.save()
+        return user
+
+class UserUpdateCustomsCodeSerializer(serializers.ModelSerializer):
+    """
+    통관 번호 수정
+    """
+
+    class Meta:
+        model = User
+        fields = ('customs_code',)
+
+    def validate(self, attrs):
+        """
+        통관 번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.validated_customs_code(attrs.get('customs_code'))
+        if verification_result is not True:
+            raise ValidationError('통관 번호 정보가 올바르지 않습니다.')
+        return attrs
+
+    def update(self, instance, validated_data):
+        """
+        통관 번호 최신화 및 암호화
         """
 
         user = super().update(instance, validated_data)
         customs_code = validated_data.get('customs_code')
-        if validated_data.get('password') is not None:
-            user.set_password(user.password)
-        user.customs_code = AESAlgorithm.encrypt(customs_code) if customs_code is not None else user.customs_code
+        user.customs_code = AESAlgorithm.encrypt(customs_code)
         user.save()
         return user
+
+
+class UserUpdateProfileSerializer(serializers.ModelSerializer):
+    """
+    프로필 정보 수정
+    """
+    class Meta:
+        model = User
+        fields = ('nickname', 'introduction', 'profile_image')
+
+    def validate(self, attrs):
+        """
+        통관 번호 데이터 검증
+        """
+
+        verification_result = ValidatedData.validated_nickname(attrs.get('nickname'))
+        if verification_result is not True:
+            raise ValidationError('닉네임 정보가 올바르지 않습니다.')
+        return attrs
 
 
 class DeliverySerializer(serializers.ModelSerializer):
@@ -137,10 +276,10 @@ class SellerSerializer(serializers.ModelSerializer):
         current_date = datetime.now() # 현재시간
         start_of_last_month = current_date.replace(month=current_date.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)# 지난달 시작일
         end_of_last_month = start_of_last_month.replace(month=start_of_last_month.month + 1, day=1) - timedelta(days=1) # 지난달 종료일
-        seller_orders1 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(created_at__gte=start_of_last_month, created_at__lte=end_of_last_month) # 조건(구매확정:5,지난달)에 맞는 쿼리셋
+        seller_orders1 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5).filter(created_at__gte=start_of_last_month, created_at__lte=end_of_last_month) # 조건(구매확정:5,지난달)에 맞는 쿼리셋
         start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0) # 당월 시작일
         end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1) # 당월 종료일
-        seller_orders2 = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(created_at__gte=start_of_month, created_at__lte=end_of_month) # 조건(구매확정:5,이번달)에 맞는 쿼리셋
+        seller_orders2 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5).filter(created_at__gte=start_of_month, created_at__lte=end_of_month) # 조건(구매확정:5,이번달)에 맞는 쿼리셋
         last_month_profits = sum(order.amount*order.price for order in seller_orders1)
         month_profits = sum(order.amount*order.price for order in seller_orders2)
         return f'({(month_profits-last_month_profits)/last_month_profits*100}%)' if last_month_profits else None
@@ -153,7 +292,7 @@ class SellerSerializer(serializers.ModelSerializer):
         current_date = datetime.now()  # 현재시간
         start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)  # 당월 시작일
         end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1)  # 당월 종료일
-        seller_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(
+        seller_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5).filter(
             created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:5,이번달)에 맞는 쿼리셋
         return sum(order.amount * order.price for order in seller_orders)
 
@@ -161,7 +300,7 @@ class SellerSerializer(serializers.ModelSerializer):
     total_profit = serializers.SerializerMethodField()
 
     def get_total_profit(self, obj):
-        seller_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status=5)  # 조건(구매확정:5)에 맞는 쿼리셋
+        seller_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5)  # 조건(구매확정:5)에 맞는 쿼리셋
         return sum(order.amount * order.price for order in seller_orders)
 
     # 월발송건수(거래확정)
@@ -171,7 +310,7 @@ class SellerSerializer(serializers.ModelSerializer):
         current_date = datetime.now()  # 현재시간
         start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)  # 당월 시작일
         end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1)  # 당월 종료일
-        sent_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status=5).filter(
+        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5).filter(
             created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:5 상태,이번달)에 맞는 쿼리셋
         return len(sent_orders)
 
@@ -179,14 +318,14 @@ class SellerSerializer(serializers.ModelSerializer):
     total_sent = serializers.SerializerMethodField()
 
     def get_total_sent(self, obj):
-        sent_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status=5)  # 조건(구매확정:5)에 맞는 쿼리셋
+        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5)  # 조건(구매확정:5)에 맞는 쿼리셋
         return len(sent_orders)
 
     # 발송완료주문(거래확정전)
     unpaid_sent = serializers.SerializerMethodField()
 
     def get_unpaid_sent(self, obj):
-        sent_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status__gte=4,
+        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status__gte=4,
                                                                      order_status__lt=5)  # 조건(배송중:4 ~구매확정:5 전 상태)에 맞는 쿼리셋
         return len(sent_orders)
 
@@ -194,7 +333,7 @@ class SellerSerializer(serializers.ModelSerializer):
     unsent = serializers.SerializerMethodField()
 
     def get_unsent(self, obj):
-        sent_orders = OrderItem.objects.filter(seller=obj.id).filter(order_status__gte=2,
+        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status__gte=2,
                                                                      order_status__lte=3)  # 조건(주문확인:2 ~배송준비중:3 상태)에 맞는 쿼리셋
         return len(sent_orders)
 
@@ -256,10 +395,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
 
     @classmethod
-    def validate(self, attrs):
+    def validate(cls, attrs):
         user = get_object_or_404(User, email=attrs.get("email"))
         try:
-            if user.is_active is False:
+            if user.login_type != 'normal':
+                raise ValidationError(f'{user.login_type}로 가입된 소셜 게정입니다.')
+            elif user.is_active is False:
                 raise ValidationError("휴면 계정입니다.")
             elif user.login_attempts_count >= 5:
                 raise ValidationError("비밀 번호 입력 회수가 초과 되었습니다.")
@@ -269,7 +410,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise ValidationError(f'비밀번호가 올바르지 않습니다. 남은 로그인 시도 회수 {5 - user.login_attempts_count}')
             else:
                 user.login_attempts_count = 0
-                user.last_login = timezone.now()
                 user.save()
                 refresh = RefreshToken.for_user(user)
                 access_token = CustomTokenObtainPairSerializer.get_token(user)

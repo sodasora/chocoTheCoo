@@ -59,7 +59,7 @@ class CartView(ListCreateAPIView):
             cart = CartItem.objects.get(
                 product=request.data["product"], user=request.user
             )
-            cart.amount += request.data.get("amount")
+            cart.amount += int(request.data.get("amount"))
             cart.save()
             return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
         except CartItem.DoesNotExist:  # 그냥 장바구니 추가
@@ -101,7 +101,7 @@ class OrderListView(ListAPIView):
             queryset = OrderItem.objects.filter(product_id=product_id)
         elif user_id:
             seller = Seller.objects.get(user=user_id)
-            queryset = OrderItem.objects.filter(seller=seller.id)
+            queryset = OrderItem.objects.filter(seller=seller.pk)
         else:
             queryset = OrderItem.objects.all()
         return queryset
@@ -110,13 +110,13 @@ class OrderListView(ListAPIView):
 class OrderCreateView(CreateAPIView):
     """주문 생성"""
 
-    permission_classes = [IsAuthenticated | IsDeliveryRegistered]
+    permission_classes = [IsAuthenticated, IsDeliveryRegistered]
     queryset = OrderItem.objects.all()
     serializer_class = OrderCreateSerializer
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
-        # bill이 생성되었는지 확인, 생성되지 않았다면 400
+        # bill이 생성되었는지 확인, 생성되지 않았다면 404
         bill_id = self.kwargs.get("bill_id")
         bill = get_object_or_404(
             Bill, id=bill_id, user=self.request.user, is_paid=False
