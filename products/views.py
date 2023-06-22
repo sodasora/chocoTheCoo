@@ -28,7 +28,7 @@ from django.db.models import Count, Q
 
 # 페이지네이션
 class PostingPagination(PageNumberPagination):
-    page_size = 8
+    page_size = 9
     page_size_query_param = "page_size"
     max_page_size = 10000
 
