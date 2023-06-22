@@ -125,7 +125,7 @@ class BillSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return StatusCategory.objects.get(id=min(temp)).name
+            return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
     def get_thumbnail_name(self, obj):
         try:
@@ -200,7 +200,7 @@ class BillDetailSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return StatusCategory.objects.get(id=min(temp)).name
+            return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
     def get_order_items(self, obj):
         order_items = obj.orderitem_set.all()
