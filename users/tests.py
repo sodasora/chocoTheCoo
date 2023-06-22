@@ -108,7 +108,7 @@ class EmailVerificationAndLoginTest(APITestCase):
         request = {
             "email": email
         }
-        response = self.client.put(url, request)
+        response = self.client.post(url, request)
         self.assertEqual(response.status_code, 200)
 
     def test_fail_login(self):
@@ -124,7 +124,7 @@ class EmailVerificationAndLoginTest(APITestCase):
         이메일 인증 테스트
         """
 
-        url = reverse("user_view")
+        url = reverse("email_authentication")
         response = self.client.put(url, request)
         self.assertEqual(response.status_code, status_code)
 
@@ -210,19 +210,19 @@ class EmailVerificationAndLoginTest(APITestCase):
         for information, stats_code in test_cases:
             self.login_test(information, stats_code)
 
-
     def password_reset(self,information,status_code):
         """
         비밀번호 찾기, 재설정 기능 테스트
         사용자가 자신의 비밀번호를 기억하지 못해서 비밀번호를 재 설정하고자 할때
         """
 
-        url = reverse("user_view")
+        url = reverse("email_authentication")
         response = self.client.patch(url, information)
         self.assertEqual(response.status_code, status_code)
 
     def test_case_password_reset(self):
 
+        CHANGE_PASSWORD = 'ChangePassword!'
         [self.login_test({"email": self.user_data.get('email'), "password": '123'}, 400) for _ in range(5)]
         self.assertEqual(self.user.is_active,False)
         # 비밀 번호 5회 틀린 경우 계정 비 활성화
@@ -233,13 +233,13 @@ class EmailVerificationAndLoginTest(APITestCase):
         test_cases = [
             ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": "DoesNotExist"}, 400),
             # 비밀번호 재 설정 테스트 (실패) - 잘못된 인증 코드로 접근
-            ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": self.user.email_verification.verification_code}, 200),
+            ({"email": self.user_data.get('email'), "password": CHANGE_PASSWORD , "verification_code": self.user.email_verification.verification_code}, 200),
             # 비밀번호 재 설정 테스트 (성공)
             ({"email": self.user_data.get('email'), "password": self.user_data.get('password'), "verification_code": self.user.email_verification.verification_code}, 400),
             # 비밀번호 재 설정 테스트 (실패) - 같은 인증 코드로 중복 시도
             ({"email": "DoesNotExist", "password": "DoesNotExist", "verification_code": "DoesNotExist"}, 404),
             # 비밀번호 재 설정 테스트 (실패)  - 이메일 정보를 잘못 기입한 경우 또는 가입 하지 않은 이메일 정보
-
+            ({"email": self.kakao_user_data.get('email'), "password": self.kakao_user_data.get('password'), "verification_code": self.user.email_verification.verification_code}, 400),
 
         ]
 
