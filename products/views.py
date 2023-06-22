@@ -54,26 +54,26 @@ class ProductListAPIView(ListCreateAPIView):
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
-    pagination_class = PostingPagination
+    # pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
         if user_id:
-            seller = get_object_or_404(Seller, user=user_id)
-            queryset = Product.objects.filter(seller=seller.pk)
+            # seller = get_object_or_404(Seller, user=user_id)
+            queryset = Product.objects.filter(seller=user_id)
         else:
             queryset = Product.objects.all()
 
         keyword = self.request.query_params.get("search", None)
         ordering = self.request.query_params.get("ordering", None)
-        category_name = self.request.query_params.get("category", None)
+        category = self.request.query_params.get("category", None)
 
         if keyword is not None:
             queryset = queryset.filter(
                 Q(name__contains=keyword) | Q(content__contains=keyword)
             )
-        if category_name is not None:
-            queryset = queryset.filter(category__name=category_name)
+        if category is not None:
+            queryset = queryset.filter(category__id=category)
 
         if ordering == "recent":
             queryset = queryset.order_by("-created_at")
@@ -83,8 +83,6 @@ class ProductListAPIView(ListCreateAPIView):
             )
         elif ordering == "expensive":
             queryset = queryset.order_by("-price")
-
-        # url에서 user_id 존재하면 필터링, 없으면 전체
         return queryset
 
     def perform_create(self, serializer):
@@ -92,12 +90,11 @@ class ProductListAPIView(ListCreateAPIView):
         serializer.save(seller=seller)
 
 
-
 class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
-    """ 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
+    """상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.request.method == "GET":
             return GetProductDetailSerializer
         else:
             return ProductDetailSerializer
