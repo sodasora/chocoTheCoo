@@ -49,16 +49,33 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class GetReviewUserListInfo(serializers.ModelSerializer):
     """
-
+    리뷰 정보 불러오기
     """
 
+    review_liking_people = serializers.SerializerMethodField()
     review_liking_people_count = serializers.SerializerMethodField()
     user_profile_image = serializers.SerializerMethodField()
 
+    def get_review_liking_people(self, obj):
+        """
+        리뷰 좋아요 누른 사람의 id값 반환
+        """
+
+        people_id = [user.pk for user in obj.review_liking_people.all()]
+        return people_id
+
     def get_review_liking_people_count(self, obj):
+        """
+        리뷰 좋아요 누른 사람 count 값 반환
+        """
+
         return obj.review_liking_people.count()
 
     def get_user_profile_image(self, obj):
+        """
+        리뷰 작성자의 프로필 이미지 반환
+        """
+
         if obj.user.profile_image:
             return str(obj.user.profile_image)
         return None
@@ -66,6 +83,7 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = "__all__"
+
 
 
 class SimpleSellerInformation(serializers.ModelSerializer):

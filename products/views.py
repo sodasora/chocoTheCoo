@@ -92,7 +92,6 @@ class ProductListAPIView(ListCreateAPIView):
         serializer.save(seller=seller)
 
 
-
 class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     """ 상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
 
