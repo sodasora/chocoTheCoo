@@ -192,7 +192,7 @@ unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구�
 <br>
 
 > 포인트 충전페이지<br>
-> ![스크린샷 2023-06-23 164343](https://github.com/sodasora/chocoTheCoo/assets/126075796/74f5a591-6c59-4428-9b66-62f19b380dde)
+> <img width="30%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/74f5a591-6c59-4428-9b66-62f19b380dde">
 
 
 >관련 reference:<br>
