@@ -119,7 +119,7 @@ class PhoneVerificationAPIView(APIView):
                 serializer.save()
             else:
                 return Response(
-                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                    {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
         except PhoneVerification.DoesNotExist:
             # 원투원 필드가 없다면 생성
@@ -128,7 +128,7 @@ class PhoneVerificationAPIView(APIView):
                 serializer.save(user=user)
             else:
                 return Response(
-                    {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                    {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
         return Response(
             {"msg": "휴대폰 번호 등록 및 인증 코드 발급 완료"}, status=status.HTTP_200_OK
@@ -164,8 +164,6 @@ class UserAPIView(APIView):
         사용자 디테일 정보 불러오기  (복호화가 필요한 데이터 포함)
         """
 
-        test = get_object_or_404(Product, pk=1)
-        print(test.seller.user.review_like)
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = UserDetailSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -489,7 +487,7 @@ class SellerPermissionAPIView(APIView):
         EmailService.message_forwarding(user.email, subject_message, content_message)
 
         return Response(
-            {"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_204_NO_CONTENT
+            {"msg": "판매자 권한을 승인했습니다."}, status=status.HTTP_200_OK
         )
 
     def delete(self, request, user_id):
@@ -544,7 +542,7 @@ class WishListAPIView(APIView):
         """
         상품 찜 등록 및 취소
         """
-        user = get_object_or_404(User, email=request.user.email)
+        user = get_object_or_404(User, pk=request.user.pk)
         product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)

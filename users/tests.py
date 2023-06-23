@@ -601,15 +601,29 @@ class UserAPITestCase(CommonTestClass):
         # 휴면 계정으로 전환후 로그인 시도할 경우
         self.login_test(login_information, 400)
 
-    def phone_certification(self, information, token):
+    def get_phone_certification(self, information, token, status_code):
         """
         휴대폰 인증 문자 발급 받기 테스트
         """
 
-        response = self.client.post(
-            path=reverse("update_information"),
+        response = self.client.put(
+            path=reverse("phone_verification"),
             data=json.dumps(information),
             content_type='application/json',
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_get_phone_certification(self):
+        """
+        핸드폰 인증 번호 발급 테스트 케이스
+        """
+        phone_number = "01031571180"
+        token = self.user_access_token
+        test_cases = [
+            # ({"phone_number": phone_number}, token, 200),
+            # 발송 성공 테스트
+            ({"phone_number": phone_number}, token, 200),
+        ]
+        for information, access_token, status_code in test_cases:
+            self.get_phone_certification(information, access_token, status_code)
