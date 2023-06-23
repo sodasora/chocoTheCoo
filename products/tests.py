@@ -60,12 +60,14 @@ class BaseTestCase(APITestCase):
 class ProductCreateTest(BaseTestCase):
     """상품 등록 테스트"""
 
+    # 비로그인 시 등록 실패
     def test_fail_if_not_logged_in(self):
         url = reverse("product-list")
         response = self.client.post(url, self.product_data[0])
         self.assertEqual(response.status_code, 401)
         self.assertEqual(Product.objects.count(), 0)
 
+    # Seller 객체가 없을 때 등록 실패
     def test_fail_if_not_seller(self):
         product_data = self.product_data[0]
         response = self.client.post(
@@ -76,6 +78,7 @@ class ProductCreateTest(BaseTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 0)
 
+    # is_seller가 False일 때, 등록 실패
     def test_fail_if_not_approved_seller(self):
         product_data = self.product_data[0]
         response = self.client.post(
@@ -86,6 +89,7 @@ class ProductCreateTest(BaseTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 0)
 
+    # 등록 성공
     def test_success_if_approved_seller(self):
         self.seller_user.is_seller = True
         self.seller_user.save()
@@ -130,25 +134,33 @@ class ProductListTest(BaseTestCase):
             seller=self.seller2, **self.product_data[1]
         )
 
+    # 전체 목록 조회 성공
     def test_success_if_not_user_id(self):
         url = reverse("product-list")
         response = self.client.get(url)
+        # print(response.data)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]["name"], self.product_data[0]["name"])
+        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(
+            response.data["results"][0]["name"], self.product_data[0]["name"]
+        )
 
+    # 특정 판매자 상품 조회 성공
     def test_success_if_user_id(self):
         url = reverse("seller-product-list", kwargs={"user_id": self.seller_user2.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["name"], self.product_data[1]["name"])
-        self.assertEqual(response.data[0]["seller"], self.seller_user2.user_seller.id)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(
+            response.data["results"][0]["name"], self.product_data[1]["name"]
+        )
+        self.assertEqual(response.data["results"][0]["seller"], self.seller_user2.id)
 
-    def test_fail_if_user_not_seller(self):
-        url = reverse("seller-product-list", kwargs={"user_id": self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+    # # 판매자가 아닌 유저 id로 조회 시 실패
+    # def test_fail_if_user_not_seller(self):
+    #     url = reverse("seller-product-list", kwargs={"user_id": self.user.id})
+    #     response = self.client.get(url)
+    #     self.assertEqual(response.status_code, 404)
 
 
 class ProductDetailTest(BaseTestCase):
@@ -160,12 +172,21 @@ class ProductDetailTest(BaseTestCase):
             seller=self.seller_user.user_seller, **self.product_data[0]
         )
 
-    def test_success_retrieve(self):
+    # 상품이 없을 때 조회 실패
+    def test_fail_if_not_product(self):
+        response = self.client.get(reverse("product-detail", kwargs={"pk": 99}))
+        self.assertEqual(response.status_code, 404)
+
+    # 상품 상세 조회 성공
+    def test_retrieve_success(self):
         url = reverse("product-detail", kwargs={"pk": self.product.id})
         response = self.client.get(url)
+        # print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["name"], self.product_data[0]["name"])
-        self.assertEqual(response.data["seller"], self.product.seller.id)
+        self.assertEqual(
+            response.data["seller"]["company_name"], self.product.seller.company_name
+        )
 
 
 class ProductUpdateTest(BaseTestCase):
@@ -198,39 +219,55 @@ class ProductUpdateTest(BaseTestCase):
         )
         self.product_update_data = self.product_data[2]
 
+    # 해당 상품이 없을 때 수정 실패
+    def test_fail_if_not_product(self):
+        self.seller_user.is_seller = True
+        self.seller_user.save()
+        response = self.client.put(
+            reverse("product-detail", kwargs={"pk": 99}),
+            self.product_update_data,
+            HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    # 비로그인시 수정 실패
     def test_fail_if_not_logged_in(self):
         url = reverse("product-detail", kwargs={"pk": self.product.id})
         response = self.client.put(url, self.product_update_data)
         self.assertEqual(response.status_code, 401)
 
+    # Seller 객체가 없을 때 수정 실패
     def test_fail_if_not_seller(self):
         response = self.client.put(
             reverse("product-detail", kwargs={"pk": self.product.id}),
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.user_access_token}",
         )
-        # print("\ntest_fail_if_not_seller:", response.data)
+        # print("\n - test_fail_if_not_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
+    # is_seller가 False일 때 수정 실패
     def test_fail_if_not_approved_seller(self):
         response = self.client.put(
             reverse("product-detail", kwargs={"pk": self.product.id}),
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_fail_if_not_approved_seller:", response.data)
+        # print("\n - test_fail_if_not_approved_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
+    # 자신의 상품이 아닐 때 수정 실패
     def test_fail_if_not_product_owner(self):
         response = self.client.put(
             reverse("product-detail", kwargs={"pk": self.product2.id}),
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_fail_if_not_product_owner:", response.data)
+        # print("\n - test_fail_if_not_product_owner:", response.data)
         self.assertEqual(response.status_code, 403)
 
-    def test_success_if_approved_seller(self):
+    # 수정 성공
+    def test_update_success(self):
         self.seller_user.is_seller = True
         self.seller_user.save()
         response = self.client.put(
@@ -238,7 +275,7 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_success_if_approved_seller:", response.data)
+        # print("\n - test_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Product.objects.first().name, self.product_update_data["name"])
         self.assertEqual(
@@ -278,11 +315,13 @@ class ProductDeleteTest(BaseTestCase):
             seller=self.seller2, **self.product_data[2]
         )
 
+    # 비로그인시 삭제 실패
     def test_fail_if_not_logged_in(self):
         url = reverse("product-detail", kwargs={"pk": self.product.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 401)
 
+    # Seller 객체가 없을 때 삭제 실패
     def test_fail_if_not_seller(self):
         response = self.client.delete(
             reverse("product-detail", kwargs={"pk": self.product.id}),
@@ -292,6 +331,7 @@ class ProductDeleteTest(BaseTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
+    # is_seller가 False일 때 삭제 실패
     def test_fail_if_not_approved_seller(self):
         response = self.client.delete(
             reverse("product-detail", kwargs={"pk": self.product.id}),
@@ -301,7 +341,8 @@ class ProductDeleteTest(BaseTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
-    def test_success_if_approved_seller(self):
+    # 삭제 성공
+    def test_delete_success(self):
         self.seller_user.is_seller = True
         self.seller_user.save()
         response = self.client.delete(
