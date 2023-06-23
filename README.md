@@ -247,9 +247,9 @@ https://developers.portone.io/docs/ko/readme/get-started
 > 채팅방
 >* 생성과 입장
 >* 채팅방 삭제(채팅방 만든 사람만 가능)
-> <img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248235519-f93e5433-8025-4b72-935b-8ca1b9f585f6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T094941Z&X-Amz-Expires=300&X-Amz-Signature=6d021103f7ef0dd3323294db594fe68a289deeddbf831893734eb467cad1c264&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> ![스크린샷 2023-06-23 184532](https://github.com/sodasora/chocoTheCoo/assets/126075796/00867796-208a-4b7e-8342-5061ede26a4d)
 >* 채팅방 실시간 채팅 (웹소켓 활용)
-<img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248234074-1ca7176a-8628-4a71-8537-3dd06411f8fe.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T094328Z&X-Amz-Expires=300&X-Amz-Signature=ae41f4bd3a41fd9ce80ea9902447e19623a74229021eca5d73c4c7089b819a65&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> ![스크린샷 2023-06-23 184243](https://github.com/sodasora/chocoTheCoo/assets/126075796/c3113b6b-133d-433e-8905-00db16b7dbe1)
 
 ---
 #### 메인 페이지 - <a href="https://chocothecoo.com/" >상세보기</a>
