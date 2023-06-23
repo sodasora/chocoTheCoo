@@ -17,6 +17,7 @@ from .models import (
 )
 
 admin.site.register(PointType)
+# admin.site.register(Seller)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
@@ -82,7 +83,7 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "password1", "password2", "nickname"),
+                "fields": ("email", "password1", "password2", "nickname", "created_at", "updated_at",),
             },
         ),
     )

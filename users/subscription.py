@@ -1,6 +1,8 @@
 import os, datetime, time
 import django
 
+
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'weasley.settings')
 django.setup()
 
@@ -10,20 +12,20 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import F, Sum
 from .validated import EmailService
-from .models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from users.models import User
+from datetime import datetime, timedelta
 
 # 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
 class SubscribecheckView(APIView):
 
     def post(self, request):
         # 로그인 및 활성화 기록에 따른 제어
-        # UserControlSystem.account_deactivation()
-        # UserControlSystem.delete_inactive_accounts()
-        # UserControlSystem.delete_user_data()
+        UserControlSystem.delete_inactive_accounts()
+        UserControlSystem.delete_user_data()
+        UserControlSystem.account_deactivation()
         
         # 다음 결제일이 오늘의 날짜 이전인 구독들을 삭제(보안목적)
         Subscribe.objects.filter(next_payment__lt=timezone.now().date(), subscribe=True).delete()
@@ -73,7 +75,7 @@ class SubscribecheckView(APIView):
         return Response({"msg":"완료"}, status=status.HTTP_202_ACCEPTED)
 
 
-# class UserControlSystem:
+class UserControlSystem:
     """
     사용자 계정 관리 시스템
     1. 가입후 2일간 계정 인증을 받지 않은 사용자 데이터 삭제
@@ -82,46 +84,51 @@ class SubscribecheckView(APIView):
     """
 
 
-    # @classmethod
-    # def delete_user_data(cls):
-    #     """
-    #     가입하고서 2일동안 계정 인증을 받지 않았고, 로그인 기록이 없는 유저 데이터 삭제
-    #     """
-    #     now = timezone.now()
-    #     objects = User.objects.filter(last_login=None).filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=2), now))
-    #     for user in objects:
-    #         subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-    #         content_message = f'{user.email}님께서 가입하고서 2일 이상 계정 인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
-    #         EmailService.message_forwarding(user.email, subject_message, content_message)
-    #         user.delete()
+    @classmethod
+    def delete_user_data(cls):
+        """
+        가입하고서 2일동안 계정 인증을 받지 않았고, 로그인 기록이 없는 유저 데이터 삭제
+        """
 
-    # @classmethod
-    # def account_deactivation(cls):
-    #     """
-    #     마지막 로그인 기록이 30일 이상 지난 사용자의 계정 비 활성화
-    #     """
-    #     now = timezone.now()
-    #     objects = User.objects.exclude(last_login=None).filter(is_active=True).filter(last_login__range=(now - timezone.timedelta(days=30), now))
-    #     for user in objects:
-    #         subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-    #         content_message = f'{user.email}님, 30일 이상 로그인 이력이 없어 계정을 비 활성화 했습니다.'
-    #         EmailService.message_forwarding(user.email, subject_message, content_message)
-    #         user.is_active = False
-    #         user.delete()
+        now = timezone.now()
+        two_days_ago = now - timedelta(days=2)
+        objects = User.objects.filter(last_login=None, is_active=False, updated_at__lt=two_days_ago)
+        for user in objects:
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님께서 가입하고서 2일 이상 계정 인증 및 로그인 이력이 없어 계정을 삭제 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.delete()
 
-    # @classmethod
-    # def delete_inactive_accounts(cls):
-    #     """
-    #     계정이 비 활성화 된지 30일이 지났을 경우 계정 삭제
-    #     """
+    @classmethod
+    def account_deactivation(cls):
+        """
+        마지막 로그인 기록이 30일 이상 지난 사용자의 계정 비 활성화
+        """
 
-    #     now = timezone.now()
-    #     objects = User.objects.filter(is_active=False).filter(updated_at__range=(now - timezone.timedelta(days=90), now))
-    #     for user in objects:
-    #         subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
-    #         content_message = f'{user.email}님, 휴면 계정으로 전환된지 90일 만큼 지나 계정을 삭제 했습니다.'
-    #         EmailService.message_forwarding(user.email, subject_message, content_message)
-    #         user.delete()
+        now = timezone.now()
+        a_month_ago = now - timezone.timedelta(days=30)
+        objects = User.objects.filter(is_active=True, updated_at__lt=a_month_ago)
+        for user in objects:
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님, 30일 이상 로그인 이력이 없어 계정을 비 활성화 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.is_active = False
+            user.save()
+
+    @classmethod
+    def delete_inactive_accounts(cls):
+        """
+        계정이 비 활성화 된지 30일이 지났을 경우 계정 삭제
+        """
+
+        now = timezone.now()
+        a_month_ago = now - timezone.timedelta(days=30)
+        objects = User.objects.filter(is_active=False, updated_at__lt=a_month_ago)
+        for user in objects:
+            subject_message = 'Choco The Coo에서 안내 메시지를 보냈습니다.'
+            content_message = f'{user.email}님, 휴면 계정으로 전환된지 90일 만큼 지나 계정을 삭제 했습니다.'
+            EmailService.message_forwarding(user.email, subject_message, content_message)
+            user.delete()
 
 
 # 매일 자정마다 작업 실행

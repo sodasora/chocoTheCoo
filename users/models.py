@@ -62,12 +62,13 @@ class User(AbstractBaseUser, CommonModel):
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
     customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
-    is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
-    is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
     product_wish_list = models.ManyToManyField("products.Product", symmetrical=False, related_name="wish_lists", blank=True)
     review_like = models.ManyToManyField("products.Review", symmetrical=False, related_name="review_liking_people", blank=True)
     follower = models.ManyToManyField('self', symmetrical=False, related_name="followings", blank=True)
+
+    is_admin = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+    is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname", "password"]
