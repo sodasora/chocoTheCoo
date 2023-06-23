@@ -14,12 +14,11 @@ python-dotenv = "^1.0.0"
 django-cors-headers = "^4.0.0"
 pillow = "^9.5.0"
 pycryptodome = "^3.18.0"
-schedule = "^1.2.0"
 black = "^23.3.0"
 channels = {version = ">=4.0.0,<4.1.0", extras = ["daphne"]}
-django-environ = "^0.10.0"
 redis = "^4.5.5"
 channels-redis = "^4.1.0"
+django-environ = "^0.10.0"
 
 
 [build-system]

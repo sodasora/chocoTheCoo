@@ -54,7 +54,7 @@ class ProductListAPIView(ListCreateAPIView):
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
-    # pagination_class = PostingPagination
+    pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")

@@ -1,4 +1,4 @@
-import os, datetime, schedule, time
+import os, datetime, time
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'weasley.settings')
@@ -125,7 +125,7 @@ class SubscribecheckView(APIView):
 
 
 # 매일 자정마다 작업 실행
-schedule.every().day.at("00:00").do(SubscribecheckView.post)
+# schedule.every().day.at("00:00").do(SubscribecheckView.post)
 
 # 테스트용 한시간에 한 번씩 확인하기
 # schedule.every().hours.at("00:00").do(subscribe_check)
