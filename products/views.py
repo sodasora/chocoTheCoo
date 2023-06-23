@@ -30,7 +30,7 @@ from math import ceil
 
 # 페이지네이션
 class PostingPagination(PageNumberPagination):
-    page_size = 8
+    page_size = 9
     page_size_query_param = "page_size"
     max_page_size = 10000
 
@@ -55,7 +55,7 @@ class ProductListAPIView(ListCreateAPIView):
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
-    # pagination_class = PostingPagination
+    pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")

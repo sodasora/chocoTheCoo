@@ -83,11 +83,6 @@ DATABASES = {
 
 
 env = Env()
-# env_path = BASE_DIR / ".env"
-# if env_path.exists():
-#     with env_path.open(encoding="utf8") as f:
-#         env.read_env(f, overwrite=True)
-
 
 # django channels layer
 if "CHANNEL_LAYER_REDIS_URL" in env:
