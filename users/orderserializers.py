@@ -1,10 +1,22 @@
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
+    StringRelatedField,
 )
 from users.models import CartItem, Bill, OrderItem, StatusCategory
 from products.models import Product
 from .cryption import AESAlgorithm
+from products.serializers import SimpleSellerInformation
+
+
+class StatusCategorySerializer(ModelSerializer):
+    """
+    주문 상태 카테고리 생성, 조회 시리얼라이저
+    """
+
+    class Meta:
+        model = StatusCategory
+        fields = "__all__"
 
 
 class CartSerializer(ModelSerializer):
@@ -69,35 +81,6 @@ class OrderCreateSerializer(ModelSerializer):
         fields = ("product_id", "amount", "price", "seller")
 
 
-class OrderItemSerializer(ModelSerializer):
-    """
-    주문 생성, 목록 조회 시리얼라이저
-    """
-
-    product_image = SerializerMethodField()
-
-    def get_product_image(self, obj):
-        product = Product.objects.get(pk=obj.product_id)
-        return product.image.url if product.image else None
-
-    class Meta:
-        model = OrderItem
-        fields = "__all__"
-        read_only_fields = ("bill", "name", "price", "seller")
-        depth = 1
-
-
-class OrderItemBillSerializer(OrderItemSerializer):
-    order_status = SerializerMethodField()
-
-    def get_order_status(self, obj):
-        return obj.order_status.name
-
-    class Meta:
-        model = OrderItem
-        exclude = ("bill",)
-
-
 class OrderItemDetailSerializer(ModelSerializer):
     """
     주문 상품 상세 조회 시리얼라이저
@@ -108,6 +91,19 @@ class OrderItemDetailSerializer(ModelSerializer):
         fields = "__all__"
         depth = 1
 
+
+class SimpleBillSerializer(ModelSerializer):
+    def to_representation(self, instance):
+        """
+        배송지 모델  데이터 복호화
+        """
+        information = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**information)
+        return decrypt_result
+
+    class Meta:
+        model = Bill
+        fields = "__all__"
 
 class BillSerializer(ModelSerializer):
     """
@@ -200,11 +196,11 @@ class BillDetailSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return StatusCategory.objects.get(id=min(temp)).name if temp else 1
+            return StatusCategory.objects.get(id=min(temp)).name if temp else "결제대기"
 
     def get_order_items(self, obj):
         order_items = obj.orderitem_set.all()
-        serializer = OrderItemBillSerializer(order_items, many=True)
+        serializer = SimpleOrderItemSerializer(order_items, many=True)
         return serializer.data
 
     def get_total_price(self, obj):
@@ -227,11 +223,29 @@ class BillDetailSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class StatusCategorySerializer(ModelSerializer):
+class OrderItemSerializer(ModelSerializer):
     """
-    주문 상태 카테고리 생성, 조회 시리얼라이저
+    주문 목록 조회 시리얼라이저
     """
 
+    bill = SimpleBillSerializer()
+    seller = SimpleSellerInformation()
+    order_status = StatusCategorySerializer()
+    product_image = SerializerMethodField()
+
+    def get_product_image(self, obj):
+        product = Product.objects.get(pk=obj.product_id)
+        return product.image.url if product.image else None
+
     class Meta:
-        model = StatusCategory
+        model = OrderItem
+        fields = "__all__"
+        read_only_fields = ("bill", "name", "price", "seller")
+
+
+class SimpleOrderItemSerializer(ModelSerializer):
+    order_status = StringRelatedField()
+
+    class Meta:
+        model = OrderItem
         fields = "__all__"

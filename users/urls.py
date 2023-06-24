@@ -102,10 +102,8 @@ urlpatterns += [
     path("bills/<int:pk>/", BillDetailView.as_view(), name="bill_detail_view"),
     # 주문 생성
     path("bills/<int:bill_id>/orders/",OrderCreateView.as_view(),name="order_create_view"),
-    # 전체 주문 목록 조회
-    path("orders/products/", OrderListView.as_view(), name="all_order_list_view"),
     # 판매자별 주문 목록 조회
-    path("orders/products/seller/<int:user_id>/",OrderListView.as_view(),name="seller_order_list_view"),
+    path("orders/products/", OrderListView.as_view(), name="seller_order_list_view"),
     # 상품별 주문 목록 조회
     path("orders/products/<int:product_id>/",OrderListView.as_view(),name="order_list_view"),
     # 주문 상세 조회
