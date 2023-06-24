@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.generics import (
     get_object_or_404,
@@ -19,8 +20,7 @@ from .serializers import (
 from users.serializers import PointSerializer
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Category, Review
-from users.models import Seller, User
-from rest_framework.permissions import IsAuthenticated
+from users.models import OrderItem, Seller, User
 from config.permissions_ import IsApprovedSeller, IsReadOnly
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
@@ -151,6 +151,15 @@ class ReviewView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         product = Product.objects.get(id=self.kwargs.get("product_id"))
+        
+        user = self.request.user
+        has_bought = OrderItem.objects.filter(bill__user=user, product_id=product.id).exists()
+        has_reviewed = Review.objects.filter(user=user, product=product).exists()
+
+        if has_reviewed:
+            raise ValidationError(detail="이미 리뷰한 상품입니다")
+        if not has_bought:
+            raise ValidationError(detail="구매이력이 없습니다")
 
         point, point_type = self.get_point_info(product.price, self.request.data.get("image"))
 
