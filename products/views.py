@@ -30,7 +30,7 @@ from math import ceil
 
 # 페이지네이션
 class PostingPagination(PageNumberPagination):
-    page_size = 8
+    page_size = 9
     page_size_query_param = "page_size"
     max_page_size = 10000
 
@@ -48,19 +48,29 @@ class CategoryDetailAPIView(RetrieveAPIView):
     queryset = Category.objects.all()
     serializer_class = CategoryDetailSerializer
     lookup_field = "id"
+    
 
+class AllProductListAPIView(ListAPIView):
+    """특정 판매자의 상품 전체 조회"""
+
+    permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
+    serializer_class = ProductListSerializer
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("user_id")
+        queryset = Product.objects.filter(seller=user_id)
+        return queryset
 
 class ProductListAPIView(ListCreateAPIView):
     """상품 전체 조회, 생성 / 특정 판매자의 상품 전체 조회"""
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
     serializer_class = ProductListSerializer
-    # pagination_class = PostingPagination
+    pagination_class = PostingPagination
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
         if user_id:
-            # seller = get_object_or_404(Seller, user=user_id)
             queryset = Product.objects.filter(seller=user_id)
         else:
             queryset = Product.objects.all()
