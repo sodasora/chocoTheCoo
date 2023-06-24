@@ -580,13 +580,15 @@ class ReviewListAPIView(APIView):
         review = get_object_or_404(Review, id=review_id)
         if review in user.review_like.all():
             user.review_like.remove(review)
+            liking_people = review.review_liking_people.count()
             return Response(
-                {"message": "리뷰 좋아요를 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT
+                {"liking_people": liking_people}, status=status.HTTP_200_OK
             )
         else:
             user.review_like.add(review)
+            liking_people = review.review_liking_people.count()
             return Response(
-                {"message": "리뷰 좋아요를 등록 했습니다."}, status=status.HTTP_201_CREATED
+                {"liking_people": liking_people}, status=status.HTTP_201_CREATED
             )
 
 
