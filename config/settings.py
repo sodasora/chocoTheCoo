@@ -14,9 +14,10 @@ IAMPORT_SECRET = os.environ.get('IAMPORT_SECRET')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', '0') == '1'
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['backend']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -74,12 +75,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION  = 'config.asgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# postgres 환경변수가 존재 할 경우에 postgres db에 연결을 시도.
+POSTGRES_DB = os.environ.get('POSTGRES_DB', '')
+if POSTGRES_DB:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': POSTGRES_DB,
+            'USER': os.environ.get('POSTGRES_USER', ''),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': os.environ.get('POSTGRES_HOST', ''),
+            'PORT': os.environ.get('POSTGRES_PORT', ''),
+        }
     }
-}
+
+# 환경변수가 존재하지 않을 경우 sqlite3을 사용.
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 env = Env()
@@ -204,3 +221,9 @@ AUTH_USER_MODEL = 'users.User'
 ## CORS ############################################################################
 # 모든 허용한 상태로 수정 필요
 CORS_ALLOW_ALL_ORIGINS = True
+
+# # CORS 허용 목록에 ec2 ip를 추가합니다.
+# CORS_ORIGIN_WHITELIST = ['http://127.0.0.1']
+
+# # CSRF 허용 목록을 CORS와 동일하게 설정합니다.
+# CSRF_TRUSTED_ORIGINS = CORS_ORIGIN_WHITELIST
