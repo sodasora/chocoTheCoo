@@ -474,7 +474,7 @@ $RECYCLE.BIN/
 */migrations/*
 !*/migrations/__init__.py
 
-#gitmessage
+# gitmessage
 .gitmessage.txt
 
 json_data

@@ -7,6 +7,7 @@ from .views import (
     ReviewView,
     ReviewDetailView,
     MyReviewView,
+    AllProductListAPIView,
 )
 
 urlpatterns = [
@@ -16,6 +17,8 @@ urlpatterns = [
     path(
         "categories/<int:id>/", CategoryDetailAPIView.as_view(), name="category-detail"
     ),
+    # 특정 판매자의 상품 페이지네이션 없이 전체 조회
+    path("seller/<int:user_id>/all/", AllProductListAPIView.as_view(), name="seller-product-list-all"),
     # 특정 판매자의 상품 전체 조회
     path("seller/<int:user_id>/", ProductListAPIView.as_view(), name="seller-product-list"),
     # 상품 전체 조회
