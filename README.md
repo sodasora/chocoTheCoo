@@ -238,7 +238,7 @@ https://developers.portone.io/docs/ko/readme/get-started
 > Redis 서버 구동 방법
 >* Redis Enterprise Cloud free 플랜 가입
 >* host, port, password 정보 확인 => 채널레이어 설정
->* 예: CHANNEL_LAYER_REDIS_URL="redis://:암호@호스트명:6379
+>* 예: CHANNEL_LAYER_REDIS_URL="redis://:암호@호스트명:6379"
 >* .env로 관리할 것
 >* 서버 구동 시 도커 활용
 >* 명령어: docker run -d -restart always -name redis7 -publish 6379:6379 redis:7
