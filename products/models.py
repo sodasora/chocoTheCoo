@@ -1,5 +1,5 @@
 from django.db import models
-from config.models import CommonModel
+from config.models import CommonModel, img_upload_to
 
 
 class Category(models.Model):
@@ -16,7 +16,7 @@ class Product(CommonModel):
     price = models.IntegerField("상품가격", null=True, default=0)
     amount = models.IntegerField("상품수량", null=True, default=0)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    image = models.ImageField("상품 이미지", blank=True, null=True)
+    image = models.ImageField("상품 이미지", upload_to=img_upload_to, blank=True, null=True)
 
     def __str__(self):
         return self.name     
@@ -40,7 +40,7 @@ class Review(CommonModel):
     content = models.TextField(
         "리뷰내용",
     )
-    image = models.ImageField("리뷰이미지", upload_to="%Y/%m", blank=True, null=True)
+    image = models.ImageField("리뷰이미지", upload_to=img_upload_to, blank=True, null=True)
     STAR_CHOICES = [
         (1, "⭐"),
         (2, "⭐⭐"),
