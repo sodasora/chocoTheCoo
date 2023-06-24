@@ -150,7 +150,7 @@ class Delivery(models.Model):
 
     def __str__(self):
         """수령인"""
-        return self.user
+        return str(self.user)
 
 
 class CartItem(CommonModel):

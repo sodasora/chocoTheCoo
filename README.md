@@ -34,10 +34,8 @@ ChcoTheCoo supports your LOVE!!
 * 백엔드
 <img src="https://img.shields.io/badge/Python 3.11-3776AB?style=for-the-badge&logo=python&logoColor=white">
 <img src="https://img.shields.io/badge/Django 4.2.2-092E20?style=for-the-badge&logo=django&logoColor=white">
-<br>
 <img src="https://img.shields.io/badge/djangorestframework-092E20?style=for-the-badge&logo=django&logoColor=white">
 <img src="https://img.shields.io/badge/djangorestframework-simplejwt-색상?style=for-the-badge&logo=django&logoColor=white">
-<br>
 <img src="https://img.shields.io/badge/daphne-303030?style=for-the-badge&logo=daphne&logoColor=white"> 
 <img src="https://img.shields.io/badge/redis 7.0.11-FF1F1F?style=for-the-badge&logo=redis&logoColor=white">
 <!-- <img src="https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white"> -->
@@ -97,7 +95,7 @@ ChcoTheCoo supports your LOVE!!
 > black = "^23.3.0" <br>
 >* 개발 환경 내에서 통일된 포맷팅을 사용하여, 충돌을 방지하기 위해 사용 <br>
 
->redis = "^4.5.5" <br>
+> redis = "^4.5.5" <br>
 >* 오픈 소스의 인 메모리 데이터 구조 저장소(데이터베이스) <br>
 
 > channels-redis = "^4.1.0" <br>
@@ -111,22 +109,21 @@ ChcoTheCoo supports your LOVE!!
 >* channels: 장고 통합 레이어
 >* daphne: ASGI 서버(장고/채널스 개발서버)
 <br>
+
 ---
-<br>
+
 
 ## 📌 주요 기능
 #### 로그인 - <a href="https://chocothecoo.com/login.html" >상세보기</a>
 <br>
 
-> DRF Simple JWT <br>
+> DRF Simple JWT
 >* Token 기반 인증 <br>
 Requset, Response 의 인증 방식을 Token으로 구현 <br>
 stateless한 특성을 통해 Clinet Server의 부하를 줄일것을 기대 가능 <br>
-<br>
 >* 확장성 <br>
 payload에 사용자 간단한 데이터를 추가하여 <br>
 프론트와 서비스 통합시 편리한 데이터 전송 가능 <br>
-<br>
 >* 간단한 구현 <br>
 SIMPLE JWT Library를 사용함으로써 Token 인증 방식의 간단한 구현
 <br>
@@ -136,8 +133,6 @@ SIMPLE JWT Library를 사용함으로써 Token 인증 방식의 간단한 구현
 Resource Server와 Clinet Server의 API 통신을 통해 Redirect URI, API KEY 발급 <br>
 Clinet Server는 Resurce Server로 부터 발급받은 사용자의 Access Token을 검증 <br>
 검증 후 사용자에게 Client Server의 Refresh, Access Token 을 발급<br>
-<br>
-
 >* scope <br>
 Resource Server로 부터 소셜 계정의 데이터 수집 <br>
 email, profile image, nickname <br>
@@ -161,27 +156,24 @@ https://cloud.google.com/identity-platform/docs/sign-in-user-email?hl=ko <br>
 >* Model field에 사용자의 다양한 데이터 공간 확보 <br>
 Login Type 세분화 필드를 추가하여 소셜 계정 구분 <br>
 Bollean 필드를 사용하여 계정 활성화, 관리자 및 판매자 권한 구분 <br>
-<br>
 >* 보안 <br>
 사용자의 비밀번호를 sha256 알고리즘을 사용하여 보안성 향상 <br>
 set,check password 메서드 기능 지원을 통한 손쉬운 로그인 검증<br>
-<br>
 >* 기능 지원 <br>
 is_active, last_login 등 다양한 기능 지원을 통해 편의성 향상 <br>
-<br>
 >* social login <br>
-unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현
-<br>
+unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현<br>
+
 > 보안 <br>
 >* 필요성 <br>
 사용자의 주소지 정보, 통관 번호, 휴대폰 연락처와 판매자 정보 암·복호화 과정이 필요<br>
-<br>
 >* pycryptodome Library 
 다양한 암호화 알고리즘중 AES 알고리즘 사용 <br>
 블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현
 <br>
  
----
+----
+
 ### 결제 - <a href="https://chocothecoo.com/pointcharge.html" >상세보기</a>
 
 #### 결제검증
@@ -197,21 +189,23 @@ unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구�
 >* 결제 상세내역 조회를 위해 포트원 결제 단건 조회 API 요청<br>
 >* 응답받은 내용을 바탕으로 실 결제 금액과 결제요청금액(데이터베이스)을 비교<br>
 >* 동일하다면 포인트 충전완료<br>
+<br>
 
 > 포인트 충전페이지<br>
-<img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248205086-523600bc-f096-4492-b22a-8750266f0dcb.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T074354Z&X-Amz-Expires=300&X-Amz-Signature=40d1c62a4f89c91ccc043aca94ec12ae3989c2397b9d94a68b1095566227a2d6&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> <img width="30%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/74f5a591-6c59-4428-9b66-62f19b380dde">
+
 
 >관련 reference:<br>
 https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
+
 #### 마이 페이지 - <a href="https://chocothecoo.com/mypage.html" >상세보기</a>
 
 >포인트 통계
 >* 달력을 통해 오늘 또는 날짜에 따른 포인트 내역 확인<br>
-
-> <img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248164000-89c965a6-b602-4231-bd0b-4d2b0bd50e42.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T054540Z&X-Amz-Expires=300&X-Amz-Signature=fc9b472f99977fb6217aff50cc8fc05e6beb0303da750c7f04bacec24b8451fe&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> ![스크린샷 2023-06-23 144510](https://github.com/sodasora/chocoTheCoo/assets/126075796/2db5d498-1f9f-412c-a15c-9a5ee8ade282)
 
 > 출석인증, 구매내역, 리뷰보기 기능<br>
 >* 유저의 구매내역과 리뷰내역 등 관리 가능
@@ -233,6 +227,7 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
+
 #### 채팅 - <a href="https://chocothecoo.com/chatindex.html" >상세보기</a>
 
 > Redis 서버 구동 방법
@@ -247,13 +242,15 @@ https://developers.portone.io/docs/ko/readme/get-started
 > 채팅방
 >* 생성과 입장
 >* 채팅방 삭제(채팅방 만든 사람만 가능)
-> <img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248235519-f93e5433-8025-4b72-935b-8ca1b9f585f6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T094941Z&X-Amz-Expires=300&X-Amz-Signature=6d021103f7ef0dd3323294db594fe68a289deeddbf831893734eb467cad1c264&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> ![스크린샷 2023-06-23 184532](https://github.com/sodasora/chocoTheCoo/assets/126075796/00867796-208a-4b7e-8342-5061ede26a4d)
 >* 채팅방 실시간 채팅 (웹소켓 활용)
-<img width="70%" src="https://github-production-user-asset-6210df.s3.amazonaws.com/126075796/248234074-1ca7176a-8628-4a71-8537-3dd06411f8fe.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20230623%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230623T094328Z&X-Amz-Expires=300&X-Amz-Signature=ae41f4bd3a41fd9ce80ea9902447e19623a74229021eca5d73c4c7089b819a65&X-Amz-SignedHeaders=host&actor_id=126075796&key_id=0&repo_id=649973176">
+> ![스크린샷 2023-06-23 184243](https://github.com/sodasora/chocoTheCoo/assets/126075796/c3113b6b-133d-433e-8905-00db16b7dbe1)
 
 ---
+
 #### 메인 페이지 - <a href="https://chocothecoo.com/" >상세보기</a>
 <br>
+
 > 상품(Products) 
 >* url 쿼리 파라미터로 전달된 값에 따라 해당 상품들의 목록 조회 가능
 >* 판매자 페이지, 카테고리 , 전체 상품 조회 등 일정 조건에 따라서 조회 가능하도록 구현
@@ -276,6 +273,7 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
+
 #### 판매자 페이지  - <a herf = "https://chocothecoo.com/sellerpage.html"></a> 
 <br>
 <img width="70%" src="https://chocothecoo.com/static/images/sellerlogo.gif">
