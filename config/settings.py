@@ -16,8 +16,7 @@ IAMPORT_SECRET = os.environ.get('IAMPORT_SECRET')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', '0') == '1'
 
-# ALLOWED_HOSTS = ['backend']
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['backend','localhost','127.0.0.1']
 
 
 # Application definition
@@ -34,10 +33,12 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    
     # local apps
     'users',
     'products',
     'chat',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -75,13 +76,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION  = 'config.asgi.application'
 
 
-# postgres 환경변수가 존재 할 경우에 postgres db에 연결을 시도.
-POSTGRES_DB = os.environ.get('POSTGRES_DB', '')
-if POSTGRES_DB:
+# POSTGRES_ON 활성일 때 postgres db에 연결을 시도.
+POSTGRES_ON = os.environ.get('POSTGRES_ON', '0') == '1'
+if POSTGRES_ON:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': POSTGRES_DB,
+            'NAME': os.environ.get('POSTGRES_DB', ''),
             'USER': os.environ.get('POSTGRES_USER', ''),
             'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
             'HOST': os.environ.get('POSTGRES_HOST', ''),
@@ -89,7 +90,7 @@ if POSTGRES_DB:
         }
     }
 
-# 환경변수가 존재하지 않을 경우 sqlite3을 사용.
+# POSTGRES_ON 비활성일 때 sqlite3을 사용.
 else:
     DATABASES = {
         'default': {
@@ -145,11 +146,44 @@ USE_I18N = True
 USE_TZ = False
 
 
-STATIC_ROOT = BASE_DIR / "static"
-STATIC_URL = "/static/"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = "/media/"
+# AWS_S3_ON 환경변수가 활성일 때 AWS_S3에 연결
+AWS_S3_ON = os.environ.get('AWS_S3_ON', '0') == '1'
+if AWS_S3_ON:
+
+    # S3 Storage 경로
+    DEFAULT_FILE_STORAGE = 'config.storages.MediaStorage' # 미디어 저장위치
+    AWS_MEDIAFILES_LOCATION = 'media' #aws S3에 모이는 파일명
+    STATICFILES_STORAGE = 'config.storages.StaticStorage'
+    AWS_STATICFILES_LOCATION = 'statics'
+
+    # S3 설정을 위한 변수
+    # iam의 정보
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+
+    AWS_REGION = os.environ.get('AWS_REGION', '')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (
+        AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_LOCATION = 'statics'
+    STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'static')
+    ]
+
+    
+# AWS_S3_ON 비활성일 때 기본경로를 사용.
+else:
+    STATIC_ROOT = BASE_DIR / "static"
+    STATIC_URL = "/static/"
+
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    MEDIA_URL = "/media/"
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -222,8 +256,8 @@ AUTH_USER_MODEL = 'users.User'
 # 모든 허용한 상태로 수정 필요
 CORS_ALLOW_ALL_ORIGINS = True
 
-# # CORS 허용 목록에 ec2 ip를 추가합니다.
-# CORS_ORIGIN_WHITELIST = ['http://127.0.0.1']
+# CORS 허용 목록에 ec2 ip를 추가합니다.
+# CORS_ORIGIN_WHITELIST = ['http://127.0.0.1','http://localhost']
 
-# # CSRF 허용 목록을 CORS와 동일하게 설정합니다.
+# CSRF 허용 목록을 CORS와 동일하게 설정합니다.
 # CSRF_TRUSTED_ORIGINS = CORS_ORIGIN_WHITELIST
