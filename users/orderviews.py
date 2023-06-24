@@ -213,7 +213,7 @@ class BillView(ListCreateAPIView):
         if self.request.method == "GET":
             self.permission_classes = [IsAuthenticated]
         else:
-            self.permission_classes = [IsAuthenticated | IsDeliveryRegistered]
+            self.permission_classes = [IsAuthenticated, IsDeliveryRegistered]
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -240,7 +240,7 @@ class BillView(ListCreateAPIView):
 class BillDetailView(RetrieveAPIView):
     """주문 내역 상세 조회"""
 
-    permission_classes = [IsAuthenticated | IsDeliveryRegistered]
+    permission_classes = [IsAuthenticated, IsDeliveryRegistered]
     serializer_class = BillDetailSerializer
 
     def get_queryset(self):
@@ -248,9 +248,8 @@ class BillDetailView(RetrieveAPIView):
         return queryset
 
 
-class StatusCategoryView(ListCreateAPIView):
-    """주문 상태 생성, 목록 조회"""
+class StatusCategoryView(ListAPIView):
+    """주문 상태 목록 조회"""
 
-    permission_classes = [IsAdminUser]
     serializer_class = StatusCategorySerializer
     queryset = StatusCategory.objects.all()

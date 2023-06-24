@@ -15,13 +15,11 @@ class Product(CommonModel):
     content = models.TextField("상품설명")
     price = models.IntegerField("상품가격", null=True, default=0)
     amount = models.IntegerField("상품수량", null=True, default=0)
-
-    # onetomany , foreign key 로!!
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     image = models.ImageField("상품 이미지", blank=True, null=True)
 
-    # def __str__(self):
-    #     return self.name
+    def __str__(self):
+        return self.name     
 
 
 class Review(CommonModel):

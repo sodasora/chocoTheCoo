@@ -11,6 +11,7 @@ from .models import (
     StatusCategory,
     OrderItem,
     CartItem,
+    Delivery,
     Bill,
     Subscribe,
     Seller,
@@ -94,6 +95,7 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)
+admin.site.register(Delivery)
 admin.site.register(OrderItem)
 admin.site.register(Bill)
 admin.site.register(Seller)
