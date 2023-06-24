@@ -618,6 +618,7 @@ class UserAPITestCase(CommonTestClass):
         """
         핸드폰 인증 번호 발급 테스트 케이스
         """
+
         phone_number = "01031571180"
         token = self.user_access_token
         test_cases = [

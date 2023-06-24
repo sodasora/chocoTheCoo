@@ -1,8 +1,10 @@
+import time
+
 from rest_framework import serializers
 import users.models
 from products.models import Product, Category, Review
 from users.models import OrderItem, User
-
+import json
 
 # 카테고리
 class CategoryDetailSerializer(serializers.ModelSerializer):
@@ -47,6 +49,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         read_only_fields = ('seller',)
 
 
+class UserProfileInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'profile_image', 'nickname')
+
+
 class GetReviewUserListInfo(serializers.ModelSerializer):
     """
     리뷰 정보 불러오기
@@ -54,7 +62,16 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
 
     review_liking_people = serializers.SerializerMethodField()
     review_liking_people_count = serializers.SerializerMethodField()
-    user_profile_image = serializers.SerializerMethodField()
+    is_like = serializers.SerializerMethodField()
+    user = UserProfileInformationSerializer()
+
+    def get_is_like(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            # 좋아요 object에 포함되 있다면 True 아니라면 False
+            return obj.review_liking_people.filter(pk=request.user.pk).exists()
+        return False
+
 
     def get_review_liking_people(self, obj):
         """
@@ -71,19 +88,15 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
 
         return obj.review_liking_people.count()
 
-    def get_user_profile_image(self, obj):
-        """
-        리뷰 작성자의 프로필 이미지 반환
-        """
-
-        if obj.user.profile_image:
-            return str(obj.user.profile_image)
-        return None
 
     class Meta:
         model = Review
-        fields = "__all__"
+        exclude = ('created_at',)
 
+    def to_representation(self, instance):
+        information = super().to_representation(instance)
+        information['updated_at'] = information.get('updated_at')[:10]
+        return information
 
 
 class SimpleSellerInformation(serializers.ModelSerializer):
