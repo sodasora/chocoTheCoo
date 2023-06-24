@@ -129,7 +129,6 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
         seller = get_object_or_404(Seller, user=self.request.user)
         serializer.save(seller=seller)
 
-
 class ReviewView(ListCreateAPIView):
     """리뷰 조회, 생성"""
 
@@ -141,20 +140,28 @@ class ReviewView(ListCreateAPIView):
         queryset = Review.objects.filter(product_id=product_id)
         return queryset
 
-    def perform_create(self, serializer):
-        product = Product.objects.get(id=self.kwargs.get("product_id"))
-        if self.request.data.get("image"):
-            point = ceil(product.price * 0.05)
+    def get_point_info(self, product_price, image_exists):
+        if image_exists:
+            point = ceil(product_price * 0.05)
             point_type = 3
         else:
-            point = ceil(product.price * 0.01)
+            point = ceil(product_price * 0.01)
             point_type = 2
+        return point, point_type
+
+    def perform_create(self, serializer):
+        product = Product.objects.get(id=self.kwargs.get("product_id"))
+
+        point, point_type = self.get_point_info(product.price, self.request.data.get("image"))
 
         data = {"point": point}
         point_serializer = PointSerializer(data=data)
-        point_serializer.save(user=self.request.user, point_type_id=point_type)
+        if point_serializer.is_valid():
+            point_serializer.save(user=self.request.user, point_type_id=point_type)
+        else:
+            raise serializer.ValidationError(point_serializer.errors)
+            
         serializer.save(user=self.request.user, product=product)
-
 
 class ReviewDetailView(RetrieveUpdateAPIView):
     """리뷰 상세 조회, 수정"""

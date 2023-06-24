@@ -2,14 +2,13 @@ from django.db import models
 from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from datetime import date
-from config.models import CommonModel
+from config.models import CommonModel,img_upload_to
 from .iamport import validation_prepare, get_transaction
 from .validated import ValidatedData
 import hashlib
 import random
 import time
 from django.db.models.signals import post_save
-
 
 class UserManager(BaseUserManager):
     """
@@ -57,7 +56,7 @@ class User(AbstractBaseUser, CommonModel):
     email = models.EmailField("이메일 주소", max_length=100, unique=True)
     nickname = models.CharField("사용자 이름", max_length=20)
     password = models.CharField("비밀번호", max_length=128)
-    profile_image = models.ImageField("프로필 이미지", upload_to="%Y/%m", blank=True, null=True)
+    profile_image = models.ImageField("프로필 이미지", upload_to=img_upload_to, blank=True, null=True)
     introduction = models.CharField("소개", max_length=50, blank=True, null=True, default="아직 소개글이 없습니다.")
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
     customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
@@ -130,7 +129,7 @@ class Seller(CommonModel):
     business_owner_name = models.CharField("대표자 성함", max_length=20)
     account_holder = models.CharField("예금주", max_length=20)
     contact_number = models.CharField("업체 연락처", max_length=20)
-    company_img = models.ImageField("업체 로고", upload_to="%Y/%m", blank=True, null=True)
+    company_img = models.ImageField("업체 로고", upload_to=img_upload_to, blank=True, null=True)
 
     def __str__(self):
         """업체명"""
