@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from users.models import User
+from chat.models import RoomMessage
 from datetime import datetime, timedelta
 
 # 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
@@ -27,10 +28,14 @@ class SubscribecheckView(APIView):
         UserControlSystem.delete_user_data()
         UserControlSystem.account_deactivation()
         
+        # 일주일 전 채팅은 지워지도록
+        one_week_ago = timezone.now() - timedelta(days=7)
+        RoomMessage.objects.filter(created_at__lte = one_week_ago).delete()
+        
         # 다음 결제일이 오늘의 날짜 이전인 구독들을 삭제(보안목적)
         Subscribe.objects.filter(next_payment__lt=timezone.now().date(), subscribe=True).delete()
         subscribe_users = Subscribe.objects.filter(next_payment=timezone.now().date(), subscribe=True)
-        print(subscribe_users)
+        # print(subscribe_users)
         
         for subscribe_user in subscribe_users:
             with transaction.atomic():
@@ -39,13 +44,13 @@ class SubscribecheckView(APIView):
                         .filter(point_type__in=[1, 2, 3, 4, 5])
                         .aggregate(total=Sum("point"))
                 )
-                print(total_plus_point)
+                # print(total_plus_point)
                 total_minus_point = (
                     Point.objects.filter(user_id=subscribe_user.user.id)
                         .filter(point_type__in=[6, 7])
                         .aggregate(total=Sum("point"))
                 )
-                print(total_minus_point)
+                # print(total_minus_point)
                 try:
                     total_point = total_plus_point["total"] - total_minus_point["total"]
                     print(total_point)
