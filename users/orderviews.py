@@ -30,6 +30,7 @@ from .orderserializers import (
     OrderCreateSerializer,
     OrderItemDetailSerializer,
     OrderItemSerializer,
+    OrderStatusSerializer,
     StatusCategorySerializer,
 )
 from config.permissions_ import IsDeliveryRegistered
@@ -58,11 +59,14 @@ class CartView(ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         """장바구니 추가"""
+
+        # 상품 아이디로 추가
         if product_id := request.data.get("product"):
             product = get_object_or_404(Product, id=product_id)
             amount = int(request.data.get("amount"))
             self.add_exist_cart(product, amount)
 
+        # 주문내역 아이디로 추가
         elif bill_id := request.data.get("bill_id"):
             bill = get_object_or_404(Bill, pk=bill_id)
             order_items = bill.orderitem_set.all()
@@ -71,6 +75,7 @@ class CartView(ListCreateAPIView):
                 amount = orderitem.amount
                 self.add_exist_cart(product, amount)
 
+        # 주문상품 아이디로 추가
         elif order_item_id := request.data.get("order_item_id"):
             orderitem = get_object_or_404(OrderItem, id=order_item_id)
             product = get_object_or_404(Product, pk=orderitem.product_id)
@@ -284,3 +289,44 @@ class StatusCategoryView(ListAPIView):
 
     serializer_class = StatusCategorySerializer
     queryset = StatusCategory.objects.all()
+
+
+class StatusChangeView(RetrieveUpdateAPIView):
+    serializer_class = OrderStatusSerializer
+    queryset = OrderItem.objects.all()
+
+    def order_status_permission_check(self, user, instance, order_status):
+        cur_status = instance.order_status.id
+
+        # 결제 완료 이후 상품은 판매자가 자유롭게
+        if cur_status in [2, 3, 4, 5] and order_status in [2, 3, 4, 5]:
+            return instance.seller == user.user_seller
+
+        # 배송 완료 이후 구매 확정은 구매자가
+        elif cur_status == 5 and order_status == 6:
+            return instance.bill.user == user
+
+        # 미결제, 구매확정 주문의 상태는 변경 불가
+        else:
+            return False
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        order_status = int(self.request.data.get("order_status"))
+
+        # 결제 완료 이후 상품은 판매자가 자유롭게
+        if self.order_status_permission_check(request.user, instance, order_status):
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_update(self, serializer):
+        order_status = StatusCategory.objects.get(
+            pk=self.request.data.get("order_status")
+        )
+        serializer.save(order_status=order_status)

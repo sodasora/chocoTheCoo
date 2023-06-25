@@ -31,6 +31,7 @@ from .orderviews import (
     OrderListView,
     OrderDetailView,
     StatusCategoryView,
+    StatusChangeView
 )
 from .subscription import SubscribecheckView
 
@@ -115,6 +116,8 @@ urlpatterns += [
     path("orders/products/<int:product_id>/",OrderListView.as_view(),name="order_list_view"),
     # 주문 상세 조회
     path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail_view"),
+    # 주문 상태 변경 ()
+    path("orders/status/<int:pk>/", StatusChangeView.as_view(), name="status_change_view"),
 ]
 
 """
