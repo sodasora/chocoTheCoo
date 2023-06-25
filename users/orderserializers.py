@@ -135,7 +135,7 @@ class BillSerializer(ModelSerializer):
             except:
                 pass
         product = Product.objects.get(pk=ord_list.first().product_id)
-        return {"image":None ,"name":product.name}
+        return {"image": None, "name": product.name}
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -276,10 +276,30 @@ class SimpleOrderItemSerializer(ModelSerializer):
         fields = "__all__"
 
 
-
 class OrderStatusSerializer(ModelSerializer):
-    order_status = StatusCategorySerializer(read_only=True)
+    order_status = PrimaryKeyRelatedField(
+        queryset=StatusCategory.objects.all(), required=True
+    )
 
     class Meta:
         model = OrderItem
-        fields = ('order_status',)
+        fields = ("order_status",)
+
+    def validate_order_status(self, value):
+        request = self.context["request"]
+        user = request.user
+        cur_status = self.instance.order_status.id
+        seller = self.instance.seller == user.user_seller
+        buyer = self.instance.bill.user == user
+
+        if cur_status in [2, 3, 4] and value.id in [2, 3, 4, 5]:
+            if not seller:
+                raise ValidationError("주문 상품의 판매자만 변경 가능합니다")
+        elif cur_status == 5 and value.id == 6:
+            if not buyer:
+                raise ValidationError("상품의 구매자만 변경 가능합니다")
+        elif cur_status in [1, 6]:
+            raise ValidationError("현재 상태에서 주문 상태를 수정할 수 없습니다.")
+        else:
+            raise ValidationError("유효하지 않은 주문 상태입니다.")
+        return value
