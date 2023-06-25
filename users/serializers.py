@@ -469,7 +469,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         )
         total_minus_point = (
             Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id=6)
+                .filter(point_type_id__in=[6,7])
                 .aggregate(total=Sum("point"))
         )
         try:
