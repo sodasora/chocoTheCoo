@@ -545,7 +545,7 @@ class FollowSerializer(serializers.ModelSerializer):
     followings = BriefUserInformation(many=True)
     is_follow = serializers.SerializerMethodField()
 
-    def get_in_wishlist(self, obj):
+    def get_is_follow(self, obj):
         """
         get 요청한 사용자가 팔로우중인지 판단.
         """
