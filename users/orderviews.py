@@ -94,16 +94,11 @@ class OrderListView(ListAPIView):
     serializer_class = OrderItemSerializer
 
     def get_queryset(self):
-        product_id = self.kwargs.get("product_id")
-        user_id = self.kwargs.get("user_id")
-        # url에서 product_id 존재하면 필터링, 없으면 전체
-        if product_id:
+        # url에서 product_id 존재하면 필터링, 없으면 해당 판매자 주문 조회
+        if product_id := self.kwargs.get("product_id"):
             queryset = OrderItem.objects.filter(product_id=product_id)
-        elif user_id:
-            seller = Seller.objects.get(user=user_id)
-            queryset = OrderItem.objects.filter(seller=seller.pk)
         else:
-            queryset = OrderItem.objects.all()
+            queryset = OrderItem.objects.filter(seller=self.request.user.pk)
         return queryset
 
 

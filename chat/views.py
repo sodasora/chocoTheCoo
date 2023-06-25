@@ -41,12 +41,16 @@ class ChatRoomView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
         
     def post(self, request):
-        serializer = ChatRoomSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author = request.user)
-            return Response(status=status.HTTP_201_CREATED)
+        queryset = ChatRoom.objects.filter(author = request.user)
+        if queryset.count() >= 3:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            serializer = ChatRoomSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(author = request.user)
+                return Response(status=status.HTTP_201_CREATED)
+            else:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, room_id):
         room = get_object_or_404(ChatRoom, id=room_id)

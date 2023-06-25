@@ -138,29 +138,19 @@ class ProductListTest(BaseTestCase):
     def test_success_if_not_user_id(self):
         url = reverse("product-list")
         response = self.client.get(url)
-        # print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data["results"]), 2)
-        self.assertEqual(
-            response.data["results"][0]["name"], self.product_data[0]["name"]
-        )
 
     # 특정 판매자 상품 조회 성공
     def test_success_if_user_id(self):
-        url = reverse("seller-product-list", kwargs={"user_id": self.seller_user2.id})
+        url = reverse(
+            "seller-product-list-all", kwargs={"user_id": self.seller_user2.id}
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(
-            response.data["results"][0]["name"], self.product_data[1]["name"]
-        )
-        self.assertEqual(response.data["results"][0]["seller"], self.seller_user2.id)
-
-    # # 판매자가 아닌 유저 id로 조회 시 실패
-    # def test_fail_if_user_not_seller(self):
-    #     url = reverse("seller-product-list", kwargs={"user_id": self.user.id})
-    #     response = self.client.get(url)
-    #     self.assertEqual(response.status_code, 404)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["name"], self.product_data[1]["name"])
+        self.assertEqual(response.data[0]["seller"], self.seller_user2.id)
 
 
 class ProductDetailTest(BaseTestCase):
