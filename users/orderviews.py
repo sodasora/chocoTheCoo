@@ -291,42 +291,19 @@ class StatusCategoryView(ListAPIView):
     queryset = StatusCategory.objects.all()
 
 
-class StatusChangeView(RetrieveUpdateAPIView):
+class StatusChangeView(UpdateAPIView):
+    """주문 상태 변경"""
+
+    permission_classes = [IsAuthenticated]
     serializer_class = OrderStatusSerializer
     queryset = OrderItem.objects.all()
 
-    def order_status_permission_check(self, user, instance, order_status):
-        cur_status = instance.order_status.id
-
-        # 결제 완료 이후 상품은 판매자가 자유롭게
-        if cur_status in [2, 3, 4, 5] and order_status in [2, 3, 4, 5]:
-            return instance.seller == user.user_seller
-
-        # 배송 완료 이후 구매 확정은 구매자가
-        elif cur_status == 5 and order_status == 6:
-            return instance.bill.user == user
-
-        # 미결제, 구매확정 주문의 상태는 변경 불가
-        else:
-            return False
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        order_status = int(self.request.data.get("order_status"))
-
-        # 결제 완료 이후 상품은 판매자가 자유롭게
-        if self.order_status_permission_check(request.user, instance, order_status):
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
-            if serializer.is_valid():
-                self.perform_update(serializer)
-                return Response(serializer.data)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
     def perform_update(self, serializer):
-        order_status = StatusCategory.objects.get(
-            pk=self.request.data.get("order_status")
-        )
-        serializer.save(order_status=order_status)
+        order_item = self.get_object()
+        cur_status = order_item.order_status.id
+        new_status = self.request.data.get('order_status')
+        if cur_status == 5 and new_status == 6:
+            seller = order_item.seller.user
+            total_point = order_item.amount * order_item.price
+            Point.objects.create(user=seller, point_type_id=8, point=total_point)
+        serializer.save()
