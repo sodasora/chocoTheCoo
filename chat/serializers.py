@@ -9,11 +9,18 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
+    author_name = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
+    author_image = serializers.SerializerMethodField()
 
-    def get_author(self, obj):
+    def get_author_name(self, obj):
         return obj.author.nickname
+      
+    def get_author_image(self, obj):
+      if obj.author.profile_image:
+        return obj.author.profile_image.url
+      else:
+        return None
     
     def get_created_at(self, obj):
         time = obj.created_at
@@ -32,9 +39,9 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ParticipantSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
+    author_name = serializers.SerializerMethodField()
     
-    def get_author(self, obj):
+    def get_author_name(self, obj):
           return obj.user.nickname
         
     class Meta:
