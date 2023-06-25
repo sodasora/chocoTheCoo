@@ -17,6 +17,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from products.models import Product
+from users.serializers import DeliverySerializer
+from users.validated import ValidatedData
 from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller
 from .orderserializers import (
     BillCreateSerializer,
@@ -237,15 +239,29 @@ class BillView(ListCreateAPIView):
         elif self.request.method == "POST":
             return BillCreateSerializer
 
-    def perform_create(self, serializer):
-        deli = get_object_or_404(Delivery, pk=self.request.data.get("delivery_id"))
-        serializer.save(
-            user=self.request.user,
-            address=deli.address,
-            detail_address=deli.detail_address,
-            recipient=deli.recipient,
-            postal_code=deli.postal_code,
+    def create(self, request, *args, **kwargs):
+        if delivery_id := self.request.data.get("delivery_id"):
+            deli = get_object_or_404(Delivery, pk=delivery_id)
+            data = {
+                "address": deli.address,
+                "detail_address": deli.detail_address,
+                "recipient": deli.recipient,
+                "postal_code": deli.postal_code,
+            }
+
+        elif request.data.get("postal_code") and request.data.get("recipient"):
+            data = request.data
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
     def get_queryset(self):
         queryset = Bill.objects.filter(user=self.request.user).order_by("-created_at")
