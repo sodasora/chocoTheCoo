@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import RoomMessage, ChatRoom
+from .models import RoomMessage, ChatRoom, RoomChatParticipant
 
 class ChatRoomSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,3 +29,14 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMessage
         fields = '__all__'
+
+
+class ParticipantSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    
+    def get_author(self, obj):
+          return obj.user.nickname
+        
+    class Meta:
+          model = RoomChatParticipant
+          fields = '__all__'

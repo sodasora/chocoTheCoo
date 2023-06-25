@@ -2,11 +2,10 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from rest_framework.viewsets import ViewSet
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import ChatRoom, RoomMessage
-from .serializers import MessageSerializer, ChatRoomSerializer
+from .models import ChatRoom, RoomMessage, RoomChatParticipant
+from .serializers import ParticipantSerializer, MessageSerializer, ChatRoomSerializer
 
 
 class ChatViewSet(ViewSet):
@@ -26,7 +25,12 @@ class ChatViewSet(ViewSet):
             is_read=True
         )
         queryset = RoomMessage.objects.filter(room_id=room.id).select_related('author').order_by('created_at')
+        # participant = RoomChatParticipant.objects.filter(room_id=room.id)
         serializer = MessageSerializer(queryset, many=True)
+        # participant_serializer = ParticipantSerializer(participant, many=True)
+        # data = {
+        #     "message": serializer.data, 
+        #     "participant": participant_serializer.data}
         
         return Response(serializer.data, status=status.HTTP_200_OK) 
 

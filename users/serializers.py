@@ -464,7 +464,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         information = super().to_representation(instance)
         total_plus_point = (
             Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[1, 2, 3, 4, 5])
+                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8])
                 .aggregate(total=Sum("point"))
         )
         total_minus_point = (
