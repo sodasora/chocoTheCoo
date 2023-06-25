@@ -6,7 +6,8 @@ from .views import (
     ReviewView,
     ReviewDetailView,
     MyReviewView,
-    AllProductListAPIView
+    AllProductListAPIView,
+    MyProductReview
 )
 
 """
@@ -33,6 +34,8 @@ urlpatterns += [
     path("<int:product_id>/reviews/<int:pk>/", ReviewDetailView.as_view(), name="review_detail_view"),
     # 유저의 리뷰 간단조회
     path("mypage/reviews/", MyReviewView.as_view(), name="myreview_view"),
+    # 제품의 유저 리뷰 조회
+    path("mypage/<int:product_id>/reviews/", MyProductReview.as_view(), name="my_product_review"),
 ]
 
 """
