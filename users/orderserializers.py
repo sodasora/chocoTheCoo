@@ -5,8 +5,10 @@ from rest_framework.serializers import (
 )
 from users.models import CartItem, Bill, OrderItem, StatusCategory
 from products.models import Product
+from users.validated import ValidatedData
 from .cryption import AESAlgorithm
 from products.serializers import SimpleSellerInformation
+from rest_framework.serializers import ValidationError
 
 
 class StatusCategorySerializer(ModelSerializer):
@@ -105,6 +107,7 @@ class SimpleBillSerializer(ModelSerializer):
         model = Bill
         fields = "__all__"
 
+
 class BillSerializer(ModelSerializer):
     """
     주문서 목록 조회 시리얼라이저
@@ -173,13 +176,38 @@ class BillCreateSerializer(ModelSerializer):
     class Meta:
         model = Bill
         fields = "__all__"
-        read_only_fields = (
-            "user",
-            "address",
-            "detail_address",
-            "recipient",
-            "postal_code",
-        )
+        read_only_fields = ("user",)
+
+    def validate(self, deliveries_data):
+        """
+        우편 번호 검증
+        """
+        verification_result = ValidatedData.validated_postal_code(**deliveries_data)
+        if not verification_result:
+            raise ValidationError("우편 정보가 올바르지 않습니다.")
+        return deliveries_data
+
+    def encrypt_deliveries_information(self, deliveries, validated_data):
+        """
+        오브 젝트 암호화
+        """
+
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        deliveries.address = encrypt_result.get("address")
+        deliveries.detail_address = encrypt_result.get("detail_address")
+        deliveries.recipient = encrypt_result.get("recipient")
+        deliveries.postal_code = encrypt_result.get("postal_code")
+        deliveries.save()
+        return deliveries
+
+    def create(self, validated_data):
+        """ "
+        배송 정보 오브 젝트 생성
+        """
+        deliveries = super().create(validated_data)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
+        deliveries.save()
+        return deliveries
 
 
 class BillDetailSerializer(ModelSerializer):

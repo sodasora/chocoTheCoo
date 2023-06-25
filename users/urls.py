@@ -88,11 +88,11 @@ OrderAPI
 장바구니, 주문내역, 주문 상품 CRUD
 """
 urlpatterns += [
-    # 장바구니 조회
+    # 장바구니 담기, 조회
     path("carts/", CartView.as_view(), name="cart_view"),
     # 장바구니 삭제, 일괄삭제
     path("carts/delete/", CartView.as_view(), name="cart_delete_view"),
-    # 장바구니 담기, 장바구니 수량 변경
+    # 장바구니 수량 변경
     path("carts/<int:pk>/", CartDetailView.as_view(), name="cart_detail_view"),
     # 주문 상태 생성
     path("status/", StatusCategoryView.as_view(), name="status_category_view"),
