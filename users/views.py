@@ -535,7 +535,7 @@ class WishListAPIView(APIView):
         상품을 찜 등록한 사용자 정보들 불러오기
         """
         product = get_object_or_404(Product, id=product_id)
-        serializer = GetWishListUserInfo(product)
+        serializer = GetWishListUserInfo(product, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, product_id):
@@ -546,13 +546,15 @@ class WishListAPIView(APIView):
         product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
+            wish_list = product.wish_lists.count()
             return Response(
-                {"message": "상품 찜 등록을 취소 했습니다."}, status=status.HTTP_204_NO_CONTENT
+                {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
+            wish_list = product.wish_lists.count()
             return Response(
-                {"message": "상품을 찜 등록 했습니다."}, status=status.HTTP_201_CREATED
+                {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )
 
 
