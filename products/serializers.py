@@ -60,26 +60,16 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
     리뷰 정보 불러오기
     """
 
-    review_liking_people = serializers.SerializerMethodField()
     review_liking_people_count = serializers.SerializerMethodField()
     is_like = serializers.SerializerMethodField()
     user = UserProfileInformationSerializer()
 
     def get_is_like(self, obj):
         request = self.context.get("request")
-        if request and request.user.is_authenticated:
+        if request.user.is_authenticated:
             # 좋아요 object에 포함되 있다면 True 아니라면 False
             return obj.review_liking_people.filter(pk=request.user.pk).exists()
         return False
-
-
-    def get_review_liking_people(self, obj):
-        """
-        리뷰 좋아요 누른 사람의 id값 반환
-        """
-
-        people_id = [user.pk for user in obj.review_liking_people.all()]
-        return people_id
 
     def get_review_liking_people_count(self, obj):
         """
@@ -115,9 +105,23 @@ class GetProductDetailSerializer(serializers.ModelSerializer):
     seller = SimpleSellerInformation()
     product_reviews = GetReviewUserListInfo(many=True)
     product_information = serializers.SerializerMethodField()
+    in_wishlist = serializers.SerializerMethodField()
+
+    def get_in_wishlist(self, obj):
+        """
+        get 요청 사용자가 상품을 찜 등록 했는지 판단.
+        """
+
+        request = self.context.get("request")
+        if request.user.is_authenticated:
+            return obj.wish_lists.filter(pk=request.user.pk).exists()
+        return False
 
     def get_product_information(self, obj):
-        # 다른 시리얼 라이저 데이터 불러오기
+        """
+        해당 product의 통계치 불러오기
+        """
+
         new_dict = {
             "sales": ProductListSerializer(obj).data.get('sales'),
             "likes": ProductListSerializer(obj).data.get('likes'),
