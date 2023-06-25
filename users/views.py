@@ -546,13 +546,14 @@ class WishListAPIView(APIView):
         product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
-            wish_list = product.wish_lists.count()
+            product.wish_lists.count()
+            wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
-            wish_list = product.wish_lists.count()
+            wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )
@@ -604,9 +605,8 @@ class FollowAPIView(APIView):
         """
         다른 사용자(로그인한 유저 x)를 팔로우 하고 있는 유저 목록 뽑아오기
         """
-
         owner = get_object_or_404(User, id=user_id)
-        serializer = FollowSerializer(owner)
+        serializer = FollowSerializer(owner, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, user_id):
@@ -614,17 +614,20 @@ class FollowAPIView(APIView):
         사용자를 팔로우, 언팔로우
         """
 
+
         user = get_object_or_404(User, pk=request.user.pk)
-        owner = get_object_or_404(Review, id=user_id)
+        owner = get_object_or_404(User, id=user_id)
         if owner in user.follower.all():
             user.follower.remove(owner)
+            followings = user.followings.count()
             return Response(
-                {"msg": "Unfollow"}, status=status.HTTP_204_NO_CONTENT
+                {"followings": followings}, status=status.HTTP_200_OK
             )
         else:
             user.follower.add(owner)
+            followings = user.followings.count()
             return Response(
-                {"msg": "Follow"}, status=status.HTTP_201_CREATED
+                {"followings": followings}, status=status.HTTP_201_CREATED
             )
 
 
