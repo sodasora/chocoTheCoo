@@ -96,6 +96,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         user = await self.get_user_obj(user_id)
         room = await self.get_room_obj(room_id)
+        
+        if user.profile_image:
+            image = user.profile_image.url
+        else:
+            image = None
 
         message = text_data_json['message']
         
@@ -107,6 +112,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
           'sender': user.id,
           'sender_name': user.nickname,
           'room_id': room.id,
+          'profile':image,
           'time': await self.get_time(),
         }        
         
