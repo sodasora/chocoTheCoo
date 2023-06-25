@@ -15,6 +15,8 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+
+from products.models import Product
 from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller
 from .orderserializers import (
     BillCreateSerializer,
@@ -54,16 +56,34 @@ class CartView(ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         """장바구니 추가"""
+        if product_id := request.data.get("product"):
+            product = get_object_or_404(Product, id=product_id)
+            amount = int(request.data.get("amount"))
+            self.add_exist_cart(product, amount)
 
-        try:  # 이미 존재하는 상품이면 개수 amount개 추가
-            cart = CartItem.objects.get(
-                product=request.data["product"], user=request.user
-            )
-            cart.amount += int(request.data.get("amount"))
-            cart.save()
-            return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
-        except CartItem.DoesNotExist:  # 그냥 장바구니 추가
-            return super().post(request, *args, **kwargs)
+        elif bill_id := request.data.get("bill_id"):
+            bill = get_object_or_404(Bill, pk=bill_id)
+            order_items = bill.orderitem_set.all()
+            for orderitem in order_items:
+                product = get_object_or_404(Product, pk=orderitem.product_id)
+                amount = orderitem.amount
+                self.add_exist_cart(product, amount)
+
+        elif order_item_id := request.data.get("order_item_id"):
+            orderitem = get_object_or_404(OrderItem, id=order_item_id)
+            product = get_object_or_404(Product, pk=orderitem.product_id)
+            amount = orderitem.amount
+            self.add_exist_cart(product, amount)
+        return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
+
+    # 이미 존재하는 상품이면 개수 amount개 추가
+    def add_exist_cart(self, product, amount):
+        cart_item, created = CartItem.objects.get_or_create(
+            product=product, user=self.request.user, defaults={"amount": amount}
+        )
+        if not created:
+            cart_item.amount += amount
+            cart_item.save()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
