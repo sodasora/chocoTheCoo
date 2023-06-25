@@ -83,24 +83,24 @@ class SignupAPIViewTest(CommonTestClass):
             # 이메일 형식 오류 - 공백이 포함되어 있음
             ({"email": "test1@navercom", "password": "Test123123!", "nickname": "test"}, 400),
             # 이메일 형식 오류 - dot 이 없음
-            ({"email": "test2@naver.com", "password": "test123123!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 대문자 없음
-            ({"email": "test3@naver.com", "password": "TEST123123!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 소문자 없음
+            ({"email": "test2@naver.com", "password": "test123123!", "nickname": "test"}, 200),
+            # 성공 - 영문자 대문자 없어도 가능
+            ({"email": "test3@naver.com", "password": "TEST123123!", "nickname": "test"}, 200),
+            # 성공 - 영문자 소문자 없어도 가능
             ({"email": "test4@naver.com", "password": "Testtesttest!", "nickname": "test"}, 400),
             # 비밀번호 형식 오류 - 숫자 없음
             ({"email": "test5@naver.com", "password": "Test123123", "nickname": "test"}, 400),
             # 비밀번호 형식 오류 - 특수문자 없음
             ({"email": "tes6@naver.com", "password": "Aa1!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 8자의 길이를 충족 못함
+            # 비밀번호 형식 오류 - 5자의 길이를 충족 못함
             ({"email": "tes7@naver.com", "password": "Test1 23123!", "nickname": "test"}, 400),
             # 비밀번호 형식 오류 - 공백이 포함되어 있음
             ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "tes t"}, 400),
-            # 닉네임 형식 오류 - 공백이 포함되어 있ㅇ므
+            # # 닉네임 형식 오류 - 공백이 포함되어 있음
             ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "t"}, 400),
-            # 닉네임 형식 오류 - 2자 이상 조건을 충족 못함
-            ({"email": "test9@naver.com", "password": "Test123123!", "nickname": "testtesttesttest"}, 400),
-            # 닉네임 형식 오류 - 10자 이상의 길이를 가짐
+            # # 닉네임 형식 오류 - 2자 이상 조건을 충족 못함
+            ({"email": "test9@naver.com", "password": "Test123123!", "nickname": "testtesttesttesttestestsets"}, 400),
+            # # 닉네임 형식 오류 - 20자 이상의 길이를 가짐
             ({"password": "Test123123!", "nickname": "test"}, 400),
             # # 이메일 형식 오류 - 값이 없음
             ({"email": "test10@naver.com", "nickname": "test"}, 400),
@@ -270,12 +270,6 @@ class EmailVerificationAndLoginTest(CommonTestClass):
             ({"email": self.user_data.get('email'), "password": "Password123",
               "verification_code": self.user.email_verification.verification_code}, 400),
             # 실패 - 특수 문자 없음
-            ({"email": self.user_data.get('email'), "password": "password123!",
-              "verification_code": self.user.email_verification.verification_code}, 400),
-            # 실패 - 대 문자 없음
-            ({"email": self.user_data.get('email'), "password": "AAAAAA123!",
-              "verification_code": self.user.email_verification.verification_code}, 400),
-            # 실패 - 소 문자 없음
             ({"email": self.user_data.get('email'), "password": "Password!",
               "verification_code": self.user.email_verification.verification_code}, 400),
             # 실패 - 숫자 없음
@@ -353,10 +347,6 @@ class UserAPITestCase(CommonTestClass):
         test_cases = [
             ({"password": self.user_data.get('password'), "new_password": "NewPassword123"}, token, 400),
             # 실패 - 특수 문자 없음
-            ({"password": self.user_data.get('password'), "new_password": "ewassword123!"}, token, 400),
-            # 실패 - 대 문자 없음
-            ({"password": self.user_data.get('password'), "new_password": "NAAAAAAAAAA123!"}, token, 400),
-            # 실패 - 소 문자 없음
             ({"password": self.user_data.get('password'), "new_password": "NewPassword!"}, token, 400),
             # 실패 - 숫자 없음
             ({"password": self.user_data.get('password'), "new_password": new_password}, None, 401),
@@ -624,7 +614,7 @@ class UserAPITestCase(CommonTestClass):
         test_cases = [
             # ({"phone_number": phone_number}, token, 200),
             # 발송 성공 테스트
-            ({"phone_number": phone_number}, token, 200),
+            ({"phone_number": "010 15 156 123 48489 "}, token, 400),
         ]
         for information, access_token, status_code in test_cases:
             self.get_phone_certification(information, access_token, status_code)

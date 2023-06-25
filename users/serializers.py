@@ -105,7 +105,7 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
 
         if ValidatedData.validated_password(attrs.get('password')) is not True:
             # 비밀번호  검증
-            raise ValidationError('비밀번호는 영 대소문자, 숫자, 특수문자가 필요합니다.')
+            raise ValidationError('비밀번호는 영문자,숫자,특수문자로 길이 5이상의 조건이 충족되어야 합니다.')
         return attrs
 
     def update(self, instance, validated_data):
@@ -545,7 +545,7 @@ class FollowSerializer(serializers.ModelSerializer):
     followings = BriefUserInformation(many=True)
     is_follow = serializers.SerializerMethodField()
 
-    def get_in_wishlist(self, obj):
+    def get_is_follow(self, obj):
         """
         get 요청한 사용자가 팔로우중인지 판단.
         """

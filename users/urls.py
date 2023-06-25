@@ -20,6 +20,7 @@ from .views import (
     PointImpAjaxView,
     PhoneVerificationAPIView,
     UpdateUserInformationAPIView,
+    FollowAPIView,
 )
 from .orderviews import (
     CartView,
@@ -36,7 +37,7 @@ from .subscription import SubscribecheckView
 
 """
 User API
-회원가입 및 인증, 로그인 및 소셜 로그인, 회원 정보 수정
+회원가입 및 인증, 로그인 및 소셜 로그인, 회원 정보 수정, 팔로우, 위시리스트, 좋아요
 """
 urlpatterns = [
     # 회원 가입 , 회원 탈퇴 , 비밀번호 수정, 이메일 수정
@@ -47,8 +48,14 @@ urlpatterns = [
     path("get/auth_code/", EmailAuthenticationAPIView.as_view(), name="email_authentication"),
     # 핸드폰 인증
     path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
-    # 프로필 읽기, 회원정보 수정, 휴면 계정으로 전환
+    # 프로필 읽기
     path("profile/<int:user_id>/", UserProfileAPIView.as_view(), name="profile-view"),
+    # 리뷰 좋아요 등록 및 취소, 좋아요 등록한 유저의 간략한 정보 불러오기
+    path("review/<int:review_id>/", ReviewListAPIView.as_view(), name="review-list-API"),
+    # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
+    path("wish/<int:product_id>/", WishListAPIView.as_view(), name="wish-list-API"),
+    # 팔로우 / 언팔로우, 팔로우 사용자 정보 불러오기
+    path("follow/<int:user_id>/", FollowAPIView.as_view(), name="follow-API"),
     # SIMPLE JWT Token 발급
     path("login/", CustomTokenObtainPairView.as_view(), name="login"),
     # refresh token 발급
@@ -126,10 +133,6 @@ urlpatterns += [
     # path("photo/", PointPhotoView.as_view(), name="point_photo_view"),
     # 구독
     path("subscribe/", SubscribeView.as_view(), name="subscribe_view"),
-    # 리뷰 좋아요 등록 및 취소, 좋아요 등록한 유저의 간략한 정보 불러오기
-    path("review/<int:review_id>/", ReviewListAPIView.as_view(), name="review-list-API"),
-    # 상품 찜  등록 및 취소, 찜 등록한 유저의 간략한 정보 불러오기
-    path("wish/<int:product_id>/", WishListAPIView.as_view(), name="wish-list-API"),
     # 결제api
     path("payment/checkout/", PointCheckoutView.as_view(), name="point_checkout"),
     path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
