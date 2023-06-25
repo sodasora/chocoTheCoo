@@ -546,13 +546,14 @@ class WishListAPIView(APIView):
         product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
-            wish_list = product.wish_lists.count()
+            product.wish_lists.count()
+            wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
-            wish_list = product.wish_lists.count()
+            wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )

@@ -47,7 +47,7 @@ urlpatterns = [
     path("get/auth_code/", EmailAuthenticationAPIView.as_view(), name="email_authentication"),
     # 핸드폰 인증
     path("phone/verification/", PhoneVerificationAPIView.as_view(), name='phone_verification'),
-    # 프로필 읽기, 회원정보 수정, 휴면 계정으로 전환
+    # 프로필 읽기
     path("profile/<int:user_id>/", UserProfileAPIView.as_view(), name="profile-view"),
     # SIMPLE JWT Token 발급
     path("login/", CustomTokenObtainPairView.as_view(), name="login"),

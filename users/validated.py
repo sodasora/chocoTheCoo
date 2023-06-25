@@ -161,11 +161,26 @@ class ValidatedData:
         비밀 번호 검증
         """
 
-        if password is None:
-            return False
-        password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        password_match = re.match(password_pattern, password)
-        return bool(password_match)
+        check = [
+            lambda element: all(
+                x.isdigit() or x.islower() or x.isupper() or (x in ['!', '@', '#', '$', '%', '^', '&', '*', '_']) for x
+                in element),
+            # 요소 하나 하나를 순환하며 숫자,소문자,대문자,지정된 특수문자 제외한 요소가 있을경우 False
+            lambda element: any(x in ['!', '@', '#', '$', '%', '^', '&', '*', '_'] for x in element),
+            # 최소 하나 이상의 특수문자 요구
+            lambda element: any(x.isdigit() for x in element),
+            # 최소 하나 이상의 숫자 요구
+            lambda element: len(element) == len(element.replace(" ", "")),
+            # 공백이 포함 되어 있을 경우 False
+            lambda element: True if (len(element) > 5 and len(element) < 21) else False,
+            # 전달된 값의 개수가 5~20 사이일 경우 True
+            lambda element: any(x.islower() or x.isupper() for x in element),
+            # 요소 하나하나를 순환하며, 요소중 대문자 또는 소문자가 있어야함(숫자로만 가입 불가능)
+        ]
+        for i in check:
+            if not i(password):
+                return False
+        return True
 
     @classmethod
     def validated_nickname(cls, nickname):
@@ -176,7 +191,7 @@ class ValidatedData:
         check = [
             lambda element: element is not None,
             lambda element: len(element) == len(element.replace(" ", "")),
-            lambda element: True if (1 < len(element) < 10) else False,
+            lambda element: True if (1 < len(element) < 20) else False,
         ]
         for i in check:
             if not i(nickname):
@@ -387,7 +402,7 @@ class ValidatedData:
         elif not check_password(password, instance.password):
             return [False, '입력하신 비밀번호가 사용자의 비밀번호와 일치하지 않습니다.']
         elif not cls.validated_password(new_password):
-            return [False, '비밀번호는 영 대소문자, 숫자, 특수문자가 필요합니다.']
+            return [False, '비밀번호는 영문자,숫자,특수문자로 길이 5이상의 조건이 충족되어야 합니다.']
         else:
             return True
 
