@@ -1,6 +1,10 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .social import KakaoLogin, GoogleLogin, NaverLogin
+from .social import (
+    KakaoLogin,
+    GoogleLogin,
+    NaverLogin,
+)
 from .views import (
     UserAPIView,
     EmailAuthenticationAPIView,
@@ -21,6 +25,7 @@ from .views import (
     PhoneVerificationAPIView,
     UpdateUserInformationAPIView,
     FollowAPIView,
+
 )
 from .orderviews import (
     CartView,
@@ -60,12 +65,12 @@ urlpatterns = [
     path("login/", CustomTokenObtainPairView.as_view(), name="login"),
     # refresh token 발급
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    # 카카오 로그인
+    # 카카오 로그인, 콜백 처리
     path("kakao/login/", KakaoLogin.as_view(), name="kakao-login"),
+    # 구글 로그인 , 콜백 처리
+    path("google/login/", GoogleLogin.as_view(), name="google-login"),
     # 네이버 로그인
     path("naver/login/", NaverLogin.as_view(), name="naver-login"),
-    # 구글 로그인
-    path("google/login/", GoogleLogin.as_view(), name="google-login"),
 ]
 
 """
