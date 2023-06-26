@@ -157,7 +157,7 @@ class ReviewView(ListCreateAPIView):
         has_reviewed = Review.objects.filter(user=user, product=product).exists()
 
         if has_reviewed:
-            raise ValidationError(detail="이미 리뷰한 상품입니다")
+            Response(status=status.HTTP_406_NOT_ACCEPTABLE)
         if not has_bought:
             raise ValidationError(detail="구매이력이 없습니다")
 
@@ -171,6 +171,21 @@ class ReviewView(ListCreateAPIView):
             raise serializer.ValidationError(point_serializer.errors)
             
         serializer.save(user=self.request.user, product=product)
+
+
+# 합치자니 프론트 코드가 많이 바껴야할 수도 있을 것 같아서 view를 분리했습니다.
+# 나중에 시간된다면 합쳐서 정리해두겠습니다.
+class MyProductReview(ListAPIView):
+    """제품의 내가 쓴 리뷰 조회"""
+
+    permission_classes = [IsAuthenticated | IsReadOnly]
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        product_id = self.kwargs.get("product_id")
+        queryset = Review.objects.filter(product_id=product_id, user=self.request.user)
+        return queryset
+
 
 class ReviewDetailView(RetrieveUpdateAPIView):
     """리뷰 상세 조회, 수정"""

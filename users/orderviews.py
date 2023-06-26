@@ -30,6 +30,7 @@ from .orderserializers import (
     OrderCreateSerializer,
     OrderItemDetailSerializer,
     OrderItemSerializer,
+    OrderStatusSerializer,
     StatusCategorySerializer,
 )
 from config.permissions_ import IsDeliveryRegistered
@@ -58,11 +59,14 @@ class CartView(ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         """장바구니 추가"""
+
+        # 상품 아이디로 추가
         if product_id := request.data.get("product"):
             product = get_object_or_404(Product, id=product_id)
             amount = int(request.data.get("amount"))
             self.add_exist_cart(product, amount)
 
+        # 주문내역 아이디로 추가
         elif bill_id := request.data.get("bill_id"):
             bill = get_object_or_404(Bill, pk=bill_id)
             order_items = bill.orderitem_set.all()
@@ -71,6 +75,7 @@ class CartView(ListCreateAPIView):
                 amount = orderitem.amount
                 self.add_exist_cart(product, amount)
 
+        # 주문상품 아이디로 추가
         elif order_item_id := request.data.get("order_item_id"):
             orderitem = get_object_or_404(OrderItem, id=order_item_id)
             product = get_object_or_404(Product, pk=orderitem.product_id)
@@ -284,3 +289,21 @@ class StatusCategoryView(ListAPIView):
 
     serializer_class = StatusCategorySerializer
     queryset = StatusCategory.objects.all()
+
+
+class StatusChangeView(UpdateAPIView):
+    """주문 상태 변경"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderStatusSerializer
+    queryset = OrderItem.objects.all()
+
+    def perform_update(self, serializer):
+        order_item = self.get_object()
+        cur_status = order_item.order_status.id
+        new_status = self.request.data.get('order_status')
+        if cur_status == 5 and new_status == 6:
+            seller = order_item.seller.user
+            total_point = order_item.amount * order_item.price
+            Point.objects.create(user=seller, point_type_id=8, point=total_point)
+        serializer.save()

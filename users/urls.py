@@ -36,6 +36,7 @@ from .orderviews import (
     OrderListView,
     OrderDetailView,
     StatusCategoryView,
+    StatusChangeView
 )
 from .subscription import SubscribecheckView
 
@@ -120,6 +121,8 @@ urlpatterns += [
     path("orders/products/<int:product_id>/",OrderListView.as_view(),name="order_list_view"),
     # 주문 상세 조회
     path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail_view"),
+    # 주문 상태 변경 ()
+    path("orders/status/<int:pk>/", StatusChangeView.as_view(), name="status_change_view"),
 ]
 
 """
@@ -132,17 +135,11 @@ urlpatterns += [
     path("points/<str:date>/", PointView.as_view(), name="point_date_view"),
     # 출석용 포인트
     path("attendance/", PointAttendanceView.as_view(), name="point_attendance_view"),
-    # # 텍스트리뷰용
-    # path("text/", PointReviewView.as_view(), name="point_review_view"),
-    # # 포토리뷰용
-    # path("photo/", PointPhotoView.as_view(), name="point_photo_view"),
     # 구독
     path("subscribe/", SubscribeView.as_view(), name="subscribe_view"),
     # 결제api
     path("payment/checkout/", PointCheckoutView.as_view(), name="point_checkout"),
     path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
-    # # 상품 구매용 포인트 차감
-    # path("pointpayment/", PointBuyView.as_view(), name="point_buy_view"),
     # 스케줄링
     path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]

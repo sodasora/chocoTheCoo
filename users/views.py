@@ -546,14 +546,15 @@ class WishListAPIView(APIView):
         product = get_object_or_404(Product, id=product_id)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
-            product.wish_lists.count()
-            wish_list = user.product_wish_list.count()
+            wish_list = product.wish_lists.count()
+            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
-            wish_list = user.product_wish_list.count()
+            wish_list = product.wish_lists.count()
+            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )
@@ -651,10 +652,10 @@ class PointStaticView(APIView):
 
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7)"""
+        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7), 정산(8)"""
         day_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
                 .filter(date=date)
                 .aggregate(total=Sum("point"))
         )
@@ -673,7 +674,7 @@ class PointStaticView(APIView):
         day_total_point = plus_point - minus_point
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
                 .filter(date__month=timezone.now().date().month)
                 .aggregate(total=Sum("point"))
         )
@@ -693,7 +694,7 @@ class PointStaticView(APIView):
 
         total_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5])
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
                 .aggregate(total=Sum("point"))
         )
         total_minus_point = (

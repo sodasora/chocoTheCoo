@@ -1,6 +1,7 @@
 # utils
 import json
 from datetime import datetime
+from rest_framework.response import Response
 
 # channels
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -9,6 +10,7 @@ from channels.db import database_sync_to_async
 # models, serializers
 from users.models import User
 from chat.models import RoomMessage, ChatRoom, RoomChatParticipant
+from chat.serializers import ParticipantSerializer
 
 class ChatConsumer(AsyncWebsocketConsumer):
 
@@ -31,10 +33,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if is_first:
             response = {
                 'response_type' : "enter",
-                'sender': user.id,
                 'sender_name': user.nickname,
                 'participants_count' : participants_count,
-                'user_id' : user.id
+                'user_id' : user.id,
             }
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -59,11 +60,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             room_id = self.scope['url_route']['kwargs']['room_id']
             _, participants_count = await self.enter_or_out_room(user.id , room_id, is_enter = False)
 
-
         response = {
             'response_type' : "out",
             'participants_count' : participants_count,
-            'user_id' : user.id
+            'user_id' : user.id,
           }
 
         await self.channel_layer.group_send(
@@ -96,6 +96,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         user = await self.get_user_obj(user_id)
         room = await self.get_room_obj(room_id)
+        
+        if user.profile_image:
+            image = user.profile_image.url
+        else:
+            image = None
 
         message = text_data_json['message']
         
@@ -105,9 +110,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
           'response_type' : "message",
           'message': message,
           'sender': user.id,
-        #   'sender_image': user.profile_image.url,
           'sender_name': user.nickname,
           'room_id': room.id,
+          'profile':image,
           'time': await self.get_time(),
         }        
         
@@ -173,7 +178,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
       participants = RoomChatParticipant.objects.filter(room_id = room_id)
       participant, is_first = RoomChatParticipant.objects.get_or_create(room_id = room_id, user_id = user_id)
-
+      
       if is_enter:
         return is_first, participants.count()
       else:

@@ -8,7 +8,7 @@ from products.models import Product
 from users.validated import ValidatedData
 from .cryption import AESAlgorithm
 from products.serializers import SimpleSellerInformation
-from rest_framework.serializers import ValidationError
+from rest_framework.serializers import ValidationError, PrimaryKeyRelatedField
 
 
 class StatusCategorySerializer(ModelSerializer):
@@ -116,7 +116,6 @@ class BillSerializer(ModelSerializer):
     order_items_count = SerializerMethodField()
     total_price = SerializerMethodField()
     thumbnail = SerializerMethodField()
-    thumbnail_name = SerializerMethodField()
     bill_order_status = SerializerMethodField()
 
     def get_bill_order_status(self, obj):
@@ -126,24 +125,17 @@ class BillSerializer(ModelSerializer):
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
             return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
-    def get_thumbnail_name(self, obj):
-        try:
-            ord_item = obj.orderitem_set.all()[0]
-            product = Product.objects.get(pk=ord_item.product_id)
-        except:
-            return None
-        return product.name
-
     def get_thumbnail(self, obj):
-        thumbnail = []
         ord_list = obj.orderitem_set.all()
         for i in ord_list:
             try:
-                product = Product.object.get(pk=i.product_id)
-                thumbnail.append(product.image)
+                product = Product.objects.get(pk=i.product_id)
+                if product.image:
+                    return {"image": product.image.url, "name": product.name}
             except:
                 pass
-        return thumbnail
+        product = Product.objects.get(pk=ord_list.first().product_id)
+        return {"image": None, "name": product.name}
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -273,7 +265,41 @@ class OrderItemSerializer(ModelSerializer):
 
 class SimpleOrderItemSerializer(ModelSerializer):
     order_status = StringRelatedField()
+    product_image = SerializerMethodField()
+
+    def get_product_image(self, obj):
+        product = Product.objects.get(pk=obj.product_id)
+        return product.image.url if product.image else None
 
     class Meta:
         model = OrderItem
         fields = "__all__"
+
+
+class OrderStatusSerializer(ModelSerializer):
+    order_status = PrimaryKeyRelatedField(
+        queryset=StatusCategory.objects.all(), required=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = ("order_status",)
+
+    def validate_order_status(self, value):
+        request = self.context["request"]
+        user = request.user
+        cur_status = self.instance.order_status.id
+        seller = self.instance.seller == user.user_seller
+        buyer = self.instance.bill.user == user
+
+        if cur_status in [2, 3, 4] and value.id in [2, 3, 4, 5]:
+            if not seller:
+                raise ValidationError("주문 상품의 판매자만 변경 가능합니다")
+        elif cur_status == 5 and value.id == 6:
+            if not buyer:
+                raise ValidationError("상품의 구매자만 변경 가능합니다")
+        elif cur_status in [1, 6]:
+            raise ValidationError("현재 상태에서 주문 상태를 수정할 수 없습니다.")
+        else:
+            raise ValidationError("유효하지 않은 주문 상태입니다.")
+        return value
