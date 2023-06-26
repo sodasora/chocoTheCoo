@@ -450,13 +450,36 @@ class ReadUserSerializer(serializers.ModelSerializer):
         model = User
 
         fields = (
-        "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction')
+        "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction', 'follower'
+        )
 
     def to_representation(self, instance):
         """
-        프로필 정보에 포인트 합산 데이터 추가
+        프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
         """
         information = super().to_representation(instance)
+
+        # 팔로우 하는 판매자 정보 불러오기
+        sellers = information.get('follower')
+        seller_information = []
+        for pk in sellers:
+            seller = get_object_or_404(Seller,pk=pk)
+            company_img = (
+                seller.company_img.url if seller.company_img else None
+            )
+            data = {
+                'company_img': company_img,
+                'company_name': seller.company_name,
+                'user': {
+                    'id': seller.user.id,
+                },
+                'contact_number': seller.contact_number,
+                'followings_count': seller.user.followings.count()
+            }
+            seller_information.append(data)
+
+
+        # 포인트 합산 내역 뽑아오기
         total_plus_point = (
             Point.objects.filter(user_id=information.get('id'))
                 .filter(point_type_id__in=[1, 2, 3, 4, 5, 8])
@@ -475,6 +498,8 @@ class ReadUserSerializer(serializers.ModelSerializer):
                 if total_plus_point["total"] is not None else 0
             )
         information["total_point"] = total_point
+        information["seller_information"] = seller_information
+        information.pop('follower')
         return information
 
 
