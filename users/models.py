@@ -143,7 +143,7 @@ class Delivery(models.Model):
         "users.User", related_name="deliveries_data", on_delete=models.CASCADE
     )
     address = models.CharField("주소", max_length=100)
-    detail_address = models.CharField("상세주소", max_length=100)
+    detail_address = models.CharField("상세주소", max_length=100, blank=True, null=True)
     recipient = models.CharField("수령인", max_length=30)
     postal_code = models.CharField("우편번호", max_length=10)
 

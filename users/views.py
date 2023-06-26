@@ -300,10 +300,9 @@ class UserProfileAPIView(APIView):
         )
 
 
-class DeliveryAPIView(APIView):
+class GetDeliveryAPIView(APIView):
     """
     GET : 사용자의 배송 정보들 읽기 (복호화)
-    POST : 사용자의 배송 정보 기입
     """
 
     def get(self, request, user_id):
@@ -311,25 +310,32 @@ class DeliveryAPIView(APIView):
         배송 정보들 읽기
         """
 
-        user = get_object_or_404(User, id=user_id)
-        serializer = DeliverySerializer(user.deliveries_data, many=True)
+        owner = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(User, pk=request.user.pk)
+        if user != owner and user.is_seller is not True:
+            # 접근자가 본인의 데이터를 조회 하지 않으며, 접근자가 판매자 권한이 없는 경우
+            return Response(
+                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = DeliverySerializer(owner.deliveries_data, many=True)
         return Response(
             serializer.data, status=status.HTTP_200_OK
         )
 
-    def post(self, request, user_id):
+
+class DeliveryAPIView(APIView):
+    """
+    POST : 사용자의 배송 정보 기입
+    """
+
+    def post(self, request):
         """
         배송 정보 추가
         """
 
-        user = get_object_or_404(User, id=user_id)
-        validated_result = ValidatedData.validated_deliveries(user, request)
-        if validated_result is not True:
-            return Response(
-                {"err": "유효성 검사 실패"}, status=validated_result
-            )
-
-        serializer = DeliverySerializer(data=request.data)
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = DeliverySerializer(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save(user=user)
             return Response(
@@ -337,7 +343,7 @@ class DeliveryAPIView(APIView):
             )
         else:
             return Response(
-                {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -351,9 +357,10 @@ class UpdateDeliveryAPIView(APIView):
         """
         배송 정보 수정
         """
+
         delivery = get_object_or_404(Delivery, id=delivery_id)
         if request.user == delivery.user:
-            serializer = DeliverySerializer(delivery, data=request.data)
+            serializer = DeliverySerializer(delivery, data=request.data, context={'user': request.user})
             if serializer.is_valid():
                 serializer.save()
                 return Response({"msg": "배송 정보를 수정 했습니다."}, status=status.HTTP_200_OK)

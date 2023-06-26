@@ -1,14 +1,20 @@
 from rest_framework.test import APITestCase
 from datetime import timedelta
-import users.models
-import users.validated
 from unittest.mock import patch
 from django.utils import timezone
 from django.urls import reverse
-import json
-from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from django.test.client import (
+    MULTIPART_CONTENT,
+    encode_multipart,
+    BOUNDARY
+)
 from PIL import Image
+import users.models
+import users.validated
+import json
 import tempfile
+import os
+CALLING_NUMBER = os.environ.get('CALLING_NUMBER')
 
 
 class CommonTestClass(APITestCase):
@@ -626,7 +632,7 @@ class UserAPITestCase(CommonTestClass):
     #     인증 번호로 휴대폰 인증 테스트
     #     """
     #
-    #     phone_number = "01031571180"
+    #     phone_number = CALLING_NUMBER
     #     token = self.user_access_token
     #     test_cases = [
     #         # 발송 성공 테스트
@@ -662,6 +668,10 @@ class UserAPITestCase(CommonTestClass):
     #
     #     for information, access_token, status_code in test_cases:
     #         self.mobile_phone_verification_test(information, access_token, status_code)
+    #
+    #     # 인증 여부 확인
+    #     user = users.models.User.objects.get(pk=self.user.pk)
+    #     self.assertEqual(user.phone_verification.is_verified, True)
 
 
 class DeliveryInformationTestCase(CommonTestClass):
@@ -674,14 +684,60 @@ class DeliveryInformationTestCase(CommonTestClass):
         배송 정보를 위한 사용자 셋팅
         (배송 정보를 기입하기 위해서는 휴대폰 인증을 요구하고 있어, 해당 테스트에서는 핸드폰 인증을 건너 뜀)
         """
-        # phone_verification 객체를 user에 연결
-        phone_verification = users.models.PhoneVerification.objects.create(
+
+        # accessToken 저장
+        response = self.client.post(reverse("login"), self.user_data)
+        token = json.loads(response.content.decode())
+        self.user_access_token = token.get('access')
+
+        # 휴대폰 인증
+        users.models.PhoneVerification.objects.create(
             user=self.user,
-            verification_numbers="1234",
+            is_verified=True,
         )
-        self.user.phone_verification = phone_verification
         self.user.save()
 
-    # def additional_testing_of_delivery_information:
+    def add_delivery_information_test(self, postal_code, token, status_code):
+        """
+        배송 정보 추가 테스트
+        """
 
+        request_data = {
+            "address": "우주 왕복 비행선",
+            "detail_address": "306호",
+            "recipient": "우주인",
+            "postal_code": postal_code
+        }
+
+        response = self.client.post(
+            path=reverse("create-delivery", args=self.user.pk),
+            data=json.dumps(request_data),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_add_delivery_information(self):
+        """
+        배송 정보 추가 테스트 케이스
+        """
+
+        token = self.user_access_token
+        test_cases = [
+            # 테스트 케이스 양식
+            # (우편 번호, 토큰 정보, status_code)
+
+            # 배송 정보 기입 성공 테스트
+            ("12345", token, 200),
+            # 실패 케이스 - 토큰 정보 없음
+            ("12345", None, 401),
+            # 실패 케이스 - 우편 번호 형식 오류
+            ("", token, 400),
+            ("AA123", token, 400),
+            ("123 45", token, 400),
+            ("1234845", token, 400),
+            ("123", token, 400),
+        ]
+        for postal_code, access_token, status_code in test_cases:
+            self.add_delivery_information_test(postal_code, access_token, status_code)
 
