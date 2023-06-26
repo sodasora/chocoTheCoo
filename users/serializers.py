@@ -310,8 +310,8 @@ class SellerSerializer(serializers.ModelSerializer):
         current_date = datetime.now()  # 현재시간
         start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)  # 당월 시작일
         end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1)  # 당월 종료일
-        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=5).filter(
-            created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:5 상태,이번달)에 맞는 쿼리셋
+        sent_orders = OrderItem.objects.filter(seller=obj.pk).filter(order_status=6).filter(
+            created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:6 상태,이번달)에 맞는 쿼리셋
         return len(sent_orders)
 
     # 발송완료건수(거래확정)
