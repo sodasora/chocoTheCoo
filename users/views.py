@@ -435,6 +435,9 @@ class SellerAPIView(APIView):
         user = get_object_or_404(User, pk=request.user.pk)
 
         try:
+            for follower in user.follower.all():
+                follower.followings.remove(user)
+
             user.is_seller = False
             user.user_seller.delete()
             user.save()
@@ -504,6 +507,9 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         try:
+            for follower in user.follower.all():
+                follower.followings.remove(user)
+
             subject_message = '관리자가 판매자 권한을 거절 했습니다.'
             content_message = request.data.get('msg')
             EmailService.message_forwarding(user.email, subject_message, content_message)
@@ -618,15 +624,20 @@ class FollowAPIView(APIView):
 
         user = get_object_or_404(User, pk=request.user.pk)
         owner = get_object_or_404(User, id=user_id)
+        if owner.is_seller is False:
+            return Response(
+                {"err": "판매자 사용자만 팔로우 할 수 있습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         if owner in user.follower.all():
             user.follower.remove(owner)
-            followings = user.followings.count()
+            followings = owner.followings.count()
             return Response(
                 {"followings": followings}, status=status.HTTP_200_OK
             )
         else:
             user.follower.add(owner)
-            followings = user.followings.count()
+            followings = owner.followings.count()
             return Response(
                 {"followings": followings}, status=status.HTTP_201_CREATED
             )

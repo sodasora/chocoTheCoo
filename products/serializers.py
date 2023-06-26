@@ -1,7 +1,7 @@
 import time
 
 from rest_framework import serializers
-import users.models
+from users.models import Seller
 from products.models import Product, Category, Review
 from users.models import OrderItem, User
 import json
@@ -109,7 +109,7 @@ class SimpleSellerInformation(serializers.ModelSerializer):
         return obj.user.followings.count()
 
     class Meta:
-        model = users.models.Seller
+        model = Seller
         fields = ('company_img', 'company_name', 'user', 'business_owner_name', 'contact_number', 'is_follow', 'followings_count')
 
 
