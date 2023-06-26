@@ -8,7 +8,7 @@ from .models import User
 from .serializers import CustomTokenObtainPairSerializer
 
 # REDIRECT_URI = 'https://chocothecoo.com'
-REDIRECT_URI = 'http://127.0.0.1:5501/login.html'
+REDIRECT_URI = 'http://127.0.0.1:5501/index.html'
 KAKAO_API_KEY = os.environ.get('KAKAO_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 NAVER_CLINET_ID = os.environ.get('NAVER_CLINET_ID')
