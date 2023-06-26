@@ -604,17 +604,84 @@ class UserAPITestCase(CommonTestClass):
         )
         self.assertEqual(response.status_code, status_code)
 
-    def test_case_get_phone_certification(self):
+    def mobile_phone_verification_test(self, information, token, status_code):
         """
-        핸드폰 인증 번호 발급 테스트 케이스
+        휴대폰 인증 테스트
         """
 
-        phone_number = "01031571180"
-        token = self.user_access_token
-        test_cases = [
-            # ({"phone_number": phone_number}, token, 200),
-            # 발송 성공 테스트
-            ({"phone_number": "010 15 156 123 48489 "}, token, 400),
-        ]
-        for information, access_token, status_code in test_cases:
-            self.get_phone_certification(information, access_token, status_code)
+        response = self.client.patch(
+            path=reverse("phone_verification"),
+            data=json.dumps(information),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+    """
+    문자 발송 제한으로 인해 테스트 코드 모두 작성 후 주석 해제 예정
+    """
+    # def test_case_mobile_phone_verification(self):
+    #     """
+    #     핸드폰 인증 번호 발급 테스트 케이스
+    #     인증 번호로 휴대폰 인증 테스트
+    #     """
+    #
+    #     phone_number = "01031571180"
+    #     token = self.user_access_token
+    #     test_cases = [
+    #         # 발송 성공 테스트
+    #         ({"phone_number": phone_number}, token, 200),
+    #         # 테스트 실패 케이스
+    #         ({"phone_number": "010 2345 6789"}, token, 400),
+    #         # 공백이 포함된 휴대폰 번호
+    #         ({"phone_number": "010-2345-6789"}, token, 400),
+    #         # -가 포함된 휴대폰 번호
+    #         ({"phone_number": "01086789"}, token, 400),
+    #         # 정확하지 않은 핸드폰 번호
+    #         ({"phone_number": "공일공일이삼사오육칠팔"}, token, 400),
+    #         # 잘못된 입력값
+    #         ({"phone_number": "010 2346789"}, token, 400),
+    #         # 공백이 포함된 휴대폰 번호
+    #         ({"phone_number": phone_number}, None, 401),
+    #         # 토큰 정보 없음
+    #     ]
+    #     for information, access_token, status_code in test_cases:
+    #         self.get_phone_certification(information, access_token, status_code)
+    #
+    #     verification_numbers = self.user.phone_verification.verification_numbers
+    #     test_cases = [
+    #         # 테스트 실패 케이스 - 잘못된 인증 번호
+    #         ({"verification_numbers": "wrong verification code"}, token, 400),
+    #         # 토큰 정보 없음
+    #         ({"verification_numbers": verification_numbers}, None, 401),
+    #         # 테스트 성공 케이스
+    #         ({"verification_numbers": verification_numbers}, token, 200),
+    #         # 테스트 실패 케이스 - 중복 시도
+    #         ({"verification_numbers": verification_numbers}, token, 400),
+    #     ]
+    #
+    #     for information, access_token, status_code in test_cases:
+    #         self.mobile_phone_verification_test(information, access_token, status_code)
+
+
+class DeliveryInformationTestCase(CommonTestClass):
+    """
+    배송 정보 테스트 케이스
+    """
+
+    def setUp(self):
+        """
+        배송 정보를 위한 사용자 셋팅
+        (배송 정보를 기입하기 위해서는 휴대폰 인증을 요구하고 있어, 해당 테스트에서는 핸드폰 인증을 건너 뜀)
+        """
+        # phone_verification 객체를 user에 연결
+        phone_verification = users.models.PhoneVerification.objects.create(
+            user=self.user,
+            verification_numbers="1234",
+        )
+        self.user.phone_verification = phone_verification
+        self.user.save()
+
+    # def additional_testing_of_delivery_information:
+
+

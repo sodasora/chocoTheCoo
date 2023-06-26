@@ -532,17 +532,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class WishListAPIView(APIView):
     """
-    GET : 상품 찜 등록한 유저 정보 불러오기,
     POST : 상품 찜 등록 및 취소
     """
-
-    def get(self, request, product_id):
-        """
-        상품을 찜 등록한 사용자 정보들 불러오기
-        """
-        product = get_object_or_404(Product, id=product_id)
-        serializer = GetWishListUserInfo(product, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, product_id):
         """
@@ -553,14 +544,12 @@ class WishListAPIView(APIView):
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
             wish_list = product.wish_lists.count()
-            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
             wish_list = product.wish_lists.count()
-            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )
@@ -568,18 +557,8 @@ class WishListAPIView(APIView):
 
 class ReviewListAPIView(APIView):
     """
-    GET : 리뷰 좋아요 등록한 유저 정보 불러오기,
     POST : 리뷰 좋아요 등록 및 취소
     """
-
-    def get(self, request, review_id):
-        """
-        리뷰를 좋아요 등록한 사용자 정보들 불러오기
-        """
-
-        review = get_object_or_404(Review, id=review_id)
-        serializer = GetReviewUserListInfo(review)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, review_id):
         """
@@ -604,29 +583,23 @@ class ReviewListAPIView(APIView):
 
 class FollowAPIView(APIView):
     """
-    GET : 유저를 팔로우 하는 사람 정보 불러오기
     POST : 팔로우 등록 및 취소
     """
-
-    def get(self, request, user_id):
-        """
-        다른 사용자(로그인한 유저 x)를 팔로우 하고 있는 유저 목록 뽑아오기
-        """
-        owner = get_object_or_404(User, id=user_id)
-        serializer = FollowSerializer(owner, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, user_id):
         """
         사용자를 팔로우, 언팔로우
         """
 
-
         user = get_object_or_404(User, pk=request.user.pk)
         owner = get_object_or_404(User, id=user_id)
         if owner.is_seller is False:
             return Response(
                 {"err": "판매자 사용자만 팔로우 할 수 있습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        elif owner == user:
+            return Response(
+                {"err": "스스로를 팔로우 할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if owner in user.follower.all():
