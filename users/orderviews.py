@@ -202,7 +202,7 @@ def OrderPointCreate(user: object, total_buy_price: int):
     """주문 상품 포인트 생성"""
     total_plus_point = (
         Point.objects.filter(user_id=user.id)
-        .filter(point_type__in=[1, 2, 3, 4, 5])
+        .filter(point_type__in=[1, 2, 3, 4, 5, 8])
         .aggregate(total=Sum("point"))
     ).get("total", 0) or 0
     total_minus_point = (
