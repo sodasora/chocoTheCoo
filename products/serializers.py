@@ -40,7 +40,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     stars = serializers.SerializerMethodField()
     def get_stars(self, obj):
         product_stars = Review.objects.filter(product=obj.id) # 조건(해당상품의 리뷰)에 맞는 쿼리셋
-        return round(sum(star.star for star in product_stars)/len(product_stars), 1) if product_stars else None # 리뷰가 존재한다면 평균값 리턴, 없다면 None
+        return round(sum(star.star for star in product_stars)/len(product_stars), 1) if product_stars else 0 # 리뷰가 존재한다면 평균값 리턴, 없다면 None
 
 
     class Meta:

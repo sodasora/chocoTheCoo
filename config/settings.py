@@ -255,6 +255,10 @@ AUTH_USER_MODEL = 'users.User'
 ## CORS ############################################################################
 # 모든 허용한 상태로 수정 필요
 CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5501",  # 특정 출처만 허용
+# ]
 
 # CORS 허용 목록에 ec2 ip를 추가합니다.
 # CORS_ORIGIN_WHITELIST = ['http://127.0.0.1','http://localhost']
