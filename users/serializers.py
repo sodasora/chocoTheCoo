@@ -499,6 +499,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
             )
         information["total_point"] = total_point
         information["seller_information"] = seller_information
+        information.pop('follower')
         return information
 
 
