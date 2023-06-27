@@ -37,10 +37,8 @@ ChcoTheCoo supports your LOVE!!
 * 백엔드
 <img src="https://img.shields.io/badge/Python 3.11-3776AB?style=for-the-badge&logo=python&logoColor=white">
 <img src="https://img.shields.io/badge/Django 4.2.2-092E20?style=for-the-badge&logo=django&logoColor=white">
-<br>
 <img src="https://img.shields.io/badge/djangorestframework-092E20?style=for-the-badge&logo=django&logoColor=white">
 <img src="https://img.shields.io/badge/djangorestframework-simplejwt-색상?style=for-the-badge&logo=django&logoColor=white">
-<br>
 <img src="https://img.shields.io/badge/daphne-303030?style=for-the-badge&logo=daphne&logoColor=white"> 
 <img src="https://img.shields.io/badge/redis 7.0.11-FF1F1F?style=for-the-badge&logo=redis&logoColor=white">
 <!-- <img src="https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white"> -->
@@ -114,8 +112,8 @@ ChcoTheCoo supports your LOVE!!
 >* channels: 장고 통합 레이어
 >* daphne: ASGI 서버(장고/채널스 개발서버)
 <br>
+
 ---
-<br>
 
 ## 📌 주요 기능
 #### 로그인 - <a href="https://chocothecoo.com/login.html" >상세보기</a>
@@ -125,11 +123,9 @@ ChcoTheCoo supports your LOVE!!
 >* Token 기반 인증 <br>
 Requset, Response 의 인증 방식을 Token으로 구현 <br>
 stateless한 특성을 통해 Clinet Server의 부하를 줄일것을 기대 가능 <br>
-<br>
 >* 확장성 <br>
 payload에 사용자 간단한 데이터를 추가하여 <br>
 프론트와 서비스 통합시 편리한 데이터 전송 가능 <br>
-<br>
 >* 간단한 구현 <br>
 SIMPLE JWT Library를 사용함으로써 Token 인증 방식의 간단한 구현
 <br>
@@ -139,8 +135,6 @@ SIMPLE JWT Library를 사용함으로써 Token 인증 방식의 간단한 구현
 Resource Server와 Clinet Server의 API 통신을 통해 Redirect URI, API KEY 발급 <br>
 Clinet Server는 Resurce Server로 부터 발급받은 사용자의 Access Token을 검증 <br>
 검증 후 사용자에게 Client Server의 Refresh, Access Token 을 발급<br>
-<br>
-
 >* scope <br>
 Resource Server로 부터 소셜 계정의 데이터 수집 <br>
 email, profile image, nickname <br>
@@ -164,21 +158,18 @@ https://cloud.google.com/identity-platform/docs/sign-in-user-email?hl=ko <br>
 >* Model field에 사용자의 다양한 데이터 공간 확보 <br>
 Login Type 세분화 필드를 추가하여 소셜 계정 구분 <br>
 Bollean 필드를 사용하여 계정 활성화, 관리자 및 판매자 권한 구분 <br>
-<br>
 >* 보안 <br>
 사용자의 비밀번호를 sha256 알고리즘을 사용하여 보안성 향상 <br>
 set,check password 메서드 기능 지원을 통한 손쉬운 로그인 검증<br>
-<br>
 >* 기능 지원 <br>
 is_active, last_login 등 다양한 기능 지원을 통해 편의성 향상 <br>
-<br>
 >* social login <br>
 unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현
 <br>
+
 > 보안 <br>
 >* 필요성 <br>
 사용자의 주소지 정보, 통관 번호, 휴대폰 연락처와 판매자 정보 암·복호화 과정이 필요<br>
-<br>
 >* pycryptodome Library 
 다양한 암호화 알고리즘중 AES 알고리즘 사용 <br>
 블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현
