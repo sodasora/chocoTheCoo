@@ -172,7 +172,7 @@ if AWS_S3_ON:
     AWS_LOCATION = 'statics'
     STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static')
+        os.path.join(BASE_DIR, 'statics')
     ]
 
     
@@ -183,6 +183,7 @@ else:
 
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     MEDIA_URL = "/media/"
+
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
