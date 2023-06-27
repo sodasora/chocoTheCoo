@@ -51,7 +51,7 @@ class AllProductListAPIView(ListAPIView):
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
-        queryset = Product.objects.filter(seller=user_id)
+        queryset = Product.objects.filter(seller=user_id).order_by("-created_at")
         return queryset
 
 
@@ -63,7 +63,7 @@ class ProductListAPIView(ListCreateAPIView):
     pagination_class = ProductPagination
 
     def get_queryset(self):
-        filters = Q()
+        filters = Q(item_state=1)
         params = self.request.query_params
 
         if seller := params.get("user_id"):
@@ -102,22 +102,11 @@ def ordering_queryset(queryset, ordering):
     return orderings[ordering]
 
 
-class SellerProductListAPIView(ListAPIView):
-    """특정 판매자 상품 전체 조회, 생성"""
-
-    permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
-    serializer_class = ProductListSerializer
-
-    def get_queryset(self):
-        user_id = self.kwargs.get("user_id")
-        return Product.objects.filter(seller=user_id).order_by("-created_at")
-
-
 class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
-    """상세 조회, 수정, 삭제 (Retrieve 상속에서 수정됨)"""
+    """상세 조회, 수정, 삭제"""
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(item_state=1)
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -128,6 +117,11 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         seller = get_object_or_404(Seller, user=self.request.user)
         serializer.save(seller=seller)
+
+    def perform_destroy(self, instance):
+        instance.item_state = 6
+        instance.save()
+
 
 class ReviewView(ListCreateAPIView):
     """리뷰 조회, 생성"""
@@ -152,7 +146,9 @@ class ReviewView(ListCreateAPIView):
     def perform_create(self, serializer):
         product = get_object_or_404(Product, id=self.kwargs.get("product_id"))
         user = self.request.user
-        has_bought = OrderItem.objects.filter(bill__user=user, product_id=product.id).exists()
+        has_bought = OrderItem.objects.filter(
+            bill__user=user, product_id=product.id
+        ).exists()
         has_reviewed = Review.objects.filter(user=user, product=product).exists()
 
         if has_reviewed:
@@ -160,7 +156,9 @@ class ReviewView(ListCreateAPIView):
         if not has_bought:
             raise ValidationError(detail="구매이력이 없습니다")
 
-        point, point_type = self.get_point_info(product.price, self.request.data.get("image"))
+        point, point_type = self.get_point_info(
+            product.price, self.request.data.get("image")
+        )
 
         data = {"point": point}
         point_serializer = PointSerializer(data=data)
@@ -168,7 +166,7 @@ class ReviewView(ListCreateAPIView):
             point_serializer.save(user=self.request.user, point_type_id=point_type)
         else:
             raise serializer.ValidationError(point_serializer.errors)
-            
+
         serializer.save(user=self.request.user, product=product)
 
 
