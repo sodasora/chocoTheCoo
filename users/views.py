@@ -739,13 +739,13 @@ class PointCheckoutView(APIView):
     def post(self, request, *args, **kwargs):
         user = request.user
         amount = request.data.get('amount')
-        type = request.data.get('type')
+        payment_type = request.data.get('payment_type')
 
         try:
             trans = PayTransaction.objects.create_new(
                 user=user,
                 amount=amount,
-                type=type
+                payment_type=payment_type
             )
         except:
             trans = None
