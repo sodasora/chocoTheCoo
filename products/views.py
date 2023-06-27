@@ -1,4 +1,4 @@
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotAcceptable
 from rest_framework.views import APIView
 from rest_framework.generics import (
     get_object_or_404,
@@ -150,14 +150,13 @@ class ReviewView(ListCreateAPIView):
         return point, point_type
 
     def perform_create(self, serializer):
-        product = Product.objects.get(id=self.kwargs.get("product_id"))
-        
+        product = get_object_or_404(Product, id=self.kwargs.get("product_id"))
         user = self.request.user
         has_bought = OrderItem.objects.filter(bill__user=user, product_id=product.id).exists()
         has_reviewed = Review.objects.filter(user=user, product=product).exists()
 
         if has_reviewed:
-            Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+            raise NotAcceptable(detail="이미 리뷰한 상품입니다")
         if not has_bought:
             raise ValidationError(detail="구매이력이 없습니다")
 

@@ -167,8 +167,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     product_star = serializers.SerializerMethodField()
     
     def get_product_name(self, obj):
-        return obj.product.name
-    
+        if hasattr(obj, "product"):
+            return obj.product.name
+        else:
+            return None
     def get_product_star(self, obj):
         return obj.star * '⭐'
 

@@ -124,10 +124,10 @@ class Seller(CommonModel):
     user = models.OneToOneField("users.User", related_name="user_seller", on_delete=models.CASCADE, primary_key=True)
     company_name = models.CharField("업체명", max_length=20, unique=True)
     business_number = models.CharField("사업자 등록 번호", max_length=20)
-    bank_name = models.CharField("은행 이름", max_length=20)
-    account_number = models.CharField("계좌 번호", max_length=30)
+    bank_name = models.CharField("은행 이름", max_length=100)
+    account_number = models.CharField("계좌 번호", max_length=100)
     business_owner_name = models.CharField("대표자 성함", max_length=20)
-    account_holder = models.CharField("예금주", max_length=20)
+    account_holder = models.CharField("예금주", max_length=100)
     contact_number = models.CharField("업체 연락처", max_length=20)
     company_img = models.ImageField("업체 로고", upload_to=img_upload_to, blank=True, null=True)
 
@@ -144,8 +144,8 @@ class Delivery(models.Model):
     )
     address = models.CharField("주소", max_length=100)
     detail_address = models.CharField("상세주소", max_length=100, blank=True, null=True)
-    recipient = models.CharField("수령인", max_length=30)
-    postal_code = models.CharField("우편번호", max_length=10)
+    recipient = models.CharField("수령인", max_length=100)
+    postal_code = models.CharField("우편번호", max_length=100)
 
     def __str__(self):
         """수령인"""
@@ -155,7 +155,6 @@ class Delivery(models.Model):
 class CartItem(CommonModel):
     """장바구니"""
 
-    # * User와 Product의 ManyToManyField
     user = models.ForeignKey(
         "users.User",
         models.CASCADE,
@@ -179,8 +178,8 @@ class Bill(CommonModel):
     )
     address = models.CharField("주소", max_length=100)
     detail_address = models.CharField("상세주소", max_length=100)
-    recipient = models.CharField("수령인", max_length=30)
-    postal_code = models.CharField("우편번호", max_length=10)
+    recipient = models.CharField("수령인", max_length=100)
+    postal_code = models.CharField("우편번호", max_length=100)
     is_paid = models.BooleanField("결제 여부", default=False)
 
 
@@ -197,14 +196,15 @@ class StatusCategory(models.Model):
 class OrderItem(CommonModel):
     """주문상품"""
 
-    bill = models.ForeignKey("users.Bill", models.CASCADE, verbose_name="주문내역")
+    bill = models.ForeignKey("users.Bill", models.PROTECT, verbose_name="주문내역")
     seller = models.ForeignKey("users.Seller", models.CASCADE, verbose_name="판매자")
     order_status = models.ForeignKey(
-        "users.StatusCategory", models.CASCADE, verbose_name="주문상태", default=1
+        "users.StatusCategory", models.PROTECT, verbose_name="주문상태", default=1
     )
     name = models.CharField("상품명", max_length=100)
     amount = models.PositiveIntegerField("상품개수", default=1)
     price = models.PositiveIntegerField("상품가격")
+    image = models.TextField("상품이미지")
     product_id = models.IntegerField("상품ID")
 
 
@@ -227,7 +227,7 @@ class Point(CommonModel):
     )
     date = models.DateField("날짜", default=date.today)
     point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
-    point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
+    point_type = models.ForeignKey(PointType, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.user.nickname + self.point_type.title + str(self.point)
@@ -300,7 +300,7 @@ class PayTransaction(CommonModel):
     # amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     transaction_status = models.CharField(max_length=220, null=True, blank=True)
-    type = models.CharField(max_length=120)
+    payment_type = models.CharField(max_length=120)
 
     objects = TransactionManager()
 

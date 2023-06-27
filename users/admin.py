@@ -15,6 +15,7 @@ from .models import (
     Bill,
     Subscribe,
     Seller,
+    PhoneVerification
 )
 
 admin.site.register(PointType)
@@ -22,6 +23,7 @@ admin.site.register(PointType)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
+admin.site.register(PhoneVerification)
 
 
 class UserCreationForm(forms.ModelForm):

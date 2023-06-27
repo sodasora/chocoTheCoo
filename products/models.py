@@ -17,9 +17,19 @@ class Product(CommonModel):
     amount = models.IntegerField("상품수량", null=True, default=0)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     image = models.ImageField("상품 이미지", upload_to=img_upload_to, blank=True, null=True)
+    # STATUS_CHOICES = [
+    #     (1, "Active"),
+    #     (2, "Inactive"),
+    #     (3, "Withdrawn")
+    # ]
+    # status = models.CharField(
+    #     max_length=10,
+    #     choices=STATUS_CHOICES,
+    #     default=1,
+    # )
 
     def __str__(self):
-        return self.name     
+        return self.name
 
 
 class Review(CommonModel):
@@ -34,7 +44,7 @@ class Review(CommonModel):
         "products.Product",
         models.CASCADE,
         verbose_name="상품",
-        related_name="product_reviews"
+        related_name="product_reviews",
     )
     title = models.CharField("리뷰제목", max_length=20)
     content = models.TextField(
@@ -49,6 +59,6 @@ class Review(CommonModel):
         (5, "⭐⭐⭐⭐⭐"),
     ]
     star = models.IntegerField("리뷰 별점", choices=STAR_CHOICES)
-    
+
     class Meta:
         ordering = ["-updated_at"]
