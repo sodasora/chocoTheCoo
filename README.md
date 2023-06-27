@@ -27,8 +27,11 @@ ChcoTheCoo supports your LOVE!!
  마이페이지(달력, 찜목록보기, 포인트조회, 프로필, 내리뷰보기), 구독 기능(프론트(광고 및 초코구독안내문), 백엔드CRU(구독 자동갱신)), 
  프론트 페이지네이션, 결제 테스트코드, 채팅 테스트코드
  - 팀원1 : 김광운 - 리뷰 CRUD, 장바구니 CRUD, 주문내역 CR, 주문상품 CR, 주문상태 R, 커스텀 퍼미션, 테스트 코드(상품, 리뷰, 장바구니, 주문), fixture 생성, 백엔드 상품 정렬 및 필터링(카테고리, 검색, 페이지네이션), 프론트(장바구니, 구매내역, 구매내역 상세, 장바구니 담기, 상품 좋아요, 주문하기)
- - 팀원2 : 문영오 - 배포,
+ - 팀원2 : 문영오 - 헤더&푸터, 판매자통계페이지(판재자정보,판매통계정보), 판매자별주문현황조회(주문상태변경), 판매자별상품현황조회, 배포
  - 팀원3 : 손성수 - 사용자 정보 CRUD, 판매자 정보 CRUD, 배송지 정보 CRUD, 이메일 핸드폰 인증, 소셜 로그인, 개인 정보 암·복호화, 팔로우, 리뷰 좋아요, 상품 찜, 이메일 및 핸드폰 메시지 발송
+
+### 🔩 ARCHITECTURE
+<img src="https://i.postimg.cc/wBm2wqRR/architecture.png">
 
 ### 📚 STACK
 * 백엔드
@@ -95,7 +98,7 @@ ChcoTheCoo supports your LOVE!!
 > black = "^23.3.0" <br>
 >* 개발 환경 내에서 통일된 포맷팅을 사용하여, 충돌을 방지하기 위해 사용 <br>
 
-> redis = "^4.5.5" <br>
+>redis = "^4.5.5" <br>
 >* 오픈 소스의 인 메모리 데이터 구조 저장소(데이터베이스) <br>
 
 > channels-redis = "^4.1.0" <br>
@@ -112,12 +115,11 @@ ChcoTheCoo supports your LOVE!!
 
 ---
 
-
 ## 📌 주요 기능
 #### 로그인 - <a href="https://chocothecoo.com/login.html" >상세보기</a>
 <br>
 
-> DRF Simple JWT
+> DRF Simple JWT <br>
 >* Token 기반 인증 <br>
 Requset, Response 의 인증 방식을 Token으로 구현 <br>
 stateless한 특성을 통해 Clinet Server의 부하를 줄일것을 기대 가능 <br>
@@ -162,7 +164,8 @@ set,check password 메서드 기능 지원을 통한 손쉬운 로그인 검증<
 >* 기능 지원 <br>
 is_active, last_login 등 다양한 기능 지원을 통해 편의성 향상 <br>
 >* social login <br>
-unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현<br>
+unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현
+<br>
 
 > 보안 <br>
 >* 필요성 <br>
@@ -172,8 +175,7 @@ unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구�
 블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현
 <br>
  
-----
-
+---
 ### 결제 - <a href="https://chocothecoo.com/pointcharge.html" >상세보기</a>
 
 #### 결제검증
@@ -189,7 +191,6 @@ unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구�
 >* 결제 상세내역 조회를 위해 포트원 결제 단건 조회 API 요청<br>
 >* 응답받은 내용을 바탕으로 실 결제 금액과 결제요청금액(데이터베이스)을 비교<br>
 >* 동일하다면 포인트 충전완료<br>
-<br>
 
 > 포인트 충전페이지<br>
 > <img width="30%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/74f5a591-6c59-4428-9b66-62f19b380dde">
@@ -200,7 +201,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
-
 #### 마이 페이지 - <a href="https://chocothecoo.com/mypage.html" >상세보기</a>
 
 >포인트 통계
@@ -227,13 +227,12 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
-
 #### 채팅 - <a href="https://chocothecoo.com/chatindex.html" >상세보기</a>
 
 > Redis 서버 구동 방법
 >* Redis Enterprise Cloud free 플랜 가입
 >* host, port, password 정보 확인 => 채널레이어 설정
->* 예: CHANNEL_LAYER_REDIS_URL="redis://:암호@호스트명:6379"
+>* 예: CHANNEL_LAYER_REDIS_URL="redis://:암호@호스트명:6379
 >* .env로 관리할 것
 >* 서버 구동 시 도커 활용
 >* 명령어: docker run -d -restart always -name redis7 -publish 6379:6379 redis:7
@@ -247,7 +246,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 > ![스크린샷 2023-06-23 184243](https://github.com/sodasora/chocoTheCoo/assets/126075796/c3113b6b-133d-433e-8905-00db16b7dbe1)
 
 ---
-
 #### 메인 페이지 - <a href="https://chocothecoo.com/" >상세보기</a>
 <br>
 
@@ -273,7 +271,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 ---
-
 #### 판매자 페이지  - <a herf = "https://chocothecoo.com/sellerpage.html"></a> 
 <br>
 <img width="70%" src="https://chocothecoo.com/static/images/sellerlogo.gif">
@@ -292,7 +289,23 @@ https://developers.portone.io/docs/ko/readme/get-started
 >* seller_id 와 user_id를 판별하여 동일한 경우에만 수정/삭제 버튼 조회 가능
 >* 해당 상품에 대한 후기들 조회가 가능
 >* 후기 작성은 구매내역에서 가능하도록 구현했으며 작성시 상품 상세페이지에서 조회, 후기는 포인트 적립 규정때문에 삭제는 불가능 하며 사진 후기, 텍스트 후기 인지 판별하여 백엔드에서 차등한 포인트 적립 되도록 구현함 
- 
+
+---
+#### 판매자 통계 페이지  - <a herf="https://chocothecoo.com/seller.html">상세보기</a> 
+<br>
+
+> 통계
+>* 판매자별 수익,지출,평가 현황 조회가능 
+>* 누적정보, 월단위 정보 조회가능
+
+> 판매자별 상품현황 - <a herf="https://chocothecoo.com/seller_productlist.html">상세보기</a> 
+>* 판매자id에 해당하는 판매자 전용 상품 현황 조회 페이지 구현
+>* 해당 상품에 따른 재고수량변경 가능
+
+> 판매자별 주문현황 - <a herf="https://chocothecoo.com/seller_orderlist.html">상세보기</a> 
+>* 판매자id에 해당하는 판매자 전용 주문 현황 조회 페이지 구현
+>* 해당 주문에 따른 주문상태변경 가능
+
 ---
 #### 관리자 페이지 
 <br>
