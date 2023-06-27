@@ -563,7 +563,7 @@ class UserAPITestCase(CommonTestClass):
         request = {
             "email": email
         }
-        response = self.client.post(url, request)
+        self.client.post(url, request)
 
         now = timezone.now() + timedelta(minutes=10)
 
@@ -685,10 +685,23 @@ class DeliveryInformationTestCase(CommonTestClass):
         (배송 정보를 기입하기 위해서는 휴대폰 인증을 요구하고 있어, 해당 테스트에서는 핸드폰 인증을 건너 뜀)
         """
 
-        # accessToken 저장
+        # 테스트 유저
+        self.user.is_active = True
+        self.user.save()
+
+        # 휴대폰 인증을 받지 않은 유저
+        self.another_user.is_active = True
+        self.another_user.save()
+
+        # 테스트 유저 accessToken 저장
         response = self.client.post(reverse("login"), self.user_data)
         token = json.loads(response.content.decode())
         self.user_access_token = token.get('access')
+
+        # 테스트 유저2 accessToken 저장 (핸드폰 인증을 받지 않은 사용자)
+        response = self.client.post(reverse("login"), self.another_user_data)
+        token = json.loads(response.content.decode())
+        self.another_user_access_token = token.get('access')
 
         # 휴대폰 인증
         users.models.PhoneVerification.objects.create(
@@ -697,21 +710,14 @@ class DeliveryInformationTestCase(CommonTestClass):
         )
         self.user.save()
 
-    def add_delivery_information_test(self, postal_code, token, status_code):
+    def add_delivery_information_test(self, information, token, status_code):
         """
         배송 정보 추가 테스트
         """
 
-        request_data = {
-            "address": "우주 왕복 비행선",
-            "detail_address": "306호",
-            "recipient": "우주인",
-            "postal_code": postal_code
-        }
-
         response = self.client.post(
-            path=reverse("create-delivery", args=self.user.pk),
-            data=json.dumps(request_data),
+            path=reverse("create-delivery"),
+            data=json.dumps(information),
             content_type='application/json',
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
@@ -722,22 +728,76 @@ class DeliveryInformationTestCase(CommonTestClass):
         배송 정보 추가 테스트 케이스
         """
 
-        token = self.user_access_token
+        my_token = self.user_access_token
+        another_user_token = self.another_user_access_token
+
         test_cases = [
-            # 테스트 케이스 양식
-            # (우편 번호, 토큰 정보, status_code)
-
             # 배송 정보 기입 성공 테스트
-            ("12345", token, 200),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, my_token, 200),
+            # 상세 주소는 입력값이 없어도 통과
+            ({"address": "우주 왕복 비행선", "detail_address": "", "recipient": "우주인", "postal_code": "12345"}, my_token, 200),
             # 실패 케이스 - 토큰 정보 없음
-            ("12345", None, 401),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, None, 401),
             # 실패 케이스 - 우편 번호 형식 오류
-            ("", token, 400),
-            ("AA123", token, 400),
-            ("123 45", token, 400),
-            ("1234845", token, 400),
-            ("123", token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": ""}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "AA123"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "123 45"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "1234845"},my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "123"}, my_token, 400),
+            ({"address": "  ", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "", "postal_code": "12345"}, my_token, 400),
+            # 실패 케이스 - 핸드폰 인증을 받지 않은 사용자
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, another_user_token, 400),
         ]
-        for postal_code, access_token, status_code in test_cases:
-            self.add_delivery_information_test(postal_code, access_token, status_code)
+        for information, access_token, status_code in test_cases:
+            self.add_delivery_information_test(information, access_token, status_code)
 
+    def read_delivery_information(self, pk, token, status_code):
+        response = self.client.get(
+            path=reverse("get-delivery", args=[pk]),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+        if response.status_code == 200:
+            response_json = json.loads(response.content.decode())
+            return response_json
+
+    def test_add_delivery_information(self):
+        """
+        배송 정보 다섯개 초과 등록 실패 테스트
+        암호화, 복호화 성공 테스트
+        """
+
+        token = self.user_access_token
+        information = {
+            "address": "우주 왕복 비행선",
+            "detail_address": "306호",
+            "recipient": "우주인",
+            "postal_code": "12345"
+        }
+
+        # 다섯개 등록 초과 테스트
+        for index in range(6):
+            status_code = 400 if index == 5 else 200
+            self.add_delivery_information_test(information, token, status_code)
+
+        # 암호화 테스트
+        deliveries_data = self.user.deliveries_data.all()
+        for element in deliveries_data:
+            self.assertNotEqual(element.postal_code, information.get('postal_code'))
+            self.assertNotEqual(element.detail_address, information.get('detail_address'))
+            self.assertNotEqual(element.recipient, information.get('recipient'))
+            self.assertNotEqual(element.address, information.get('address'))
+
+        # 복호화 테스트
+        deliveries_data = self.read_delivery_information(self.user.pk, token, 200)
+        for element in deliveries_data:
+            self.assertEqual(element.get('postal_code'), information.get('postal_code'))
+            self.assertEqual(element.get('detail_address'), information.get('detail_address'))
+            self.assertEqual(element.get('recipient'), information.get('recipient'))
+            self.assertEqual(element.get('address'), information.get('address'))
+
+        # 권한 없는 사용자의 데이터 조회
+        another_user_access_token = self.another_user_access_token
+        self.read_delivery_information(self.user.pk, another_user_access_token, 400)
