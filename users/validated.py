@@ -382,14 +382,12 @@ class ValidatedData:
         except AttributeError:
             return False
 
-
-
-
     @classmethod
     def validated_deliveries(cls, user, request):
         """
         배송 정보 작성 유효성 검사
         """
+
         deliveries_cnt = users.models.Delivery.objects.filter(user=user).count()
         try:
             if user.phone_verification.is_verified is False:
