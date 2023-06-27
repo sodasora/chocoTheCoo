@@ -293,8 +293,8 @@ class PayTransaction(CommonModel):
     user = models.ForeignKey(
         "users.User", related_name="point_data", on_delete=models.CASCADE
     )
-    transaction_id = models.CharField(max_length=120, null=True, blank=True)
-    order_id = models.CharField(max_length=120, unique=True)
+    transaction_id = models.CharField(verbose_name="imp결제고유번호", max_length=120, null=True, blank=True)
+    order_id = models.CharField(verbose_name="주문번호", max_length=120, unique=True)
     amount = models.PositiveIntegerField(default=0)
     # 해외 payment 쓸거면 DecimalField으로 바꿔야함..!!
     # amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
