@@ -253,11 +253,10 @@ class BillView(ListCreateAPIView):
                 "recipient": deli.recipient,
                 "postal_code": deli.postal_code,
             }
-
         elif request.data.get("postal_code") and request.data.get("recipient"):
             data = request.data
 
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=data, context={'user': request.user})
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
