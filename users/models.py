@@ -238,7 +238,7 @@ class Point(CommonModel):
 
 class TransactionManager(models.Manager):
     # 새로운 트랜젝션 생성
-    def create_new(self, user, amount, type, success=None, transaction_status=None):
+    def create_new(self, user, amount, payment_type, success=None, transaction_status=None):
 
         if not user:
             raise ValueError("유저가 확인되지 않습니다.")
@@ -257,7 +257,7 @@ class TransactionManager(models.Manager):
             user=user,
             order_id=new_order_id,
             amount=amount,
-            type=type
+            payment_type=payment_type
         )
 
         if success is not None:
