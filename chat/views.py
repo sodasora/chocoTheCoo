@@ -58,8 +58,13 @@ class ChatRoomView(APIView):
     
     def delete(self, request, room_id):
         room = get_object_or_404(ChatRoom, id=room_id)
+        check_participants = RoomChatParticipant.objects.filter(room_id=room_id)
+        # print(check_participants)
         if request.user == room.author:
-            room.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            if not check_participants:
+                room.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
