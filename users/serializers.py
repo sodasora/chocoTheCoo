@@ -220,9 +220,10 @@ class DeliverySerializer(serializers.ModelSerializer):
         """
         우편 번호 검증
         """
-        verification_result = ValidatedData.validated_postal_code(**deliveries_data)
-        if not verification_result:
-            raise ValidationError("우편 정보가 올바르지 않습니다.")
+
+        validated_result = ValidatedData.validated_deliveries(self.context.get('user'), deliveries_data)
+        if validated_result is not True:
+            raise ValidationError(validated_result[1])
         return deliveries_data
 
     def encrypt_deliveries_information(self, deliveries, validated_data):
@@ -501,86 +502,6 @@ class ReadUserSerializer(serializers.ModelSerializer):
         information["seller_information"] = seller_information
         information.pop('follower')
         return information
-
-
-class BriefUserInformation(serializers.ModelSerializer):
-    """
-    간략한 사용자 정보
-    """
-
-    class Meta:
-        model = User
-        fields = ("profile_image", "nickname", 'id')
-
-
-class GetWishListUserInfo(serializers.ModelSerializer):
-    """
-    상품 찜 등록한  유저들 정보 불러오기
-    """
-
-    wish_lists_count = serializers.SerializerMethodField()
-    in_wishlist = serializers.SerializerMethodField()
-
-    def get_in_wishlist(self, obj):
-        """
-        로그인한 사용자가 찜 목록에 등록했는지 안했는지 판단,
-        로그인 안한 사용자라면 False를 반환
-        """
-        request = self.context.get("request")
-        if request.user.is_authenticated:
-            return obj.wish_lists.filter(pk=request.user.pk).exists()
-        return False
-
-    def get_wish_lists_count(self, obj):
-        """
-        상품의 찜 목록 등록한 사용자의 개수 반환
-        """
-        return obj.wish_lists.count()
-
-    class Meta:
-        model = User
-        fields = ('wish_lists_count', 'in_wishlist')
-
-
-class GetReviewUserListInfo(serializers.ModelSerializer):
-    """
-    리뷰 좋아요 유저들 정보 불러오기
-    """
-    review_liking_people = BriefUserInformation(many=True)
-    review_liking_people_count = serializers.SerializerMethodField()
-
-    def get_review_liking_people_count(self, obj):
-        return obj.review_liking_people.count()
-
-    class Meta:
-        model = User
-        fields = ('review_liking_people', 'review_liking_people_count')
-
-
-class FollowSerializer(serializers.ModelSerializer):
-    """
-    팔로우 정보 불러오기
-    """
-    followings_count = serializers.SerializerMethodField()
-    followings = BriefUserInformation(many=True)
-    is_follow = serializers.SerializerMethodField()
-
-    def get_is_follow(self, obj):
-        """
-        get 요청한 사용자가 팔로우중인지 판단.
-        """
-        request = self.context.get("request")
-        if request.user.is_authenticated:
-            return obj.followings.filter(pk=request.user.pk).exists()
-        return False
-
-
-    def get_followings_count(self, obj):
-        return obj.followings.count()
-
-    class Meta:
-        model = User
-        fields = ('followings', 'followings_count', 'is_follow')
 
 
 class PointSerializer(serializers.ModelSerializer):

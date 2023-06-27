@@ -1,14 +1,20 @@
 from rest_framework.test import APITestCase
 from datetime import timedelta
-import users.models
-import users.validated
 from unittest.mock import patch
 from django.utils import timezone
 from django.urls import reverse
-import json
-from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from django.test.client import (
+    MULTIPART_CONTENT,
+    encode_multipart,
+    BOUNDARY
+)
 from PIL import Image
+import users.models
+import users.validated
+import json
 import tempfile
+import os
+CALLING_NUMBER = os.environ.get('CALLING_NUMBER')
 
 
 class CommonTestClass(APITestCase):
@@ -557,7 +563,7 @@ class UserAPITestCase(CommonTestClass):
         request = {
             "email": email
         }
-        response = self.client.post(url, request)
+        self.client.post(url, request)
 
         now = timezone.now() + timedelta(minutes=10)
 
@@ -604,17 +610,194 @@ class UserAPITestCase(CommonTestClass):
         )
         self.assertEqual(response.status_code, status_code)
 
-    def test_case_get_phone_certification(self):
+    def mobile_phone_verification_test(self, information, token, status_code):
         """
-        핸드폰 인증 번호 발급 테스트 케이스
+        휴대폰 인증 테스트
         """
 
-        phone_number = "01031571180"
-        token = self.user_access_token
+        response = self.client.patch(
+            path=reverse("phone_verification"),
+            data=json.dumps(information),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+    """
+    문자 발송 제한으로 인해 테스트 코드 모두 작성 후 주석 해제 예정
+    """
+    # def test_case_mobile_phone_verification(self):
+    #     """
+    #     핸드폰 인증 번호 발급 테스트 케이스
+    #     인증 번호로 휴대폰 인증 테스트
+    #     """
+    #
+    #     phone_number = CALLING_NUMBER
+    #     token = self.user_access_token
+    #     test_cases = [
+    #         # 발송 성공 테스트
+    #         ({"phone_number": phone_number}, token, 200),
+    #         # 테스트 실패 케이스
+    #         ({"phone_number": "010 2345 6789"}, token, 400),
+    #         # 공백이 포함된 휴대폰 번호
+    #         ({"phone_number": "010-2345-6789"}, token, 400),
+    #         # -가 포함된 휴대폰 번호
+    #         ({"phone_number": "01086789"}, token, 400),
+    #         # 정확하지 않은 핸드폰 번호
+    #         ({"phone_number": "공일공일이삼사오육칠팔"}, token, 400),
+    #         # 잘못된 입력값
+    #         ({"phone_number": "010 2346789"}, token, 400),
+    #         # 공백이 포함된 휴대폰 번호
+    #         ({"phone_number": phone_number}, None, 401),
+    #         # 토큰 정보 없음
+    #     ]
+    #     for information, access_token, status_code in test_cases:
+    #         self.get_phone_certification(information, access_token, status_code)
+    #
+    #     verification_numbers = self.user.phone_verification.verification_numbers
+    #     test_cases = [
+    #         # 테스트 실패 케이스 - 잘못된 인증 번호
+    #         ({"verification_numbers": "wrong verification code"}, token, 400),
+    #         # 토큰 정보 없음
+    #         ({"verification_numbers": verification_numbers}, None, 401),
+    #         # 테스트 성공 케이스
+    #         ({"verification_numbers": verification_numbers}, token, 200),
+    #         # 테스트 실패 케이스 - 중복 시도
+    #         ({"verification_numbers": verification_numbers}, token, 400),
+    #     ]
+    #
+    #     for information, access_token, status_code in test_cases:
+    #         self.mobile_phone_verification_test(information, access_token, status_code)
+    #
+    #     # 인증 여부 확인
+    #     user = users.models.User.objects.get(pk=self.user.pk)
+    #     self.assertEqual(user.phone_verification.is_verified, True)
+
+
+class DeliveryInformationTestCase(CommonTestClass):
+    """
+    배송 정보 테스트 케이스
+    """
+
+    def setUp(self):
+        """
+        배송 정보를 위한 사용자 셋팅
+        (배송 정보를 기입하기 위해서는 휴대폰 인증을 요구하고 있어, 해당 테스트에서는 핸드폰 인증을 건너 뜀)
+        """
+
+        # 테스트 유저
+        self.user.is_active = True
+        self.user.save()
+
+        # 휴대폰 인증을 받지 않은 유저
+        self.another_user.is_active = True
+        self.another_user.save()
+
+        # 테스트 유저 accessToken 저장
+        response = self.client.post(reverse("login"), self.user_data)
+        token = json.loads(response.content.decode())
+        self.user_access_token = token.get('access')
+
+        # 테스트 유저2 accessToken 저장 (핸드폰 인증을 받지 않은 사용자)
+        response = self.client.post(reverse("login"), self.another_user_data)
+        token = json.loads(response.content.decode())
+        self.another_user_access_token = token.get('access')
+
+        # 휴대폰 인증
+        users.models.PhoneVerification.objects.create(
+            user=self.user,
+            is_verified=True,
+        )
+        self.user.save()
+
+    def add_delivery_information_test(self, information, token, status_code):
+        """
+        배송 정보 추가 테스트
+        """
+
+        response = self.client.post(
+            path=reverse("create-delivery"),
+            data=json.dumps(information),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_add_delivery_information(self):
+        """
+        배송 정보 추가 테스트 케이스
+        """
+
+        my_token = self.user_access_token
+        another_user_token = self.another_user_access_token
+
         test_cases = [
-            # ({"phone_number": phone_number}, token, 200),
-            # 발송 성공 테스트
-            ({"phone_number": "010 15 156 123 48489 "}, token, 400),
+            # 배송 정보 기입 성공 테스트
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, my_token, 200),
+            # 상세 주소는 입력값이 없어도 통과
+            ({"address": "우주 왕복 비행선", "detail_address": "", "recipient": "우주인", "postal_code": "12345"}, my_token, 200),
+            # 실패 케이스 - 토큰 정보 없음
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, None, 401),
+            # 실패 케이스 - 우편 번호 형식 오류
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": ""}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "AA123"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "123 45"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "1234845"},my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "123"}, my_token, 400),
+            ({"address": "  ", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, my_token, 400),
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "", "postal_code": "12345"}, my_token, 400),
+            # 실패 케이스 - 핸드폰 인증을 받지 않은 사용자
+            ({"address": "우주 왕복 비행선", "detail_address": "306호", "recipient": "우주인", "postal_code": "12345"}, another_user_token, 400),
         ]
         for information, access_token, status_code in test_cases:
-            self.get_phone_certification(information, access_token, status_code)
+            self.add_delivery_information_test(information, access_token, status_code)
+
+    def read_delivery_information(self, pk, token, status_code):
+        response = self.client.get(
+            path=reverse("get-delivery", args=[pk]),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+        if response.status_code == 200:
+            response_json = json.loads(response.content.decode())
+            return response_json
+
+    def test_add_delivery_information(self):
+        """
+        배송 정보 다섯개 초과 등록 실패 테스트
+        암호화, 복호화 성공 테스트
+        """
+
+        token = self.user_access_token
+        information = {
+            "address": "우주 왕복 비행선",
+            "detail_address": "306호",
+            "recipient": "우주인",
+            "postal_code": "12345"
+        }
+
+        # 다섯개 등록 초과 테스트
+        for index in range(6):
+            status_code = 400 if index == 5 else 200
+            self.add_delivery_information_test(information, token, status_code)
+
+        # 암호화 테스트
+        deliveries_data = self.user.deliveries_data.all()
+        for element in deliveries_data:
+            self.assertNotEqual(element.postal_code, information.get('postal_code'))
+            self.assertNotEqual(element.detail_address, information.get('detail_address'))
+            self.assertNotEqual(element.recipient, information.get('recipient'))
+            self.assertNotEqual(element.address, information.get('address'))
+
+        # 복호화 테스트
+        deliveries_data = self.read_delivery_information(self.user.pk, token, 200)
+        for element in deliveries_data:
+            self.assertEqual(element.get('postal_code'), information.get('postal_code'))
+            self.assertEqual(element.get('detail_address'), information.get('detail_address'))
+            self.assertEqual(element.get('recipient'), information.get('recipient'))
+            self.assertEqual(element.get('address'), information.get('address'))
+
+        # 권한 없는 사용자의 데이터 조회
+        another_user_access_token = self.another_user_access_token
+        self.read_delivery_information(self.user.pk, another_user_access_token, 400)

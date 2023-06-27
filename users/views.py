@@ -29,12 +29,9 @@ from .serializers import (
     SellerSerializer,
     PointSerializer,
     SubscriptionSerializer,
-    GetWishListUserInfo,
-    GetReviewUserListInfo,
     UserDetailSerializer,
     SubscriptionInfoSerializer,
     PhoneVerificationSerializer,
-    FollowSerializer,
     UserUpdateCustomsCodeSerializer,
     UserUpdateProfileSerializer,
     UserUpdateEmailSerializer,
@@ -300,10 +297,9 @@ class UserProfileAPIView(APIView):
         )
 
 
-class DeliveryAPIView(APIView):
+class GetDeliveryAPIView(APIView):
     """
     GET : 사용자의 배송 정보들 읽기 (복호화)
-    POST : 사용자의 배송 정보 기입
     """
 
     def get(self, request, user_id):
@@ -311,25 +307,32 @@ class DeliveryAPIView(APIView):
         배송 정보들 읽기
         """
 
-        user = get_object_or_404(User, id=user_id)
-        serializer = DeliverySerializer(user.deliveries_data, many=True)
+        owner = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(User, pk=request.user.pk)
+        if user != owner and user.is_seller is not True:
+            # 접근자가 본인의 데이터를 조회 하지 않으며, 접근자가 판매자 권한이 없는 경우
+            return Response(
+                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = DeliverySerializer(owner.deliveries_data, many=True)
         return Response(
             serializer.data, status=status.HTTP_200_OK
         )
 
-    def post(self, request, user_id):
+
+class DeliveryAPIView(APIView):
+    """
+    POST : 사용자의 배송 정보 기입
+    """
+
+    def post(self, request):
         """
         배송 정보 추가
         """
 
-        user = get_object_or_404(User, id=user_id)
-        validated_result = ValidatedData.validated_deliveries(user, request)
-        if validated_result is not True:
-            return Response(
-                {"err": "유효성 검사 실패"}, status=validated_result
-            )
-
-        serializer = DeliverySerializer(data=request.data)
+        user = get_object_or_404(User, pk=request.user.pk)
+        serializer = DeliverySerializer(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save(user=user)
             return Response(
@@ -337,7 +340,7 @@ class DeliveryAPIView(APIView):
             )
         else:
             return Response(
-                {"err": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -351,9 +354,10 @@ class UpdateDeliveryAPIView(APIView):
         """
         배송 정보 수정
         """
+
         delivery = get_object_or_404(Delivery, id=delivery_id)
         if request.user == delivery.user:
-            serializer = DeliverySerializer(delivery, data=request.data)
+            serializer = DeliverySerializer(delivery, data=request.data, context={'user': request.user})
             if serializer.is_valid():
                 serializer.save()
                 return Response({"msg": "배송 정보를 수정 했습니다."}, status=status.HTTP_200_OK)
@@ -532,17 +536,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class WishListAPIView(APIView):
     """
-    GET : 상품 찜 등록한 유저 정보 불러오기,
     POST : 상품 찜 등록 및 취소
     """
-
-    def get(self, request, product_id):
-        """
-        상품을 찜 등록한 사용자 정보들 불러오기
-        """
-        product = get_object_or_404(Product, id=product_id)
-        serializer = GetWishListUserInfo(product, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, product_id):
         """
@@ -553,14 +548,12 @@ class WishListAPIView(APIView):
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
             wish_list = product.wish_lists.count()
-            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_200_OK
             )
         else:
             user.product_wish_list.add(product)
             wish_list = product.wish_lists.count()
-            # wish_list = user.product_wish_list.count()
             return Response(
                 {"wish_list": wish_list}, status=status.HTTP_201_CREATED
             )
@@ -568,18 +561,8 @@ class WishListAPIView(APIView):
 
 class ReviewListAPIView(APIView):
     """
-    GET : 리뷰 좋아요 등록한 유저 정보 불러오기,
     POST : 리뷰 좋아요 등록 및 취소
     """
-
-    def get(self, request, review_id):
-        """
-        리뷰를 좋아요 등록한 사용자 정보들 불러오기
-        """
-
-        review = get_object_or_404(Review, id=review_id)
-        serializer = GetReviewUserListInfo(review)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, review_id):
         """
@@ -604,29 +587,23 @@ class ReviewListAPIView(APIView):
 
 class FollowAPIView(APIView):
     """
-    GET : 유저를 팔로우 하는 사람 정보 불러오기
     POST : 팔로우 등록 및 취소
     """
-
-    def get(self, request, user_id):
-        """
-        다른 사용자(로그인한 유저 x)를 팔로우 하고 있는 유저 목록 뽑아오기
-        """
-        owner = get_object_or_404(User, id=user_id)
-        serializer = FollowSerializer(owner, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, user_id):
         """
         사용자를 팔로우, 언팔로우
         """
 
-
         user = get_object_or_404(User, pk=request.user.pk)
         owner = get_object_or_404(User, id=user_id)
         if owner.is_seller is False:
             return Response(
                 {"err": "판매자 사용자만 팔로우 할 수 있습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        elif owner == user:
+            return Response(
+                {"err": "스스로를 팔로우 할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if owner in user.follower.all():

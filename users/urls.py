@@ -25,6 +25,7 @@ from .views import (
     PhoneVerificationAPIView,
     UpdateUserInformationAPIView,
     FollowAPIView,
+    GetDeliveryAPIView,
 
 )
 from .orderviews import (
@@ -79,8 +80,10 @@ DeliveryAPI
 배송 정보 CRUD
 """
 urlpatterns += [
+    # 배소 정보 읽기
+    path("get/delivery/<int:user_id>/", GetDeliveryAPIView.as_view(), name="get-delivery"),
     # 배송 정보 추가
-    path("create/delivery/<int:user_id>/", DeliveryAPIView.as_view(), name="create-delivery"),
+    path("create/delivery/", DeliveryAPIView.as_view(), name="create-delivery"),
     # 배송 정보 수정 및 삭제
     path("delivery/<int:delivery_id>/", UpdateDeliveryAPIView.as_view(), name="update-delivery"),
 ]
@@ -143,3 +146,4 @@ urlpatterns += [
     # 스케줄링
     path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]
+
