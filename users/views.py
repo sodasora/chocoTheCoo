@@ -297,34 +297,22 @@ class UserProfileAPIView(APIView):
         )
 
 
-class GetDeliveryAPIView(APIView):
+class DeliveryAPIView(APIView):
     """
-    GET : 사용자의 배송 정보들 읽기 (복호화)
+    GET : 배송 정보 읽기
+    POST : 사용자의 배송 정보 기입
     """
 
-    def get(self, request, user_id):
+    def get(self, request):
         """
         배송 정보들 읽기
         """
 
-        owner = get_object_or_404(User, id=user_id)
         user = get_object_or_404(User, pk=request.user.pk)
-        if user != owner and user.is_seller is not True:
-            # 접근자가 본인의 데이터를 조회 하지 않으며, 접근자가 판매자 권한이 없는 경우
-            return Response(
-                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = DeliverySerializer(owner.deliveries_data, many=True)
+        serializer = DeliverySerializer(user.deliveries_data, many=True)
         return Response(
             serializer.data, status=status.HTTP_200_OK
         )
-
-
-class DeliveryAPIView(APIView):
-    """
-    POST : 사용자의 배송 정보 기입
-    """
 
     def post(self, request):
         """

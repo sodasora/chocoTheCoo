@@ -181,12 +181,15 @@ class NaverLogin(APIView):
                 "Accept": "application/json",
             },
         )
-        user_data = user_data.json().get("response")
-        data = {
-            "profile_image": user_data.get("profile_image"),
-            "email": user_data.get("email"),
-            "nickname": user_data.get("nickname"),
-            "login_type": "naver",
-        }
+        # user_data = user_data.json().get("response")
+        # data = {
+        #     "profile_image": user_data.get("profile_image"),
+        #     "email": user_data.get("email"),
+        #     "nickname": user_data.get("nickname"),
+        #     "login_type": "naver",
+        # }
 
-        return SocialLogin(**data)
+        return Response(
+            {"msg": "네이버 로그인 검수 단계 입니다."}, status=status.HTTP_200_OK
+        )
+        # return SocialLogin(**data)
