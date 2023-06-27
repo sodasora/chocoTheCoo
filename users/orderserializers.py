@@ -127,15 +127,10 @@ class BillSerializer(ModelSerializer):
 
     def get_thumbnail(self, obj):
         ord_list = obj.orderitem_set.all()
-        for i in ord_list:
-            try:
-                product = Product.objects.get(pk=i.product_id)
-                if product.image:
-                    return {"image": product.image.url, "name": product.name}
-            except:
-                pass
-        product = Product.objects.get(pk=ord_list.first().product_id)
-        return {"image": None, "name": product.name}
+        for order_item in ord_list:
+            if order_item.image:
+                return {"image": order_item.image, "name": order_item.name}
+        return {"image": None, "name": ord_list.first().name}
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -174,10 +169,12 @@ class BillCreateSerializer(ModelSerializer):
         """
         우편 번호 검증
         """
-        verification_result = ValidatedData.validated_deliveries(
-            self.context.get("user"), deliveries_data
-        )
-        if not verification_result:
+        # 기존 배송정보 사용 시 밸리데이션 PASS
+        if self.context.get("skip_validation") is True:
+            return deliveries_data
+        user = self.context.get("user")
+        verification_result = ValidatedData.validated_deliveries(user, deliveries_data)
+        if verification_result is not True:
             raise ValidationError(verification_result[1])
         return deliveries_data
 
@@ -185,7 +182,9 @@ class BillCreateSerializer(ModelSerializer):
         """
         오브 젝트 암호화
         """
-
+        # 기존 배송정보 사용 시 암호화 PASS
+        if self.context.get("skip_validation") is True:
+            return deliveries
         encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
         deliveries.address = encrypt_result.get("address")
         deliveries.detail_address = encrypt_result.get("detail_address")
@@ -238,6 +237,7 @@ class BillDetailSerializer(ModelSerializer):
         """
         information = super().to_representation(instance)
         decrypt_result = AESAlgorithm.decrypt_all(**information)
+        # print(decrypt_result)
         return decrypt_result
 
     class Meta:
@@ -253,11 +253,6 @@ class OrderItemSerializer(ModelSerializer):
     bill = SimpleBillSerializer()
     seller = SimpleSellerInformation()
     order_status = StatusCategorySerializer()
-    product_image = SerializerMethodField()
-
-    def get_product_image(self, obj):
-        product = Product.objects.get(pk=obj.product_id)
-        return product.image.url if product.image else None
 
     class Meta:
         model = OrderItem
@@ -267,11 +262,6 @@ class OrderItemSerializer(ModelSerializer):
 
 class SimpleOrderItemSerializer(ModelSerializer):
     order_status = StringRelatedField()
-    product_image = SerializerMethodField()
-
-    def get_product_image(self, obj):
-        product = Product.objects.get(pk=obj.product_id)
-        return product.image.url if product.image else None
 
     class Meta:
         model = OrderItem

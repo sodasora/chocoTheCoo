@@ -146,7 +146,7 @@ class OrderCreateView(CreateAPIView):
 
         # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
         try:
-            cart_ids = request.query_params.get("cart_id").split(",")
+            cart_ids:list = request.query_params.get("cart_id").split(",")
             cart_objects = CartItem.objects.filter(pk__in=cart_ids)
             total_buy_price = sum(
                 [(cart.product.price * cart.amount) for cart in cart_objects]
@@ -175,6 +175,8 @@ class OrderCreateView(CreateAPIView):
                     "bill_id": bill_id,
                     "order_status": is_paid,
                 }
+                if cart.product.image:
+                    order_item_data["image"] = cart.product.image.url
                 order_item = OrderItem(**order_item_data)
                 order_items.append(order_item)
             # bulk_create로 장바구니 => 주문상품으로 옮겨줌. 성공시 201
@@ -245,18 +247,23 @@ class BillView(ListCreateAPIView):
             return BillCreateSerializer
 
     def create(self, request, *args, **kwargs):
+        # 기존 배송정보 사용 시
         if delivery_id := self.request.data.get("delivery_id"):
             deli = get_object_or_404(Delivery, pk=delivery_id)
             data = {
+                "user": request.user,
                 "address": deli.address,
                 "detail_address": deli.detail_address,
                 "recipient": deli.recipient,
                 "postal_code": deli.postal_code,
             }
+            serializer = self.get_serializer(
+                data=data, context={"skip_validation": True}
+            )
+        # 새로운 배송정보 입력 시
         elif request.data.get("postal_code") and request.data.get("recipient"):
             data = request.data
-
-        serializer = self.get_serializer(data=data, context={'user': request.user})
+            serializer = self.get_serializer(data=data, context={"user": request.user})
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -300,7 +307,7 @@ class StatusChangeView(UpdateAPIView):
     def perform_update(self, serializer):
         order_item = self.get_object()
         cur_status = order_item.order_status.id
-        new_status = self.request.data.get('order_status')
+        new_status = self.request.data.get("order_status")
         if cur_status == 5 and new_status == 6:
             seller = order_item.seller.user
             total_point = order_item.amount * order_item.price
