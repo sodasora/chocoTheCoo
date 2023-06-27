@@ -182,11 +182,11 @@ class NaverLogin(APIView):
             },
         )
         user_data = user_data.json().get("response")
-        # data = {
-        #     "profile_image": user_data.get("profile_image"),
-        #     "email": user_data.get("email"),
-        #     "nickname": user_data.get("nickname"),
-        #     "login_type": "naver",
-        # }
-        return Response({"msg":"Resource server로부터 앱 사용 검토 및  승인 대기중 입니다."},status=status.HTTP_200_OK)
-        # return SocialLogin(**data)
+        data = {
+            "profile_image": user_data.get("profile_image"),
+            "email": user_data.get("email"),
+            "nickname": user_data.get("nickname"),
+            "login_type": "naver",
+        }
+
+        return SocialLogin(**data)

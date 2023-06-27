@@ -146,3 +146,4 @@ urlpatterns += [
     # 스케줄링
     path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
 ]
+
