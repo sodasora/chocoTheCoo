@@ -787,6 +787,7 @@ class PointImpAjaxView(APIView):
                     serializer.save(user=user, point_type_id=5)
 
                 trans.transaction_id = imp_id
+                trans.transaction_status = "paid"
                 trans.success = True
                 trans.save()
 
