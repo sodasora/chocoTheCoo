@@ -62,7 +62,7 @@ def get_transaction(imp_id, *args, **kwargs):
                 'merchant_id': res['response']['merchant_uid'],
                 'amount': res['response']['amount'],
                 'status': res['response']['status'],
-                'type': res['response']['pay_method'],
+                'payment_type': res['response']['pay_method'],
                 'receipt_url': res['response']['receipt_url']
             }
             return context
