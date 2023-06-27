@@ -174,9 +174,11 @@ class BillCreateSerializer(ModelSerializer):
         """
         우편 번호 검증
         """
-        verification_result = ValidatedData.validated_postal_code(**deliveries_data)
+        verification_result = ValidatedData.validated_deliveries(
+            self.context.get("user"), deliveries_data
+        )
         if not verification_result:
-            raise ValidationError("우편 정보가 올바르지 않습니다.")
+            raise ValidationError(verification_result[1])
         return deliveries_data
 
     def encrypt_deliveries_information(self, deliveries, validated_data):
