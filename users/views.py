@@ -18,7 +18,6 @@ from .models import (
     Point,
     Subscribe,
     PayTransaction,
-    EmailVerification,
     PhoneVerification,
 )
 from .serializers import (
@@ -37,6 +36,7 @@ from .serializers import (
     UserUpdateEmailSerializer,
     UserUpdatePasswordSerializer,
     UserPasswordResetSerializer,
+    GetSellersInformationListSerializer,
 )
 
 
@@ -449,6 +449,27 @@ class SellerAPIView(APIView):
         )
 
 
+class GetSalesMemberApplicationDetails(APIView):
+    def get(self, request):
+        """
+        판매 권한 신청 승인 대기중인 사용자 목록 뽑아 오기
+        """
+
+        admin = get_object_or_404(User, pk=request.user.pk)
+        if admin.is_admin is not True:
+            return Response(
+                {"err": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            # seller 원투원 필드가 존재하면서, 판매 회원 권한이 없는 사용자 목록
+            sellesr_list = Seller.objects.filter(user__user_seller__isnull=False, user__is_seller=False)
+            serializer = GetSellersInformationListSerializer(sellesr_list, many=True)
+
+            return Response(
+                serializer.data, status=status.HTTP_200_OK
+            )
+
+
 class SellerPermissionAPIView(APIView):
     """
     GET : 사용자의 판매자 정보 읽기 (복호화)
@@ -499,10 +520,11 @@ class SellerPermissionAPIView(APIView):
          - admin accesstoken
          - "msg" : "거절 사유"
         """
+
         admin = get_object_or_404(User, pk=request.user.pk)
         if not admin.is_admin:
             return Response(
-                {"err": "올바른 접근 방법이 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED
+                {"err": "올바른 접근 방법이 아닙니다."}, status=status.HTTP_400_BAD_REQUEST
             )
         user = get_object_or_404(User, id=user_id)
         try:

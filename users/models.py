@@ -18,9 +18,9 @@ class UserManager(BaseUserManager):
     def create_user(self, email, nickname, password=None):
         """관리자 계정 생성"""
 
-        # validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
-        # if validated_result is not True:
-        #     raise ValueError(validated_result[1])
+        validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
+        if validated_result is not True:
+            raise ValueError(validated_result[1])
         user = self.model(
             email=self.normalize_email(email),
             nickname=nickname,

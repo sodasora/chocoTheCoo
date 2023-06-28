@@ -25,6 +25,7 @@ from .views import (
     PhoneVerificationAPIView,
     UpdateUserInformationAPIView,
     FollowAPIView,
+    GetSalesMemberApplicationDetails,
 )
 from .orderviews import (
     CartView,
@@ -93,6 +94,9 @@ urlpatterns += [
     path("seller/", SellerAPIView.as_view(), name="seller-view"),
     # 판매자 정보 조회 , 관리자 권한으로 판매자 권한 부여, 또는 판매자 데이터 삭제(요청거절)
     path("seller/permissions/<int:user_id>/", SellerPermissionAPIView.as_view(), name="seller-view"),
+    # 관리자 권한으로 판매자 활동 승인 대기 인원 목록 확인
+    path("get/seller/list/", GetSalesMemberApplicationDetails.as_view(), name="get-seller-list"),
+
 ]
 
 """

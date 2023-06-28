@@ -98,7 +98,8 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
         """
         비밀번호 데이터 검증
         """
-        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'normal')
+        verification_result = ValidatedData.validated_email_verification_code(self.instance,
+                                                                              attrs.get('verification_code'), 'normal')
         if verification_result is not True:
             # 이메일 인증 코드 검증
             raise ValidationError(verification_result[1])
@@ -139,7 +140,8 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
         이메일 정보 검증
         """
 
-        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'change')
+        verification_result = ValidatedData.validated_email_verification_code(self.instance,
+                                                                              attrs.get('verification_code'), 'change')
         if verification_result is not True:
             # 이메일 인증 코드 유효성 검사
             raise ValidationError(verification_result[1])
@@ -154,6 +156,7 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
         user.email_verification.new_email = None
         user.email_verification.save()
         return user
+
 
 class UserUpdateCustomsCodeSerializer(serializers.ModelSerializer):
     """
@@ -190,6 +193,7 @@ class UserUpdateProfileSerializer(serializers.ModelSerializer):
     """
     프로필 정보 수정
     """
+
     class Meta:
         model = User
         fields = ('nickname', 'introduction', 'profile_image')
@@ -271,18 +275,22 @@ class SellerSerializer(serializers.ModelSerializer):
 
     # 지난달 대비 수익상승률
     month_growth_rate = serializers.SerializerMethodField()
-    def get_month_growth_rate(self, obj):
-        current_date = datetime.now() # 현재시간
-        start_of_last_month = current_date.replace(month=current_date.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)# 지난달 시작일
-        end_of_last_month = start_of_last_month.replace(month=start_of_last_month.month + 1, day=1) - timedelta(days=1) # 지난달 종료일
-        seller_orders1 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=6).filter(created_at__gte=start_of_last_month, created_at__lte=end_of_last_month) # 조건(구매확정:6,지난달)에 맞는 쿼리셋
-        start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0) # 당월 시작일
-        end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1) # 당월 종료일
-        seller_orders2 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=6).filter(created_at__gte=start_of_month, created_at__lte=end_of_month) # 조건(구매확정:6,이번달)에 맞는 쿼리셋
-        last_month_profits = sum(order.amount*order.price for order in seller_orders1)
-        month_profits = sum(order.amount*order.price for order in seller_orders2)
-        return f'({(month_profits-last_month_profits)/last_month_profits*100}%)' if last_month_profits else None
 
+    def get_month_growth_rate(self, obj):
+        current_date = datetime.now()  # 현재시간
+        start_of_last_month = current_date.replace(month=current_date.month - 1, day=1, hour=0, minute=0, second=0,
+                                                   microsecond=0)  # 지난달 시작일
+        end_of_last_month = start_of_last_month.replace(month=start_of_last_month.month + 1, day=1) - timedelta(
+            days=1)  # 지난달 종료일
+        seller_orders1 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=6).filter(
+            created_at__gte=start_of_last_month, created_at__lte=end_of_last_month)  # 조건(구매확정:6,지난달)에 맞는 쿼리셋
+        start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)  # 당월 시작일
+        end_of_month = start_of_month.replace(month=start_of_month.month + 1, day=1) - timedelta(days=1)  # 당월 종료일
+        seller_orders2 = OrderItem.objects.filter(seller=obj.pk).filter(order_status=6).filter(
+            created_at__gte=start_of_month, created_at__lte=end_of_month)  # 조건(구매확정:6,이번달)에 맞는 쿼리셋
+        last_month_profits = sum(order.amount * order.price for order in seller_orders1)
+        month_profits = sum(order.amount * order.price for order in seller_orders2)
+        return f'({(month_profits - last_month_profits) / last_month_profits * 100}%)' if last_month_profits else None
 
     # 이번달 수익
     month_profits = serializers.SerializerMethodField()
@@ -338,7 +346,7 @@ class SellerSerializer(serializers.ModelSerializer):
 
     # 브랜드좋아요
     followings_count = serializers.SerializerMethodField()
-    
+
     def get_followings_count(self, obj):
         return obj.user.followings.count()
 
@@ -449,7 +457,8 @@ class ReadUserSerializer(serializers.ModelSerializer):
         model = User
 
         fields = (
-        "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction', 'follower'
+            "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction',
+            'follower'
         )
 
     def to_representation(self, instance):
@@ -462,7 +471,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         sellers = information.get('follower')
         seller_information = []
         for pk in sellers:
-            seller = get_object_or_404(Seller,pk=pk)
+            seller = get_object_or_404(Seller, pk=pk)
             company_img = (
                 seller.company_img.url if seller.company_img else None
             )
@@ -477,7 +486,6 @@ class ReadUserSerializer(serializers.ModelSerializer):
             }
             seller_information.append(data)
 
-
         # 포인트 합산 내역 뽑아오기
         total_plus_point = (
             Point.objects.filter(user_id=information.get('id'))
@@ -486,7 +494,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         )
         total_minus_point = (
             Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[6,7])
+                .filter(point_type_id__in=[6, 7])
                 .aggregate(total=Sum("point"))
         )
         try:
@@ -581,7 +589,7 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
         phone_verification.verification_numbers = SmsSendView.get_auth_numbers()
         phone_verification.is_verified = False
         message = f'Choco The Coo에서 인증 번호를 발송 했습니다. [{phone_verification.verification_numbers}]'
-        SmsSendView.send_sms(validated_data.get('phone_number'),message)
+        SmsSendView.send_sms(validated_data.get('phone_number'), message)
         phone_verification.save()
 
     def create(self, validated_data):
@@ -605,6 +613,32 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
         return phone_verification
 
 
+class GetSellersInformationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Seller
+        exclude = ("updated_at",)
+
+    def to_representation(self, instance):
+        """
+        판매자 데이터 복호화
+        """
+
+        information = super().to_representation(instance)
+        decryption_list = [
+            'account_number',
+            'account_holder',
+            'bank_name',
+            'company_name',
+            'account_number',
+        ]
+        for key, value in information.items():
+            if key in decryption_list:
+                information[key] = AESAlgorithm.decrypt(value)
+            elif key == 'created_at' or key == 'updated_at':
+                information[key] = value[:10]
+        return information
+
+
 class UserDetailSerializer(serializers.ModelSerializer):
     """
     사용자 디테일 정보
@@ -626,7 +660,9 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "nickname", "profile_image", "customs_code", "introduction", "login_type", 'user_seller', 'deliveries_data', 'phone_number')
+        fields = (
+        "id", "email", "nickname", "profile_image", "customs_code", "introduction", "login_type", 'user_seller',
+        'deliveries_data', 'phone_number', 'is_admin')
 
     def to_representation(self, instance):
         """
