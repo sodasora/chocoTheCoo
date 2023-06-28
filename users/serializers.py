@@ -132,7 +132,7 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'verification_code')
+        fields = ('verification_code',)
 
     def validate(self, attrs):
         """
@@ -143,17 +143,15 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
         if verification_result is not True:
             # 이메일 인증 코드 유효성 검사
             raise ValidationError(verification_result[1])
-        if not ValidatedData.validated_email(attrs.get('email')):
-            # 이메일 형식 유효성 검사
-            raise ValidationError('이메일 형식이 올바르지 않습니다.')
-        else:
-            return attrs
+
+        return attrs
 
     def update(self, instance, validated_data):
         user = super().update(instance, validated_data)
-        user.email = validated_data.get('email')
+        user.email = user.email_verification.new_email
         user.save()
         user.email_verification.verification_code = None
+        user.email_verification.new_email = None
         user.email_verification.save()
         return user
 

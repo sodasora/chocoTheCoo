@@ -62,7 +62,8 @@ class EmailAuthenticationAPIView(APIView):
         """
 
         user = get_object_or_404(User, email=request.data["email"])
-        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'), 'normal')
+        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'),
+                                                                          'normal')
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response(
@@ -214,7 +215,6 @@ class UserAPIView(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-
     def delete(self, request):
         """
         휴면 계정으로 전환
@@ -239,13 +239,20 @@ class UpdateUserInformationAPIView(APIView):
         """
 
         user = get_object_or_404(User, pk=request.user.pk)
-        email_delivery_result = EmailService.send_email_verification_code(user, request.data.get('email'), 'change')
-        if email_delivery_result is not True:
-            return Response({"err": email_delivery_result[1]}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
+        new_email = request.data.get('email')
+        try:
+            User.objects.get(email=new_email)
+            return Response({"err": f'{new_email}로 가입된 계정이 존재 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            email_delivery_result = EmailService.send_email_verification_code(user, new_email, 'change')
+            if email_delivery_result is not True:
+                return Response({"err": email_delivery_result[1]}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                user.email_verification.new_email = new_email
+                user.email_verification.save()
+                return Response({"msg": "인증 코드를 발송 했습니다."}, status=status.HTTP_200_OK)
 
-    def put(self,request):
+    def put(self, request):
         """
         이메일 정보 수정
         """

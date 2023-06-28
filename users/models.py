@@ -107,6 +107,7 @@ class EmailVerification(CommonModel):
 
     user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE, primary_key=True)
     verification_code = models.CharField('인증 코드', max_length=30, blank=True, null=True)
+    new_email = models.EmailField("변경 이메일 주소", max_length=100, unique=True, blank=True, null=True)
     AUTHENTICATION_TYPE = [
         # normal : 회원 인증, 비밀 번호 재 설정
         ("normal", "일반"),
