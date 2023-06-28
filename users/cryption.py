@@ -74,7 +74,10 @@ class AESAlgorithm:
     @classmethod
     def decrypt(cls, cipher_data):
         """ 단일 데이터 복호화 """
-        cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
-        cipher_data = base64.b64decode(cipher_data)
-        data = unpad(cipher.decrypt(cipher_data), AES.block_size)
-        return data.decode()
+        try:
+            cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
+            cipher_data = base64.b64decode(cipher_data)
+            data = unpad(cipher.decrypt(cipher_data), AES.block_size)
+            return data.decode()
+        except (ValueError, Error, ValueError):
+            return cipher_data
