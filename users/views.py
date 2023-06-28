@@ -532,7 +532,7 @@ class WishListAPIView(APIView):
         상품 찜 등록 및 취소
         """
         user = get_object_or_404(User, pk=request.user.pk)
-        product = get_object_or_404(Product, id=product_id)
+        product = get_object_or_404(Product, id=product_id, item_state=1)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
             wish_list = product.wish_lists.count()
