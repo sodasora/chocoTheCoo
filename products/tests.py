@@ -341,4 +341,5 @@ class ProductDeleteTest(BaseTestCase):
         )
         # print("\ntest_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(Product.objects.count(), 2)
+        self.assertEqual(Product.objects.count(), 3)
+        self.assertEqual(Product.objects.get(pk=self.product.id).item_state, "6")

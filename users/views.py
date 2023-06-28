@@ -539,7 +539,7 @@ class WishListAPIView(APIView):
         상품 찜 등록 및 취소
         """
         user = get_object_or_404(User, pk=request.user.pk)
-        product = get_object_or_404(Product, id=product_id)
+        product = get_object_or_404(Product, id=product_id, item_state=1)
         if product in user.product_wish_list.all():
             user.product_wish_list.remove(product)
             wish_list = product.wish_lists.count()
@@ -746,13 +746,13 @@ class PointCheckoutView(APIView):
     def post(self, request, *args, **kwargs):
         user = request.user
         amount = request.data.get('amount')
-        type = request.data.get('type')
+        payment_type = request.data.get('payment_type')
 
         try:
             trans = PayTransaction.objects.create_new(
                 user=user,
                 amount=amount,
-                type=type
+                payment_type=payment_type
             )
         except:
             trans = None

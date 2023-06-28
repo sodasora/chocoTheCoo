@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 import os
+
+
 class CommonModel(models.Model):
     """전체 다중 상속 공통 필드"""
 
@@ -12,7 +14,7 @@ class CommonModel(models.Model):
 
 
 # 이미지 경로, 파일명 생성함수
-def img_upload_to(instance,filename):
+def img_upload_to(instance, filename):
     now = timezone.now()
     filename_base, filename_ext = os.path.splitext(filename)
     return "{}_{}{}".format(
