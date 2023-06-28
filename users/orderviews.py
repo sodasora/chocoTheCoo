@@ -62,7 +62,7 @@ class CartView(ListCreateAPIView):
 
         # 상품 아이디로 추가
         if product_id := request.data.get("product"):
-            product = get_object_or_404(Product, id=product_id)
+            product = get_object_or_404(Product, id=product_id, item_state=1)
             amount = int(request.data.get("amount"))
             self.add_exist_cart(product, amount)
 
@@ -71,14 +71,14 @@ class CartView(ListCreateAPIView):
             bill = get_object_or_404(Bill, pk=bill_id)
             order_items = bill.orderitem_set.all()
             for orderitem in order_items:
-                product = get_object_or_404(Product, pk=orderitem.product_id)
+                product = get_object_or_404(Product, pk=orderitem.product_id, item_state=1)
                 amount = orderitem.amount
                 self.add_exist_cart(product, amount)
 
         # 주문상품 아이디로 추가
         elif order_item_id := request.data.get("order_item_id"):
             orderitem = get_object_or_404(OrderItem, id=order_item_id)
-            product = get_object_or_404(Product, pk=orderitem.product_id)
+            product = get_object_or_404(Product, pk=orderitem.product_id, item_state=1)
             amount = orderitem.amount
             self.add_exist_cart(product, amount)
         return Response({"msg": "장바구니에 추가되었습니다."}, status=status.HTTP_200_OK)
