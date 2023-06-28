@@ -204,7 +204,7 @@ class OrderItem(CommonModel):
     name = models.CharField("상품명", max_length=100)
     amount = models.PositiveIntegerField("상품개수", default=1)
     price = models.PositiveIntegerField("상품가격")
-    image = models.TextField("상품이미지")
+    image = models.TextField("상품이미지", null=True)
     product_id = models.IntegerField("상품ID")
 
 
