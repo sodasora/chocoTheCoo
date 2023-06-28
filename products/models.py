@@ -15,7 +15,7 @@ class Product(CommonModel):
     content = models.TextField("상품설명")
     price = models.IntegerField("상품가격", null=True, default=0)
     amount = models.IntegerField("상품수량", null=True, default=0)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     image = models.ImageField("상품 이미지", upload_to=img_upload_to, blank=True, null=True)
     ITEM_STATE_CHOICES = [
         (1, "판매중"),
@@ -25,7 +25,7 @@ class Product(CommonModel):
         (5, "차단됨"),
         (6, "삭제됨"),
     ]
-    item_state = models.CharField(
+    item_state = models.PositiveIntegerField(
         max_length=10,
         choices=ITEM_STATE_CHOICES,
         default=1,
