@@ -59,7 +59,7 @@ class User(AbstractBaseUser, CommonModel):
     profile_image = models.ImageField("프로필 이미지", upload_to=img_upload_to, blank=True, null=True)
     introduction = models.CharField("소개", max_length=50, blank=True, null=True, default="아직 소개글이 없습니다.")
     login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
-    customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
+    customs_code = models.CharField("통관번호", max_length=100, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     product_wish_list = models.ManyToManyField("products.Product", symmetrical=False, related_name="wish_lists", blank=True)
     review_like = models.ManyToManyField("products.Review", symmetrical=False, related_name="review_liking_people", blank=True)
@@ -94,7 +94,7 @@ class PhoneVerification(CommonModel):
     """
 
     user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE, primary_key=True)
-    phone_number = models.CharField('휴대폰 번호', max_length=30)
+    phone_number = models.CharField('휴대폰 번호', max_length=100)
     verification_numbers = models.CharField('인증 번호', max_length=4, blank=True, null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
 
@@ -107,6 +107,7 @@ class EmailVerification(CommonModel):
 
     user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE, primary_key=True)
     verification_code = models.CharField('인증 코드', max_length=30, blank=True, null=True)
+    new_email = models.EmailField("변경 이메일 주소", max_length=100, unique=True, blank=True, null=True)
     AUTHENTICATION_TYPE = [
         # normal : 회원 인증, 비밀 번호 재 설정
         ("normal", "일반"),

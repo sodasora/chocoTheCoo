@@ -505,7 +505,7 @@ class UserAPITestCase(CommonTestClass):
         token = self.user_access_token
         response = self.client.post(
             path=reverse("update_information"),
-            data=json.dumps({"email": self.user.email}),
+            data=json.dumps({"email": new_email}),
             content_type='application/json',
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
@@ -537,15 +537,12 @@ class UserAPITestCase(CommonTestClass):
         (회원 인증을 위한 유형의 인증 코드를 이메일 변경 인증 코드로 사용할 경우)
         """
 
-        new_email = "changeEamil@test.com"
-        email = self.user_data.get('email')
-        response = self.client.post(reverse("email_authentication"), {"email": email})
+        response = self.client.post(reverse("email_authentication"), {"email": self.user_data.get('email')})
         self.assertEqual(response.status_code, 200)
         # 회원 인증용 이메일 인증 코드 발급 받기
 
         verification_code = self.user.email_verification.verification_code
         information = {
-            "email": new_email,
             "verification_code": verification_code
         }
         # 인증 유형이 잘못된 인증 코드로 인증 시도
@@ -558,10 +555,19 @@ class UserAPITestCase(CommonTestClass):
         """
 
         new_email = "changeEamil@test.com"
+        token = self.user_access_token
+        response = self.client.post(
+            path=reverse("update_information"),
+            data=json.dumps({"email": new_email}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        new_email = "changeEamil@test.com"
         url = reverse("email_authentication")
-        email = self.user_data.get('email')
         request = {
-            "email": email
+            "email": new_email
         }
         self.client.post(url, request)
 
@@ -569,7 +575,6 @@ class UserAPITestCase(CommonTestClass):
 
         with patch('django.utils.timezone.now', return_value=now) as mock_now:
             information = {
-                "email": new_email,
                 "verification_code": self.user.email_verification.verification_code
             }
             self.edit_email_information(information, self.user_access_token, 400)
@@ -716,7 +721,7 @@ class DeliveryInformationTestCase(CommonTestClass):
         """
 
         response = self.client.post(
-            path=reverse("create-delivery"),
+            path=reverse("delivery"),
             data=json.dumps(information),
             content_type='application/json',
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -754,7 +759,7 @@ class DeliveryInformationTestCase(CommonTestClass):
 
     def read_delivery_information(self, pk, token, status_code):
         response = self.client.get(
-            path=reverse("get-delivery", args=[pk]),
+            path=reverse("delivery"),
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         self.assertEqual(response.status_code, status_code)
@@ -782,7 +787,7 @@ class DeliveryInformationTestCase(CommonTestClass):
             status_code = 400 if index == 5 else 200
             self.add_delivery_information_test(information, token, status_code)
 
-        # 암호화 테스트
+        # # 암호화 테스트
         deliveries_data = self.user.deliveries_data.all()
         for element in deliveries_data:
             self.assertNotEqual(element.postal_code, information.get('postal_code'))
@@ -790,14 +795,10 @@ class DeliveryInformationTestCase(CommonTestClass):
             self.assertNotEqual(element.recipient, information.get('recipient'))
             self.assertNotEqual(element.address, information.get('address'))
 
-        # 복호화 테스트
+        # # 복호화 테스트
         deliveries_data = self.read_delivery_information(self.user.pk, token, 200)
         for element in deliveries_data:
             self.assertEqual(element.get('postal_code'), information.get('postal_code'))
             self.assertEqual(element.get('detail_address'), information.get('detail_address'))
             self.assertEqual(element.get('recipient'), information.get('recipient'))
             self.assertEqual(element.get('address'), information.get('address'))
-
-        # 권한 없는 사용자의 데이터 조회
-        another_user_access_token = self.another_user_access_token
-        self.read_delivery_information(self.user.pk, another_user_access_token, 400)
