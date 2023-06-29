@@ -170,6 +170,7 @@ class BillCreateSerializer(ModelSerializer):
         우편 번호 검증
         """
         # 기존 배송정보 사용 시 밸리데이션 PASS
+
         if self.context.get("skip_validation") is True:
             return deliveries_data
         user = self.context.get("user")

@@ -1,5 +1,6 @@
 from math import ceil
 from django.core.exceptions import PermissionDenied
+from rest_framework.serializers import ValidationError
 from django.db import transaction
 from django.db.models import Sum
 from django.db.utils import IntegrityError
@@ -19,7 +20,7 @@ from rest_framework.response import Response
 from products.models import Product
 from users.serializers import DeliverySerializer
 from users.validated import ValidatedData
-from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller
+from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller, PhoneVerification
 from .orderserializers import (
     BillCreateSerializer,
     BillDetailSerializer,
@@ -51,9 +52,13 @@ class CartView(ListCreateAPIView):
             "-created_at"
         )
         try:  # url 쿼리 파라미터로 id가 전달되면 해당 값들만 조회
+            if self.request.user.phone_verification.is_verified is not True:
+                raise ValidationError("핸드폰 인증이 필요합니다.")
             cart_id = self.request.query_params.get("cart_id").split(",")
             queryset = queryset.filter(id__in=cart_id)
             return queryset
+        except PhoneVerification.DoesNotExist:
+            raise ValidationError("핸드폰 정보가 없습니다.")
         except AttributeError:  # 쿼리 파라미터가 없으면 .split에서 에러 / 전체 조회
             return queryset
 
@@ -267,6 +272,7 @@ class BillView(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
