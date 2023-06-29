@@ -165,7 +165,7 @@ class ReviewView(ListCreateAPIView):
         if point_serializer.is_valid():
             point_serializer.save(user=self.request.user, point_type_id=point_type)
         else:
-            raise serializer.ValidationError(point_serializer.errors)
+            raise ValidationError(point_serializer.errors)
 
         serializer.save(user=self.request.user, product=product)
 
