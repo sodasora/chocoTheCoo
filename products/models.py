@@ -26,7 +26,6 @@ class Product(CommonModel):
         (6, "삭제됨"),
     ]
     item_state = models.PositiveIntegerField(
-        max_length=10,
         choices=ITEM_STATE_CHOICES,
         default=1,
     )
