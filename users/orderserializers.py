@@ -126,11 +126,12 @@ class BillSerializer(ModelSerializer):
             return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
     def get_thumbnail(self, obj):
-        ord_list = obj.orderitem_set.all()
-        for order_item in ord_list:
-            if order_item.image:
-                return {"image": order_item.image, "name": order_item.name}
-        return {"image": None, "name": ord_list.first().name}
+        if ord_list := obj.orderitem_set.all():
+            for order_item in ord_list:
+                if order_item.image:
+                    return {"image": order_item.image, "name": order_item.name}
+            return {"image": None, "name": ord_list.first().name}
+        return None
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)

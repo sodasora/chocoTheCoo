@@ -157,6 +157,7 @@ class OrderCreateView(CreateAPIView):
                 [(cart.product.price * cart.amount) for cart in cart_objects]
             )
         except AttributeError:  # url params 오류
+            bill.delete()
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # 유저 포인트 차감 및 적립하기
@@ -197,6 +198,7 @@ class OrderCreateView(CreateAPIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         # statusCategory가 생성되지 않았음.
         except StatusCategory.DoesNotExist:
+            bill.delete()
             return Response(status=status.HTTP_404_NOT_FOUND)
 
     #     order_items.append(order_item_data)
