@@ -44,9 +44,12 @@ class UserSerializer(serializers.ModelSerializer):
         """"
         유저 오브 젝트 생성
         """
+
         user = super().create(validated_data)
         user.set_password(user.password)
         user.save()
+        # 포인트 기본값 할당
+        Point.objects.create(point=29900, user_id=user.pk, point_type_id=5)
         return user
 
 
