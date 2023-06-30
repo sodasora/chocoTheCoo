@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core import files
 import os, requests, tempfile
-from .models import User
+from .models import User, Point
 from .serializers import CustomTokenObtainPairSerializer
 
-REDIRECT_URI = 'https://chocothecoo.com'
+REDIRECT_URI = 'https://chocothecoo.com/index.html'
 # REDIRECT_URI = 'http://127.0.0.1:5501/index.html'
 KAKAO_API_KEY = os.environ.get('KAKAO_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
@@ -65,6 +65,7 @@ def SocialLogin(**kwargs):
         new_user.is_active = True
         new_user.set_unusable_password()
         new_user.save()
+        Point.objects.create(point=29900, user_id=new_user.pk, point_type_id=5)
         # 토큰 발급
         refresh = RefreshToken.for_user(new_user)
         access_token = CustomTokenObtainPairSerializer.get_token(new_user)
