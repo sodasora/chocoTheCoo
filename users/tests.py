@@ -802,3 +802,49 @@ class DeliveryInformationTestCase(CommonTestClass):
             self.assertEqual(element.get('detail_address'), information.get('detail_address'))
             self.assertEqual(element.get('recipient'), information.get('recipient'))
             self.assertEqual(element.get('address'), information.get('address'))
+
+    def edit_delivery_information(self, **information):
+        """
+        배송 정보 수정 테스트
+        """
+
+        delivery_id = information.get('delivery_id')
+        information = information.get('information')
+        token = information.get('token')
+        status_code = information.get('status_code')
+
+        response = self.client.put(
+            path=reverse("update-delivery", args={"pk": delivery_id}),
+            data=json.dumps(information),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, status_code)
+
+    def test_case_edit_delivery_information(self):
+        """
+        배송 정보 수정 및 삭제 테스트 케이스
+        """
+
+        token = self.user_access_token
+        information = {
+            "address": "우주 왕복 비행선",
+            "detail_address": "306호",
+            "recipient": "우주인",
+            "postal_code": "12345"
+        }
+        self.add_delivery_information_test(information, token, 200)
+
+        deliveries_data = self.read_delivery_information(self.user.pk, token, 200)
+
+        set_information = {
+            "information": {
+                "address": "서울시 강남구 스마일 아파트",
+                "detail_address": "105동 301호",
+                "recipient": "르탄이",
+                "postal_code": "53241"
+            },
+            "token": token,
+            "status_code": 200,
+            "delivery_id": deliveries_data[0].get('id')
+        }
