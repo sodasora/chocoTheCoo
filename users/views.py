@@ -388,7 +388,7 @@ class SellerAPIView(APIView):
         """
         user = get_object_or_404(User, pk=request.user.pk)
         try:
-            serializer = SellerSerializer(data=request.data)
+            serializer = SellerSerializer(data=request.data, context={"user": user})
             if serializer.is_valid():
                 serializer.save(user=user)
                 return Response(
