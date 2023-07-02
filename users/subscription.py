@@ -1,11 +1,4 @@
-import os, datetime, time
-import django
-
-
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'weasley.settings')
-django.setup()
-
+import datetime, time
 from .models import Point, Subscribe
 from .serializers import PointSerializer
 from django.db import transaction
@@ -41,7 +34,7 @@ class SubscribecheckView(APIView):
             with transaction.atomic():
                 total_plus_point = (
                     Point.objects.filter(user_id=subscribe_user.user.id)
-                        .filter(point_type__in=[1, 2, 3, 4, 5])
+                        .filter(point_type__in=[1, 2, 3, 4, 5, 8])
                         .aggregate(total=Sum("point"))
                 )
                 # print(total_plus_point)
