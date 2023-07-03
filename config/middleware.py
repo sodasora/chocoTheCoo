@@ -29,6 +29,7 @@ class JwtAuthMiddleware(BaseMiddleware):
         close_old_connections()
         try:
             token = parse_qs(scope["query_string"].decode("utf8"))["token"][0]
+            # print(token)
         except KeyError:
             scope["user"] = AnonymousUser()
             return await super().__call__(scope, receive, send)
