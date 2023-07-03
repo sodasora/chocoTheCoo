@@ -29,6 +29,7 @@ from .models import (
     StatusCategory,
     Seller,
     PhoneVerification,
+    User,
 )
 from .orderserializers import (
     BillCreateSerializer,
@@ -289,7 +290,10 @@ class BillView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         # 기존 배송정보 사용 시
-        if delivery_id := self.request.data.get("delivery_id"):
+        new_delivery = request.data.pop("new_delivery", False)
+        save_delivery = request.data.pop("save_delivery", False)
+
+        if delivery_id := request.data.get("delivery_id"):
             deli = get_object_or_404(Delivery, pk=delivery_id)
             data = {
                 "user": request.user,
@@ -301,12 +305,22 @@ class BillView(ListCreateAPIView):
             serializer = self.get_serializer(
                 data=data, context={"skip_validation": True}
             )
+
         # 새로운 배송정보 입력 시
-        elif request.data.get("postal_code") and request.data.get("recipient"):
+        elif new_delivery:
+            # 배송 정보 저장에 체크했을 시, Delivery도 생성
+            if save_delivery:
+                delivery_serializer = DeliverySerializer(
+                    data=request.data, context={"user": request.user}
+                )
+                if delivery_serializer.is_valid():
+                    delivery_serializer.save(user=request.user)
             data = request.data
             serializer = self.get_serializer(data=data, context={"user": request.user})
+
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
