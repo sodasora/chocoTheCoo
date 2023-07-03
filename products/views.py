@@ -63,7 +63,7 @@ class ProductListAPIView(ListCreateAPIView):
     pagination_class = ProductPagination
 
     def get_queryset(self):
-        filters = Q(item_state=1)
+        filters = (Q(item_state=1)| Q(item_state=2)) # 판매중(1), 품절(2)
         params = self.request.query_params
 
         if seller := params.get("user_id"):
@@ -130,7 +130,7 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
 
         # 현재 (1, "판매중"), (2, "품절")인 경우 amount 변경에 따라 자동으로 판매중, 품절로 변경
         if cur_item_state in [1, 2]:
-            item_state = 1 if amount and amount > 0 else 2
+            item_state = 1 if amount and int(amount) > 0 else 2
         serializer.save(seller=seller, item_state=item_state)
 
     def perform_destroy(self, instance):
