@@ -135,11 +135,16 @@ class ReviewView(ListCreateAPIView):
         return queryset
 
     def get_point_info(self, product_price, image_exists):
+        try:
+            is_subscribed = int(self.request.user.subscribe_data.subscribe)
+        except:
+            is_subscribed = 0
+
         if image_exists:
-            point = ceil(product_price * 0.05)
+            point = ceil(product_price * 0.05) * (1 + is_subscribed)
             point_type = 3
         else:
-            point = ceil(product_price * 0.01)
+            point = ceil(product_price * 0.01) * (1 + is_subscribed)
             point_type = 2
         return point, point_type
 
@@ -165,7 +170,7 @@ class ReviewView(ListCreateAPIView):
         if point_serializer.is_valid():
             point_serializer.save(user=self.request.user, point_type_id=point_type)
         else:
-            raise serializer.ValidationError(point_serializer.errors)
+            raise ValidationError(point_serializer.errors)
 
         serializer.save(user=self.request.user, product=product)
 

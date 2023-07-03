@@ -386,10 +386,6 @@ class SellerSerializer(serializers.ModelSerializer):
         판매자 정보 오브 젝트 수정
         """
 
-        # 유저 테스트 기간 동안 관리자 승인 절차 없이 판매자 자동 승인
-        user = self.context.get('user')
-        user.is_seller = True
-        user.save()
         seller_information = super().update(instance, validated_data)
         seller_information = self.encrypt_seller_information(seller_information, validated_data)
         seller_information.save()

@@ -126,11 +126,12 @@ class BillSerializer(ModelSerializer):
             return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
     def get_thumbnail(self, obj):
-        ord_list = obj.orderitem_set.all()
-        for order_item in ord_list:
-            if order_item.image:
-                return {"image": order_item.image, "name": order_item.name}
-        return {"image": None, "name": ord_list.first().name}
+        if ord_list := obj.orderitem_set.all():
+            for order_item in ord_list:
+                if order_item.image:
+                    return {"image": order_item.image, "name": order_item.name}
+            return {"image": None, "name": ord_list.first().name}
+        return None
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -204,13 +205,33 @@ class BillCreateSerializer(ModelSerializer):
         return deliveries
 
 
+class SimpleOrderItemSerializer(ModelSerializer):
+    order_status = StringRelatedField()
+    is_reviewed = SerializerMethodField()
+
+    def get_is_reviewed(self, obj):
+        request = self.context.get("request")
+        if request.user.is_authenticated:
+            product = Product.objects.get(pk=obj.product_id)
+            try:
+                review = product.product_reviews.get(user=request.user)
+                return {"reviewed": True, "review_id": review.pk}
+            except:
+                pass
+        return {"reviewed": False, "review_id": None}
+
+    class Meta:
+        model = OrderItem
+        fields = "__all__"
+
+
 class BillDetailSerializer(ModelSerializer):
     """
     주문서 상세 조회 시리얼라이저
     """
 
     bill_order_status = SerializerMethodField()
-    order_items = SerializerMethodField()
+    orderitem_set = SimpleOrderItemSerializer(many=True)
     total_price = SerializerMethodField()
 
     def get_bill_order_status(self, obj):
@@ -219,11 +240,6 @@ class BillDetailSerializer(ModelSerializer):
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
             return StatusCategory.objects.get(id=min(temp)).name if temp else "결제대기"
-
-    def get_order_items(self, obj):
-        order_items = obj.orderitem_set.all()
-        serializer = SimpleOrderItemSerializer(order_items, many=True)
-        return serializer.data
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -261,14 +277,6 @@ class OrderItemSerializer(ModelSerializer):
         read_only_fields = ("bill", "name", "price", "seller")
 
 
-class SimpleOrderItemSerializer(ModelSerializer):
-    order_status = StringRelatedField()
-
-    class Meta:
-        model = OrderItem
-        fields = "__all__"
-
-
 class OrderStatusSerializer(ModelSerializer):
     order_status = PrimaryKeyRelatedField(
         queryset=StatusCategory.objects.all(), required=True
@@ -282,14 +290,14 @@ class OrderStatusSerializer(ModelSerializer):
         request = self.context["request"]
         user = request.user
         cur_status = self.instance.order_status.id
-        seller = self.instance.seller == user.user_seller
-        buyer = self.instance.bill.user == user
+        seller = self.instance.seller
+        buyer = self.instance.bill.user
 
         if cur_status in [2, 3, 4] and value.id in [2, 3, 4, 5]:
-            if not seller:
+            if not (seller == user.user_seller):
                 raise ValidationError("주문 상품의 판매자만 변경 가능합니다")
         elif cur_status == 5 and value.id == 6:
-            if not buyer:
+            if not (buyer == user):
                 raise ValidationError("상품의 구매자만 변경 가능합니다")
         elif cur_status in [1, 6]:
             raise ValidationError("현재 상태에서 주문 상태를 수정할 수 없습니다.")
