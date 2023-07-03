@@ -1,4 +1,3 @@
-import datetime
 from .models import Subscribe
 from .serializers import PointSerializer
 from django.db import transaction

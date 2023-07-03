@@ -2,15 +2,16 @@
 import json
 from datetime import datetime
 from rest_framework.response import Response
+from rest_framework import status
 
 # channels
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from asgiref.sync import sync_to_async
 
 # models, serializers
 from users.models import User
 from chat.models import RoomMessage, ChatRoom, RoomChatParticipant
-from chat.serializers import ParticipantSerializer
 
 class ChatConsumer(AsyncWebsocketConsumer):
 
@@ -19,22 +20,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         room = await self.get_room_obj(room_id)
         
-        if user.is_authenticated and (room != ""):
+        if (user.id != None) and (room != ""):
             self.room_name = self.scope['url_route']['kwargs']['room_id']
             self.room_group_name = 'chat_%s' % self.room_name
+        else:
+            self.close()
         
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
         
-        is_first, participants_count = await self.enter_or_out_room(user.id, room_id, is_enter = True)
+        is_first = await self.enter_or_out_room(user.id, room_id, is_enter = True)
         
         if is_first:
             response = {
                 'response_type' : "enter",
                 'sender_name': user.nickname,
-                'participants_count' : participants_count,
                 'user_id' : user.id,
             }
             await self.channel_layer.group_send(
@@ -58,12 +60,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.scope.get('user').is_authenticated:
             user = self.scope.get('user')
             room_id = self.scope['url_route']['kwargs']['room_id']
-            _, participants_count = await self.enter_or_out_room(user.id , room_id, is_enter = False)
-
+            _ = await self.enter_or_out_room(user.id , room_id, is_enter = False)
+            
         response = {
             'response_type' : "out",
-            'participants_count' : participants_count,
             'user_id' : user.id,
+            'sender_name': user.nickname,
           }
 
         await self.channel_layer.group_send(
@@ -175,38 +177,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
       """
       출/입 에 따라 참여자를 제거/생성|가져오기 를 끝내고 참여자를 반환합니다.
       """
-
-      participants = RoomChatParticipant.objects.filter(room_id = room_id)
       participant, is_first = RoomChatParticipant.objects.get_or_create(room_id = room_id, user_id = user_id)
       
       if is_enter:
-        return is_first, participants.count()
+        return is_first
       else:
         participant.delete()
-        return is_first, participants.count()
+        return is_first
 
-
-class AlramConsumer(AsyncWebsocketConsumer):
+class AlarmConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
 
         if self.scope.get('user').is_authenticated:
+            user = self.scope.get('user')
+            self.alarm_name = 'alarm_%s' % user.id
 
-          user = self.scope.get('user')
-          self.alram_name = 'alram_%s' % user.id
-
-          # 해당 로그인 유저 그룹 생성 추가
-          await self.channel_layer.group_add(
-            self.alram_name,
-            self.channel_name
-          )
-
+            # 해당 로그인 유저 그룹 생성 추가
+            await self.channel_layer.group_add(
+                self.alarm_name,
+                self.channel_name
+            )
+        else:
+            Response(status=status.HTTP_401_UNAUTHORIZED)
+        
         await self.accept()
 
     async def disconnect(self, close_code):
         # Leave room group
         await self.channel_layer.group_discard(
-            self.alram_name,
+            self.alarm_name,
             self.channel_name
         )
 

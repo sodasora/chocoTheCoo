@@ -25,12 +25,7 @@ class ChatViewSet(ViewSet):
             is_read=True
         )
         queryset = RoomMessage.objects.filter(room_id=room.id).select_related('author').order_by('created_at')
-        # participant = RoomChatParticipant.objects.filter(room_id=room.id)
         serializer = MessageSerializer(queryset, many=True)
-        # participant_serializer = ParticipantSerializer(participant, many=True)
-        # data = {
-        #     "message": serializer.data, 
-        #     "participant": participant_serializer.data}
         
         return Response(serializer.data, status=status.HTTP_200_OK) 
 
@@ -41,8 +36,15 @@ class ChatRoomView(APIView):
     
     def get(self, request, room_id):
         room = get_object_or_404(ChatRoom, id=room_id)
-        serializer = ChatRoomSerializer(room)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        room_serializer = ChatRoomSerializer(room)
+        participants = RoomChatParticipant.objects.filter(room_id=room_id)
+        participants_serializer = ParticipantSerializer(participants, many=True)
+        
+        data = {
+            "room":room_serializer.data,
+            "participants":participants_serializer.data
+        }
+        return Response(data, status=status.HTTP_200_OK)
         
     def post(self, request):
         queryset = ChatRoom.objects.filter(author = request.user)
