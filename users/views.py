@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.utils import IntegrityError
 from django.db.models import Sum
+from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
 from products.models import Product, Review
@@ -770,10 +771,10 @@ class PointServiceView(generics.CreateAPIView):
 
 """포인트충전 결제후처리"""
 
-
 class PointCheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         user = request.user
         amount = request.data.get('amount')
@@ -802,6 +803,7 @@ class PointCheckoutView(APIView):
 class PointImpAjaxView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         user = request.user
         merchant_id = request.data.get('merchant_id')
