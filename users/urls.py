@@ -15,7 +15,7 @@ from .views import (
     UserProfileAPIView,
     CustomTokenObtainPairView,
     PointView,
-    PointStaticView,
+    PointStatisticView,
     SubscribeView,
     ReviewListAPIView,
     WishListAPIView,
@@ -134,7 +134,7 @@ PointAPI
 """
 urlpatterns += [
     # 포인트 보기
-    path("points/<str:date>/statistic/",PointStaticView.as_view(),name="point_date_static"),
+    path("points/<str:date>/statistic/",PointStatisticView.as_view(),name="point_date_statistic"),
     path("points/<str:date>/", PointView.as_view(), name="point_date_view"),
     # 출석용 포인트
     path("attendance/", PointAttendanceView.as_view(), name="point_attendance_view"),

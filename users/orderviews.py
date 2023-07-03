@@ -35,6 +35,7 @@ from .orderserializers import (
     StatusCategorySerializer,
 )
 from config.permissions_ import IsDeliveryRegistered
+from .views import PointStatisticView
 
 
 class CartView(ListCreateAPIView):
@@ -209,18 +210,10 @@ class OrderCreateView(CreateAPIView):
 
 def OrderPointCreate(user: object, total_buy_price: int):
     """주문 상품 포인트 생성"""
-    total_plus_point = (
-        Point.objects.filter(user_id=user.id)
-        .filter(point_type__in=[1, 2, 3, 4, 5, 8])
-        .aggregate(total=Sum("point"))
-    ).get("total", 0) or 0
-    total_minus_point = (
-        Point.objects.filter(user_id=user.id)
-        .filter(point_type__in=[6, 7])
-        .aggregate(total=Sum("point"))
-    ).get("total", 0) or 0
+    total_point = PointStatisticView.get_total_point(user)
+    # print(total_point)
 
-    if total_plus_point < (total_buy_price + total_minus_point):
+    if total_point < total_buy_price:
         raise PermissionDenied("결제를 위한 포인트가 부족합니다")
     
     try:
