@@ -10,7 +10,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
-    created_at = serializers.SerializerMethodField()
+    created_at_time = serializers.SerializerMethodField()
     author_image = serializers.SerializerMethodField()
 
     def get_author_name(self, obj):
@@ -22,7 +22,7 @@ class MessageSerializer(serializers.ModelSerializer):
       else:
         return None
     
-    def get_created_at(self, obj):
+    def get_created_at_time(self, obj):
         time = obj.created_at
         am_pm = time.strftime('%p')
         now_time = time.strftime('%I:%M')
