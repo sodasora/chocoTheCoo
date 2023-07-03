@@ -652,15 +652,15 @@ class PointView(generics.ListAPIView):
 
 
 # 통계
-class PointStaticView(APIView):
+class PointStatisticView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, date):
         # 포인트 총합 계산
-        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7), 정산(8)"""
+        """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 구독권이용료(6), 결제(7), 정산(8), 환불(9)"""
         day_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8, 9])
                 .filter(date=date)
                 .aggregate(total=Sum("point"))
         )
@@ -676,10 +676,10 @@ class PointStaticView(APIView):
         minus_point = (
             day_minus_point["total"] if day_minus_point["total"] is not None else 0
         )
-        day_total_point = plus_point - minus_point
+        
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8, 9])
                 .filter(date__month=timezone.now().date().month)
                 .aggregate(total=Sum("point"))
         )
@@ -695,18 +695,35 @@ class PointStaticView(APIView):
         month_minus = (
             month_minus_point["total"] if month_minus_point["total"] is not None else 0
         )
-        month_total_point = month_plus - month_minus
 
+        total_point = PointStatisticView.get_total_point(request.user)
+        
+        return Response(
+            {
+                "day_plus": plus_point,
+                "day_minus": minus_point,
+                "month_plus":month_plus,
+                "month_minus":month_minus,
+                "total_point": total_point,
+            },
+            status=status.HTTP_200_OK,
+        )
+        
+    
+    @classmethod
+    def get_total_point(self, user):
         total_plus_point = (
-            Point.objects.filter(user_id=request.user.id)
-                .filter(point_type__in=[1, 2, 3, 4, 5, 8])
+            Point.objects.filter(user_id=user.id)
+                .filter(point_type__in=[1, 2, 3, 4, 5, 8, 9])
                 .aggregate(total=Sum("point"))
         )
+        
         total_minus_point = (
-            Point.objects.filter(user_id=request.user.id)
+            Point.objects.filter(user_id=user.id)
                 .filter(point_type__in=[6, 7])
                 .aggregate(total=Sum("point"))
         )
+
         try:
             total_point = total_plus_point["total"] - total_minus_point["total"]
         except TypeError:
@@ -715,17 +732,9 @@ class PointStaticView(APIView):
                 if total_plus_point["total"] is not None
                 else 0
             )
+        
+        return total_point
 
-        return Response(
-            {
-                "day_plus": plus_point,
-                "day_minus": minus_point,
-                "day_total_point": day_total_point,
-                "month_total_point": month_total_point,
-                "total_point": total_point,
-            },
-            status=status.HTTP_200_OK,
-        )
 
 
 """포인트 종류: 출석(1)"""

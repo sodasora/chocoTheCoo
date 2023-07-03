@@ -1,16 +1,17 @@
-import datetime, time
-from .models import Point, Subscribe
+import datetime
+from .models import Subscribe
 from .serializers import PointSerializer
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import F, Sum
+from django.db.models import F
 from .validated import EmailService
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from users.models import User
 from chat.models import RoomMessage
-from datetime import datetime, timedelta
+from datetime import timedelta
+from .views import PointStatisticView
 
 # 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
 class SubscribecheckView(APIView):
@@ -32,27 +33,8 @@ class SubscribecheckView(APIView):
         
         for subscribe_user in subscribe_users:
             with transaction.atomic():
-                total_plus_point = (
-                    Point.objects.filter(user_id=subscribe_user.user.id)
-                        .filter(point_type__in=[1, 2, 3, 4, 5, 8])
-                        .aggregate(total=Sum("point"))
-                )
-                # print(total_plus_point)
-                total_minus_point = (
-                    Point.objects.filter(user_id=subscribe_user.user.id)
-                        .filter(point_type__in=[6, 7])
-                        .aggregate(total=Sum("point"))
-                )
-                # print(total_minus_point)
-                try:
-                    total_point = total_plus_point["total"] - total_minus_point["total"]
-                    print(total_point)
-                except TypeError:
-                    total_point = (
-                        total_plus_point["total"]
-                        if total_plus_point["total"] is not None
-                        else 0
-                    )
+                total_point = PointStatisticView.get_total_point(subscribe_user.user)
+                print(total_point)
 
                 # 구독료 9900원
                 if total_point >= 9900:
@@ -62,9 +44,9 @@ class SubscribecheckView(APIView):
                         serializer.save(user=subscribe_user.user, point_type_id=6)
 
                     subscribe_user.subscribe = True
-                    subscribe_user.next_payment = F('next_payment') + datetime.timedelta(weeks=4)
+                    subscribe_user.next_payment = F('next_payment') + timedelta(weeks=4)
                     # 테스트용 (1시간 뒤)
-                    # subscribe_user.next_payment = F('next_payment')+datetime.timedelta(hours = 1)
+                    # subscribe_user.next_payment = F('next_payment') + timedelta(hours = 1)
                     subscribe_user.save()
                 else:
                     subscribe_user.subscribe = False
