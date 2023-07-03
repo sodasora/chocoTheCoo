@@ -20,7 +20,16 @@ from rest_framework.response import Response
 from products.models import Product
 from users.serializers import DeliverySerializer
 from users.validated import ValidatedData
-from .models import CartItem, OrderItem, Bill, Delivery, Point, StatusCategory, Seller, PhoneVerification
+from .models import (
+    CartItem,
+    OrderItem,
+    Bill,
+    Delivery,
+    Point,
+    StatusCategory,
+    Seller,
+    PhoneVerification,
+)
 from .orderserializers import (
     BillCreateSerializer,
     BillDetailSerializer,
@@ -76,7 +85,9 @@ class CartView(ListCreateAPIView):
             bill = get_object_or_404(Bill, pk=bill_id)
             order_items = bill.orderitem_set.all()
             for orderitem in order_items:
-                product = get_object_or_404(Product, pk=orderitem.product_id, item_state=1)
+                product = get_object_or_404(
+                    Product, pk=orderitem.product_id, item_state=1
+                )
                 amount = orderitem.amount
                 self.add_exist_cart(product, amount)
 
@@ -151,21 +162,24 @@ class OrderCreateView(CreateAPIView):
 
         # cart_ids 리스트 => 해당하는 객체 쿼리셋 조회
         try:
-            cart_ids:list = request.query_params.get("cart_id").split(",")
+            cart_ids: list = request.query_params.get("cart_id").split(",")
             cart_objects = CartItem.objects.filter(pk__in=cart_ids)
             total_buy_price = sum(
                 [(cart.product.price * cart.amount) for cart in cart_objects]
             )
         except AttributeError:  # url params 오류
             bill.delete()
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"err": "no_cart"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # 유저 포인트 차감 및 적립하기
         try:
-            OrderPointCreate(request.user, total_buy_price)
-        except PermissionDenied:  # 포인트 부족
+            order_point_create(request.user, total_buy_price)
+        except PermissionDenied as e:  # 포인트 부족
             bill.delete()
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
         # orderitem 객체 리스트 생성
         try:
@@ -185,21 +199,33 @@ class OrderCreateView(CreateAPIView):
                     order_item_data["image"] = cart.product.image.url
                 order_item = OrderItem(**order_item_data)
                 order_items.append(order_item)
+                product_amount_deduction(product=cart.product, buy_amount=cart.amount)
+
             # bulk_create로 장바구니 => 주문상품으로 옮겨줌. 성공시 201
             OrderItem.objects.bulk_create(order_items)
             bill.is_paid = True
             bill.save()
-            return Response(status=status.HTTP_201_CREATED)
+            return Response({"msg": "생성 완료"}, status=status.HTTP_201_CREATED)
 
+        # 상품 재고량 부족
+        except ValidationError as e:
+            bill.delete()
+            return Response(
+                {"err": e.detail[0].code}, status=status.HTTP_400_BAD_REQUEST
+            )
         # NotNull Constraints Failed.
-        # cart또는 product가 정상적인 상태로 저장되지 않았음.
+        # cart또는 product가 정상적인 상태로 저장되지 않았음.,.
         except IntegrityError:
             bill.delete()
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"err": "incorrect_product"}, status=status.HTTP_400_BAD_REQUEST
+            )
         # statusCategory가 생성되지 않았음.
         except StatusCategory.DoesNotExist:
             bill.delete()
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"err": "status_not_exist"}, status=status.HTTP_404_NOT_FOUND
+            )
 
     #     order_items.append(order_item_data)
     #     serializer = self.get_serializer(data=order_items, many=True)
@@ -207,7 +233,7 @@ class OrderCreateView(CreateAPIView):
     #     serializer.save(bill=bill)
 
 
-def OrderPointCreate(user: object, total_buy_price: int):
+def order_point_create(user: object, total_buy_price: int):
     """주문 상품 포인트 생성"""
     total_plus_point = (
         Point.objects.filter(user_id=user.id)
@@ -221,8 +247,8 @@ def OrderPointCreate(user: object, total_buy_price: int):
     ).get("total", 0) or 0
 
     if total_plus_point < (total_buy_price + total_minus_point):
-        raise PermissionDenied("결제를 위한 포인트가 부족합니다")
-    
+        raise PermissionDenied("insufficient_balance")
+
     try:
         is_subscribed = int(user.subscribe_data.subscribe)
     except:
@@ -232,6 +258,17 @@ def OrderPointCreate(user: object, total_buy_price: int):
 
     Point.objects.create(user=user, point_type_id=7, point=total_buy_price)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
+
+
+def product_amount_deduction(product: object, buy_amount: int):
+    """주문 시 상품 재고량 감소"""
+    if product.amount < buy_amount:
+        raise ValidationError(code="out_of_stock")
+    else:
+        product.amount -= buy_amount
+        if product.amount == 0:
+            product.item_state = 2
+        product.save()
 
 
 class OrderDetailView(RetrieveUpdateAPIView):
@@ -276,6 +313,8 @@ class BillView(ListCreateAPIView):
         elif request.data.get("postal_code") and request.data.get("recipient"):
             data = request.data
             serializer = self.get_serializer(data=data, context={"user": request.user})
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
