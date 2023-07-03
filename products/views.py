@@ -10,12 +10,12 @@ from rest_framework.generics import (
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import (
-    ProductListSerializer,
     CategoryListSerializer,
+    GetProductDetailSerializer,
     ProductDetailSerializer,
+    ProductListSerializer,
     ReviewSerializer,
     ReviewDetailSerializer,
-    GetProductDetailSerializer,
 )
 from users.serializers import PointSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -106,7 +106,7 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     """상세 조회, 수정, 삭제"""
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
-    queryset = Product.objects.filter(item_state=1)
+    queryset = Product.objects.exclude(item_state__in=[5, 6])
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -116,7 +116,22 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         seller = get_object_or_404(Seller, user=self.request.user)
-        serializer.save(seller=seller)
+        amount = self.request.data.get("amount")
+
+        cur_item_state = self.get_object().item_state
+        item_state = self.request.data.get("item_state")
+
+        # (5, "차단됨"), (6, "삭제됨")의 경우 어드민만 변경 가능
+        if item_state in [5, 6]:
+            if self.request.user.is_admin:
+                pass
+            else:
+                item_state = cur_item_state
+
+        # 현재 (1, "판매중"), (2, "품절")인 경우 amount 변경에 따라 자동으로 판매중, 품절로 변경
+        if cur_item_state in [1, 2]:
+            item_state = 1 if amount and amount > 0 else 2
+        serializer.save(seller=seller, item_state=item_state)
 
     def perform_destroy(self, instance):
         instance.item_state = 6
