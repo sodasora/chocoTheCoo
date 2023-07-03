@@ -222,8 +222,13 @@ def OrderPointCreate(user: object, total_buy_price: int):
 
     if total_plus_point < (total_buy_price + total_minus_point):
         raise PermissionDenied("결제를 위한 포인트가 부족합니다")
+    
+    try:
+        is_subscribed = int(user.subscribe_data.subscribe)
+    except:
+        is_subscribed = 0
 
-    buy_point_earn = ceil(total_buy_price / 20) * (1 + int(user.subscribe_data.subscribe))
+    buy_point_earn = ceil(total_buy_price / 20) * (1 + is_subscribed)
 
     Point.objects.create(user=user, point_type_id=7, point=total_buy_price)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
