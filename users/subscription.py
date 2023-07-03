@@ -34,7 +34,7 @@ class SubscribecheckView(APIView):
         for subscribe_user in subscribe_users:
             with transaction.atomic():
                 total_point = PointStatisticView.get_total_point(subscribe_user.user)
-                print(total_point)
+                # print(total_point)
 
                 # 구독료 9900원
                 if total_point >= 9900:
