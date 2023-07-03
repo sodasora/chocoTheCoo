@@ -83,8 +83,23 @@ class GetReviewUserListInfo(serializers.ModelSerializer):
         model = Review
         exclude = ('created_at',)
 
+    def set_choices_value(self,choice_list, value):
+        """
+        쵸이스 필드 value값 탐색
+        """
+        for key, label in choice_list:
+            if key == value:
+                return label
+        return None
+
     def to_representation(self, instance):
         information = super().to_representation(instance)
+
+        # 쵸이스 필드에 맞는 값 조정
+        information['service_evaluation'] = self.set_choices_value(self.Meta.model.SERVICE_EVALUATION, information['service_evaluation'])
+        information['feedback_evaluation'] = self.set_choices_value(self.Meta.model.FEEDBACK_EVALUATION, information['feedback_evaluation'])
+        information['delivery_evaluation'] = self.set_choices_value(self.Meta.model.DELIVERY_EVALUATION, information['delivery_evaluation'])
+        # 수정일
         information['updated_at'] = information.get('updated_at')[:10]
         return information
 
@@ -121,6 +136,42 @@ class GetProductDetailSerializer(serializers.ModelSerializer):
     product_reviews = GetReviewUserListInfo(many=True)
     product_information = serializers.SerializerMethodField()
     in_wishlist = serializers.SerializerMethodField()
+    delivery_evaluation = serializers.SerializerMethodField()
+    service_evaluation = serializers.SerializerMethodField()
+    feedback_evaluation = serializers.SerializerMethodField()
+
+    def get_delivery_evaluation(self, obj):
+        """
+        배송 리뷰 평가 종합하기
+        """
+        delivery_counts = {
+            "good": obj.product_reviews.filter(delivery_evaluation="good").count(),
+            "normal": obj.product_reviews.filter(delivery_evaluation="normal").count(),
+            "bad": obj.product_reviews.filter(delivery_evaluation="bad").count(),
+        }
+        return delivery_counts
+
+    def get_service_evaluation(self, obj):
+        """
+        서비스 리뷰 평가 종합 하기
+        """
+        service_counts = {
+            "good": obj.product_reviews.filter(service_evaluation="good").count(),
+            "normal": obj.product_reviews.filter(service_evaluation="normal").count(),
+            "bad": obj.product_reviews.filter(service_evaluation="bad").count(),
+        }
+        return service_counts
+
+    def get_feedback_evaluation(self, obj):
+        """
+        피드백 리뷰 평가 종합 하기
+        """
+        feedback_counts = {
+            "good": obj.product_reviews.filter(feedback_evaluation="good").count(),
+            "normal": obj.product_reviews.filter(feedback_evaluation="normal").count(),
+            "bad": obj.product_reviews.filter(feedback_evaluation="bad").count(),
+        }
+        return feedback_counts
 
     def get_in_wishlist(self, obj):
         """
