@@ -13,8 +13,8 @@ class Product(CommonModel):
     seller = models.ForeignKey("users.Seller", on_delete=models.CASCADE)
     name = models.CharField("상품이름", max_length=100)
     content = models.TextField("상품설명")
-    price = models.IntegerField("상품가격", null=True, default=0)
-    amount = models.IntegerField("상품수량", null=True, default=0)
+    price = models.PositiveIntegerField("상품가격", null=True, default=0)
+    amount = models.PositiveIntegerField("상품수량", null=True, default=0)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     image = models.ImageField("상품 이미지", upload_to=img_upload_to, blank=True, null=True)
     ITEM_STATE_CHOICES = [
@@ -60,7 +60,7 @@ class Review(CommonModel):
         (4, "⭐⭐⭐⭐"),
         (5, "⭐⭐⭐⭐⭐"),
     ]
-    star = models.IntegerField("리뷰 별점", choices=STAR_CHOICES)
+    star = models.PositiveIntegerField("리뷰 별점", choices=STAR_CHOICES)
     DELIVERY_EVALUATION = [
         ("good", "빨라요 😁"),
         ("normal", "보통 😐"),
