@@ -7,7 +7,6 @@ from rest_framework import status
 # channels
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async
 
 # models, serializers
 from users.models import User
@@ -100,9 +99,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room = await self.get_room_obj(room_id)
         
         if user.profile_image:
-            image = user.profile_image.url
+            profile_image = user.profile_image.url
         else:
-            image = None
+            profile_image = None
+            
 
         message = text_data_json['message']
         
@@ -114,7 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
           'sender': user.id,
           'sender_name': user.nickname,
           'room_id': room.id,
-          'profile':image,
+          'profile':profile_image,
           'time': await self.get_time(),
         }        
         

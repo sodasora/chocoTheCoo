@@ -3,6 +3,9 @@ from datetime import timedelta
 from environ import Env
 import os
 
+# import environ
+DJANGO_SETTINGS_MODULE='config.settings'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
