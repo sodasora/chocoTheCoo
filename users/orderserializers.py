@@ -54,6 +54,7 @@ class CartListSerializer(ModelSerializer):
             "price": product.price,
             "image": image_url,
             "seller": str(product.seller),
+            "item_state": product.item_state,
         }
 
     class Meta:

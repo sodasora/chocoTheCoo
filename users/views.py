@@ -484,7 +484,7 @@ class SellerPermissionAPIView(APIView):
         """
         user = get_object_or_404(User, id=user_id)
         try:
-            serializer = SellerSerializer(user.user_seller)
+            serializer = SellerSerializer(user.user_seller, context={'request': request})
         except Seller.DoesNotExist:
             return Response(
                 {"err": "판매자 정보가 없습니다."}, status=status.HTTP_400_BAD_REQUEST

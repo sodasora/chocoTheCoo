@@ -353,6 +353,18 @@ class SellerSerializer(serializers.ModelSerializer):
     def get_followings_count(self, obj):
         return obj.user.followings.count()
 
+    # 셀러 팔로우
+    is_like = serializers.SerializerMethodField()
+
+    def get_is_like(self, obj):
+        request = self.context.get("request")
+        if request.user.is_authenticated:
+            # 좋아요 object에 포함되 있다면 True 아니라면 False
+            # return obj.filter(pk=request.user.pk).exists()
+            print(obj.user.pk)
+            return True
+        return False
+
     class Meta:
         model = Seller
         exclude = ('user',)
