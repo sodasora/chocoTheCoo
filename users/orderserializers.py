@@ -7,7 +7,7 @@ from users.models import CartItem, Bill, OrderItem, StatusCategory
 from products.models import Product
 from users.validated import ValidatedData
 from .cryption import AESAlgorithm
-from products.serializers import SimpleSellerInformation
+from products.serializers import ProductDetailSerializer, SimpleSellerInformation
 from rest_framework.serializers import ValidationError, PrimaryKeyRelatedField
 
 
@@ -39,23 +39,23 @@ class CartListSerializer(ModelSerializer):
     장바구니 목록 조회 시리얼라이저
     """
 
-    product = SerializerMethodField()
+    product = ProductDetailSerializer()
     aggregate_price = SerializerMethodField()
 
     def get_aggregate_price(self, obj):
         return obj.product.price * obj.amount
 
-    def get_product(self, obj):
-        product = obj.product
-        image_url = product.image.url if product.image else None
-        return {
-            "id": product.id,
-            "name": product.name,
-            "price": product.price,
-            "image": image_url,
-            "seller": str(product.seller),
-            "item_state": product.item_state,
-        }
+    # def get_product(self, obj):
+    #     product = obj.product
+    #     image_url = product.image.url if product.image else None
+    #     return {
+    #         "id": product.id,
+    #         "name": product.name,
+    #         "price": product.price,
+    #         "image": image_url,
+    #         "seller": str(product.seller),
+    #         "item_state": product.item_state,
+    #     }
 
     class Meta:
         model = CartItem

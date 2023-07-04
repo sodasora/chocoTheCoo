@@ -420,7 +420,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = get_object_or_404(User, email=attrs.get("email"))
         try:
             if user.login_type != 'normal':
-                raise ValidationError(f'{user.login_type}로 가입된 소셜 게정입니다.')
+                raise ValidationError(f'{user.login_type}로 가입된 소셜 계정입니다.')
             elif user.is_active is False:
                 raise ValidationError("휴면 계정입니다.")
             elif user.login_attempts_count >= 5:
