@@ -17,9 +17,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 django.setup()
 
-# from channels.security.websocket import AllowedHostsOriginValidator
-# from channels.auth import AuthMiddlewareStack
-
 application = ProtocolTypeRouter({
     'http': get_asgi_application(),
     'websocket': JwtAuthMiddlewareStack(
