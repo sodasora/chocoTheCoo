@@ -149,6 +149,7 @@ class EmailService:
         EmailService.message_forwarding(email, subject_message, content_message)
         return True
 
+
 class ValidatedData:
     """
     데이터 검증 클래스

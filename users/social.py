@@ -14,6 +14,7 @@ GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 NAVER_CLINET_ID = os.environ.get('NAVER_CLINET_ID')
 NAVER_SECRET_KEY = os.environ.get('NAVER_SECRET_KEY')
 
+
 def SocialLogin(**kwargs):
     """
     소셜 로그인, 회원가입
