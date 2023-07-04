@@ -18,7 +18,8 @@ IAMPORT_SECRET = os.environ.get('IAMPORT_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', '0') == '1'
-ALLOWED_HOSTS = ['backend','localhost','127.0.0.1']
+# ALLOWED_HOSTS = ['backend','localhost','127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition

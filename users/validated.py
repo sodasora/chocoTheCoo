@@ -1,7 +1,6 @@
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from rest_framework.views import APIView
-from rest_framework import status
 from django.contrib.auth.hashers import check_password
 import random, re, string, json
 import hashlib, hmac, base64, os, requests, time
@@ -153,7 +152,6 @@ class EmailService:
 class ValidatedData:
     """
     데이터 검증 클래스
-    https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/validate_test.py
     """
 
     @classmethod

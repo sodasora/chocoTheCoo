@@ -11,7 +11,7 @@ REDIRECT_URI = 'https://chocothecoo.com/index.html'
 # REDIRECT_URI = 'http://127.0.0.1:5501/index.html'
 KAKAO_API_KEY = os.environ.get('KAKAO_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-NAVER_CLIENT_ID = os.environ.get('NAVER_CLINET_ID')
+NAVER_CLIENT_ID = os.environ.get('NAVER_CLIENT_ID')
 NAVER_SECRET_KEY = os.environ.get('NAVER_SECRET_KEY')
 
 
@@ -167,7 +167,7 @@ class NaverLogin(APIView):
     """네이버 소셜 로그인"""
 
     def get(self, request):
-        return Response(NAVER_CLIENT_ID, status=status.HTTP_200_OK)
+        return Response('I4Tza14KkUFWhXG7MWZ5', status=status.HTTP_200_OK)
 
     def post(self, request):
         code = request.data.get("naver_code")
