@@ -11,7 +11,7 @@ REDIRECT_URI = 'https://chocothecoo.com/index.html'
 # REDIRECT_URI = 'http://127.0.0.1:5501/index.html'
 KAKAO_API_KEY = os.environ.get('KAKAO_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-NAVER_CLINET_ID = os.environ.get('NAVER_CLINET_ID')
+NAVER_CLIENT_ID = os.environ.get('NAVER_CLINET_ID')
 NAVER_SECRET_KEY = os.environ.get('NAVER_SECRET_KEY')
 
 
@@ -94,6 +94,7 @@ class KakaoLogin(APIView):
         Access Token을 이용하여 사용자가 동의한 추가 제공 정보들 발급 받기
         추가 제공 정보를 토대로 로그인 및 회원가입 진행
         """
+
         # Resource Server의 인가 코드 확인
         auth_code = request.data.get("code")
 
@@ -160,19 +161,19 @@ class GoogleLogin(APIView):
             "login_type": "google",
         }
         return SocialLogin(**data)
-#
-#
+
+
 class NaverLogin(APIView):
     """네이버 소셜 로그인"""
 
     def get(self, request):
-        return Response(NAVER_CLINET_ID, status=status.HTTP_200_OK)
+        return Response(NAVER_CLIENT_ID, status=status.HTTP_200_OK)
 
     def post(self, request):
         code = request.data.get("naver_code")
         state = request.data.get("state")
         access_token = requests.post(
-            f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&code={code}&client_id={NAVER_SECRET_KEY}&client_secret={NAVER_SECRET_KEY}&state={state}",
+            f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&code={code}&client_id={NAVER_CLIENT_ID}&client_secret={NAVER_SECRET_KEY}&state={state}",
             headers={"Accept": "application/json"},
         )
         access_token = access_token.json().get("access_token")
@@ -183,15 +184,11 @@ class NaverLogin(APIView):
                 "Accept": "application/json",
             },
         )
-        # user_data = user_data.json().get("response")
-        # data = {
-        #     "profile_image": user_data.get("profile_image"),
-        #     "email": user_data.get("email"),
-        #     "nickname": user_data.get("nickname"),
-        #     "login_type": "naver",
-        # }
-
-        return Response(
-            {"msg": "네이버 로그인 검수 단계 입니다."}, status=status.HTTP_200_OK
-        )
-        # return SocialLogin(**data)
+        user_data = user_data.json().get("response")
+        data = {
+            "profile_image": user_data.get("profile_image"),
+            "email": user_data.get("email"),
+            "nickname": user_data.get("nickname"),
+            "login_type": "naver",
+        }
+        return SocialLogin(**data)

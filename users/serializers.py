@@ -360,9 +360,7 @@ class SellerSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request.user.is_authenticated:
             # 좋아요 object에 포함되 있다면 True 아니라면 False
-            # return obj.filter(pk=request.user.pk).exists()
-            print(obj.user.pk)
-            return True
+            return obj.user.followings.filter(pk=request.user.pk).exists()
         return False
 
     class Meta:
