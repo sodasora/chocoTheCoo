@@ -8,14 +8,14 @@ class BaseTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.seller_user = User.objects.create_user(
-            "seller@naver.com", "test_seller", "password"
+            "seller@naver.com", "test_seller", "!@#password123"
         )
-        cls.seller_user_data = {"email": "seller@naver.com", "password": "password"}
+        cls.seller_user_data = {"email": "seller@naver.com", "password": "!@#password123"}
 
         cls.user = User.objects.create_user(
-            "testuser@naver.com", "test_user", "password"
+            "testuser@naver.com", "test_user", "!@#password123"
         )
-        cls.user_data = {"email": "testuser@naver.com", "password": "password"}
+        cls.user_data = {"email": "testuser@naver.com", "password": "!@#password123"}
 
         cls.seller = Seller.objects.create(
             user=cls.seller_user,
@@ -112,7 +112,7 @@ class ProductListTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "password"
+            "seller2@naver.com", "test_seller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -186,7 +186,7 @@ class ProductUpdateTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "password"
+            "seller2@naver.com", "test_seller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -280,7 +280,7 @@ class ProductDeleteTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "password"
+            "seller2@naver.com", "test_seller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -342,4 +342,4 @@ class ProductDeleteTest(BaseTestCase):
         # print("\ntest_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Product.objects.count(), 3)
-        self.assertEqual(Product.objects.get(pk=self.product.id).item_state, "6")
+        self.assertEqual(Product.objects.get(pk=self.product.id).item_state, 6)
