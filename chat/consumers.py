@@ -7,7 +7,6 @@ from rest_framework import status
 # channels
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async
 
 # models, serializers
 from users.models import User
