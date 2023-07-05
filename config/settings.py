@@ -3,6 +3,9 @@ from datetime import timedelta
 from environ import Env
 import os
 
+# import environ
+DJANGO_SETTINGS_MODULE='config.settings'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,9 +17,9 @@ IAMPORT_SECRET = os.environ.get('IAMPORT_SECRET')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get('DEBUG', '0') == '1'
+# ALLOWED_HOSTS = ['backend','localhost','127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -27,22 +30,25 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    
     'channels',
     'daphne',
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    
     # local apps
     'users',
     'products',
     'chat',
+    'storages',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -74,20 +80,31 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION  = 'config.asgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# POSTGRES_ON 활성일 때 postgres db에 연결을 시도.
+POSTGRES_ON = os.environ.get('POSTGRES_ON', '0') == '1'
+if POSTGRES_ON:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', ''),
+            'USER': os.environ.get('POSTGRES_USER', ''),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': os.environ.get('POSTGRES_HOST', ''),
+            'PORT': os.environ.get('POSTGRES_PORT', ''),
+        }
     }
-}
+
+# POSTGRES_ON 비활성일 때 sqlite3을 사용.
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 env = Env()
-# env_path = BASE_DIR / ".env"
-# if env_path.exists():
-#     with env_path.open(encoding="utf8") as f:
-#         env.read_env(f, overwrite=True)
-
 
 # django channels layer
 if "CHANNEL_LAYER_REDIS_URL" in env:
@@ -133,11 +150,45 @@ USE_I18N = True
 USE_TZ = False
 
 
-STATIC_ROOT = BASE_DIR / "static"
-STATIC_URL = "/static/"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = "/media/"
+# AWS_S3_ON 환경변수가 활성일 때 AWS_S3에 연결
+AWS_S3_ON = os.environ.get('AWS_S3_ON', '0') == '1'
+if AWS_S3_ON:
+
+    # S3 Storage 경로
+    DEFAULT_FILE_STORAGE = 'config.storages.MediaStorage' # 미디어 저장위치
+    AWS_MEDIAFILES_LOCATION = 'media' #aws S3에 모이는 파일명
+    STATICFILES_STORAGE = 'config.storages.StaticStorage'
+    AWS_STATICFILES_LOCATION = 'statics'
+
+    # S3 설정을 위한 변수
+    # iam의 정보
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+
+    AWS_REGION = os.environ.get('AWS_REGION', '')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (
+        AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_LOCATION = 'statics'
+    STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'statics')
+    ]
+
+    
+# AWS_S3_ON 비활성일 때 기본경로를 사용.
+else:
+    STATIC_ROOT = BASE_DIR / "static"
+    STATIC_URL = "/static/"
+
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    MEDIA_URL = "/media/"
+
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -164,11 +215,11 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     # 개발환경에 맞춘 access_token 유효시간을 넉넉히 잡았습니다.
     # 배포때 조정이 필요합니다.
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=720),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=120),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
-    "UPDATE_LAST_LOGIN": False,
+    "UPDATE_LAST_LOGIN": True,
 
     "ALGORITHM": "HS256",
     "SIGNING_KEY": os.environ.get("SECRET_KEY"),
@@ -209,3 +260,9 @@ AUTH_USER_MODEL = 'users.User'
 ## CORS ############################################################################
 # 모든 허용한 상태로 수정 필요
 CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS 허용 목록에 ec2 ip를 추가합니다.
+# CORS_ORIGIN_WHITELIST = ['http://127.0.0.1','http://localhost']
+
+# CSRF 허용 목록을 CORS와 동일하게 설정합니다.
+# CSRF_TRUSTED_ORIGINS = CORS_ORIGIN_WHITELIST

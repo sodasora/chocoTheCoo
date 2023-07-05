@@ -1,10 +1,24 @@
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
+    StringRelatedField,
 )
 from users.models import CartItem, Bill, OrderItem, StatusCategory
 from products.models import Product
+from users.validated import ValidatedData
 from .cryption import AESAlgorithm
+from products.serializers import ProductDetailSerializer, SimpleSellerInformation
+from rest_framework.serializers import ValidationError, PrimaryKeyRelatedField
+
+
+class StatusCategorySerializer(ModelSerializer):
+    """
+    주문 상태 카테고리 생성, 조회 시리얼라이저
+    """
+
+    class Meta:
+        model = StatusCategory
+        fields = "__all__"
 
 
 class CartSerializer(ModelSerializer):
@@ -25,22 +39,23 @@ class CartListSerializer(ModelSerializer):
     장바구니 목록 조회 시리얼라이저
     """
 
-    product = SerializerMethodField()
+    product = ProductDetailSerializer()
     aggregate_price = SerializerMethodField()
 
     def get_aggregate_price(self, obj):
         return obj.product.price * obj.amount
 
-    def get_product(self, obj):
-        product = obj.product
-        image_url = product.image.url if product.image else None
-        return {
-            "id": product.id,
-            "name": product.name,
-            "price": product.price,
-            "image": image_url,
-            "seller": str(product.seller),
-        }
+    # def get_product(self, obj):
+    #     product = obj.product
+    #     image_url = product.image.url if product.image else None
+    #     return {
+    #         "id": product.id,
+    #         "name": product.name,
+    #         "price": product.price,
+    #         "image": image_url,
+    #         "seller": str(product.seller),
+    #         "item_state": product.item_state,
+    #     }
 
     class Meta:
         model = CartItem
@@ -69,35 +84,6 @@ class OrderCreateSerializer(ModelSerializer):
         fields = ("product_id", "amount", "price", "seller")
 
 
-class OrderItemSerializer(ModelSerializer):
-    """
-    주문 생성, 목록 조회 시리얼라이저
-    """
-
-    product_image = SerializerMethodField()
-
-    def get_product_image(self, obj):
-        product = Product.objects.get(pk=obj.product_id)
-        return product.image.url if product.image else None
-
-    class Meta:
-        model = OrderItem
-        fields = "__all__"
-        read_only_fields = ("bill", "name", "price", "seller")
-        depth = 1
-
-
-class OrderItemBillSerializer(OrderItemSerializer):
-    order_status = SerializerMethodField()
-
-    def get_order_status(self, obj):
-        return obj.order_status.name
-
-    class Meta:
-        model = OrderItem
-        exclude = ("bill",)
-
-
 class OrderItemDetailSerializer(ModelSerializer):
     """
     주문 상품 상세 조회 시리얼라이저
@@ -109,6 +95,20 @@ class OrderItemDetailSerializer(ModelSerializer):
         depth = 1
 
 
+class SimpleBillSerializer(ModelSerializer):
+    def to_representation(self, instance):
+        """
+        배송지 모델  데이터 복호화
+        """
+        information = super().to_representation(instance)
+        decrypt_result = AESAlgorithm.decrypt_all(**information)
+        return decrypt_result
+
+    class Meta:
+        model = Bill
+        fields = "__all__"
+
+
 class BillSerializer(ModelSerializer):
     """
     주문서 목록 조회 시리얼라이저
@@ -117,7 +117,6 @@ class BillSerializer(ModelSerializer):
     order_items_count = SerializerMethodField()
     total_price = SerializerMethodField()
     thumbnail = SerializerMethodField()
-    thumbnail_name = SerializerMethodField()
     bill_order_status = SerializerMethodField()
 
     def get_bill_order_status(self, obj):
@@ -125,26 +124,15 @@ class BillSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return StatusCategory.objects.get(id=min(temp)).name
-
-    def get_thumbnail_name(self, obj):
-        try:
-            ord_item = obj.orderitem_set.all()[0]
-            product = Product.objects.get(pk=ord_item.product_id)
-        except:
-            return None
-        return product.name
+            return StatusCategory.objects.get(id=min(temp)).name if temp else 1
 
     def get_thumbnail(self, obj):
-        thumbnail = []
-        ord_list = obj.orderitem_set.all()
-        for i in ord_list:
-            try:
-                product = Product.object.get(pk=i.product_id)
-                thumbnail.append(product.image)
-            except:
-                pass
-        return thumbnail
+        if ord_list := obj.orderitem_set.all():
+            for order_item in ord_list:
+                if order_item.image:
+                    return {"image": order_item.image, "name": order_item.name}
+            return {"image": None, "name": ord_list.first().name}
+        return None
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -177,13 +165,65 @@ class BillCreateSerializer(ModelSerializer):
     class Meta:
         model = Bill
         fields = "__all__"
-        read_only_fields = (
-            "user",
-            "address",
-            "detail_address",
-            "recipient",
-            "postal_code",
-        )
+        read_only_fields = ("user",)
+
+    def validate(self, deliveries_data):
+        """
+        우편 번호 검증
+        """
+        # 기존 배송정보 사용 시 밸리데이션 PASS
+
+        if self.context.get("skip_validation") is True:
+            return deliveries_data
+        user = self.context.get("user")
+        verification_result = ValidatedData.validated_deliveries(user, deliveries_data)
+        if verification_result is not True:
+            raise ValidationError(verification_result[1])
+        return deliveries_data
+
+    def encrypt_deliveries_information(self, deliveries, validated_data):
+        """
+        오브 젝트 암호화
+        """
+        # 기존 배송정보 사용 시 암호화 PASS
+        if self.context.get("skip_validation") is True:
+            return deliveries
+        encrypt_result = AESAlgorithm.encrypt_all(**validated_data)
+        deliveries.address = encrypt_result.get("address")
+        deliveries.detail_address = encrypt_result.get("detail_address")
+        deliveries.recipient = encrypt_result.get("recipient")
+        deliveries.postal_code = encrypt_result.get("postal_code")
+        deliveries.save()
+        return deliveries
+
+    def create(self, validated_data):
+        """ "
+        배송 정보 오브 젝트 생성
+        """
+        deliveries = super().create(validated_data)
+        deliveries = self.encrypt_deliveries_information(deliveries, validated_data)
+        deliveries.save()
+        return deliveries
+
+
+class SimpleOrderItemSerializer(ModelSerializer):
+    order_status = StringRelatedField()
+    is_reviewed = SerializerMethodField()
+
+    def get_is_reviewed(self, obj):
+        request = self.context.get("request")
+        if request.user.is_authenticated:
+            product = Product.objects.get(pk=obj.product_id)
+            try:
+                review = product.product_reviews.get(user=request.user)
+                return {"reviewed": True, "review_id": review.pk}
+            except:
+                pass
+        return {"reviewed": False, "review_id": None}
+
+    class Meta:
+        model = OrderItem
+        fields = "__all__"
 
 
 class BillDetailSerializer(ModelSerializer):
@@ -192,7 +232,7 @@ class BillDetailSerializer(ModelSerializer):
     """
 
     bill_order_status = SerializerMethodField()
-    order_items = SerializerMethodField()
+    orderitem_set = SimpleOrderItemSerializer(many=True)
     total_price = SerializerMethodField()
 
     def get_bill_order_status(self, obj):
@@ -200,12 +240,7 @@ class BillDetailSerializer(ModelSerializer):
             return "결제대기"
         else:
             temp = {i.order_status.id for i in obj.orderitem_set.all()}
-            return StatusCategory.objects.get(id=min(temp)).name
-
-    def get_order_items(self, obj):
-        order_items = obj.orderitem_set.all()
-        serializer = OrderItemBillSerializer(order_items, many=True)
-        return serializer.data
+            return StatusCategory.objects.get(id=min(temp)).name if temp else "결제대기"
 
     def get_total_price(self, obj):
         order_items = obj.orderitem_set.filter(bill=obj)
@@ -220,6 +255,7 @@ class BillDetailSerializer(ModelSerializer):
         """
         information = super().to_representation(instance)
         decrypt_result = AESAlgorithm.decrypt_all(**information)
+        # print(decrypt_result)
         return decrypt_result
 
     class Meta:
@@ -227,11 +263,45 @@ class BillDetailSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class StatusCategorySerializer(ModelSerializer):
+class OrderItemSerializer(ModelSerializer):
     """
-    주문 상태 카테고리 생성, 조회 시리얼라이저
+    주문 목록 조회 시리얼라이저
     """
 
+    bill = SimpleBillSerializer()
+    seller = SimpleSellerInformation()
+    order_status = StatusCategorySerializer()
+
     class Meta:
-        model = StatusCategory
+        model = OrderItem
         fields = "__all__"
+        read_only_fields = ("bill", "name", "price", "seller")
+
+
+class OrderStatusSerializer(ModelSerializer):
+    order_status = PrimaryKeyRelatedField(
+        queryset=StatusCategory.objects.all(), required=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = ("order_status",)
+
+    def validate_order_status(self, value):
+        request = self.context["request"]
+        user = request.user
+        cur_status = self.instance.order_status.id
+        seller = self.instance.seller
+        buyer = self.instance.bill.user
+
+        if cur_status in [2, 3, 4] and value.id in [2, 3, 4, 5]:
+            if not (seller == user.user_seller):
+                raise ValidationError("주문 상품의 판매자만 변경 가능합니다")
+        elif cur_status == 5 and value.id == 6:
+            if not (buyer == user):
+                raise ValidationError("상품의 구매자만 변경 가능합니다")
+        elif cur_status in [1, 6]:
+            raise ValidationError("현재 상태에서 주문 상태를 수정할 수 없습니다.")
+        else:
+            raise ValidationError("유효하지 않은 주문 상태입니다.")
+        return value

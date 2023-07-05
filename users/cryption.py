@@ -20,10 +20,10 @@ class AESAlgorithm:
         암호화
         """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
-        BASIC_DATA = ['user','company_name', 'business_number', 'business_owner_name', 'contact_number', 'company_img','orders',]
+        basic_data = ['user', 'company_name', 'business_number', 'business_owner_name', 'contact_number', 'company_img', 'orders']
         data_dict = {}  # key값 특정
         for key, value in kwargs.items():
-            if key in BASIC_DATA:
+            if key in basic_data:
                 continue
             cipher_data = cipher.encrypt(pad(value.encode(), AES.block_size))
             encrypt_element = base64.b64encode(cipher_data).decode()
@@ -74,7 +74,10 @@ class AESAlgorithm:
     @classmethod
     def decrypt(cls, cipher_data):
         """ 단일 데이터 복호화 """
-        cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
-        cipher_data = base64.b64decode(cipher_data)
-        data = unpad(cipher.decrypt(cipher_data), AES.block_size)
-        return data.decode()
+        try:
+            cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
+            cipher_data = base64.b64decode(cipher_data)
+            data = unpad(cipher.decrypt(cipher_data), AES.block_size)
+            return data.decode()
+        except (ValueError, Error, ValueError):
+            return cipher_data

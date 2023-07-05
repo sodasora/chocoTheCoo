@@ -11,14 +11,19 @@ from .models import (
     StatusCategory,
     OrderItem,
     CartItem,
+    Delivery,
     Bill,
     Subscribe,
+    Seller,
+    PhoneVerification
 )
 
 admin.site.register(PointType)
+# admin.site.register(Seller)
 admin.site.register(Point)
 admin.site.register(Subscribe)
 admin.site.register(StatusCategory)
+admin.site.register(PhoneVerification)
 
 
 class UserCreationForm(forms.ModelForm):
@@ -81,7 +86,7 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "password1", "password2", "nickname"),
+                "fields": ("email", "password1", "password2", "nickname", "created_at", "updated_at",),
             },
         ),
     )
@@ -92,6 +97,8 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)
+admin.site.register(Delivery)
 admin.site.register(OrderItem)
 admin.site.register(Bill)
+admin.site.register(Seller)
 admin.site.register(CartItem)

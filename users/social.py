@@ -4,14 +4,16 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core import files
 import os, requests, tempfile
-from .models import User
+from .models import User, Point
 from .serializers import CustomTokenObtainPairSerializer
 
-REDIRECT_URI = 'http://127.0.0.1:5501/index.html'
+REDIRECT_URI = 'https://chocothecoo.com/index.html'
+# REDIRECT_URI = 'http://127.0.0.1:5500/index.html'
 KAKAO_API_KEY = os.environ.get('KAKAO_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-NAVER_CLINET_ID = os.environ.get('NAVER_CLINET_ID')
+NAVER_CLIENT_ID = os.environ.get('NAVER_CLIENT_ID')
 NAVER_SECRET_KEY = os.environ.get('NAVER_SECRET_KEY')
+
 
 def SocialLogin(**kwargs):
     """
@@ -64,6 +66,7 @@ def SocialLogin(**kwargs):
         new_user.is_active = True
         new_user.set_unusable_password()
         new_user.save()
+        Point.objects.create(point=29900, user_id=new_user.pk, point_type_id=5)
         # 토큰 발급
         refresh = RefreshToken.for_user(new_user)
         access_token = CustomTokenObtainPairSerializer.get_token(new_user)
@@ -91,6 +94,7 @@ class KakaoLogin(APIView):
         Access Token을 이용하여 사용자가 동의한 추가 제공 정보들 발급 받기
         추가 제공 정보를 토대로 로그인 및 회원가입 진행
         """
+
         # Resource Server의 인가 코드 확인
         auth_code = request.data.get("code")
 
@@ -157,19 +161,19 @@ class GoogleLogin(APIView):
             "login_type": "google",
         }
         return SocialLogin(**data)
-#
-#
+
+
 class NaverLogin(APIView):
     """네이버 소셜 로그인"""
 
     def get(self, request):
-        return Response(NAVER_CLINET_ID, status=status.HTTP_200_OK)
+        return Response(NAVER_CLIENT_ID, status=status.HTTP_200_OK)
 
     def post(self, request):
         code = request.data.get("naver_code")
         state = request.data.get("state")
         access_token = requests.post(
-            f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&code={code}&client_id={NAVER_SECRET_KEY}&client_secret={NAVER_SECRET_KEY}&state={state}",
+            f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&code={code}&client_id={NAVER_CLIENT_ID}&client_secret={NAVER_SECRET_KEY}&state={state}",
             headers={"Accept": "application/json"},
         )
         access_token = access_token.json().get("access_token")
@@ -181,11 +185,10 @@ class NaverLogin(APIView):
             },
         )
         user_data = user_data.json().get("response")
-        # data = {
-        #     "profile_image": user_data.get("profile_image"),
-        #     "email": user_data.get("email"),
-        #     "nickname": user_data.get("nickname"),
-        #     "login_type": "naver",
-        # }
-        return Response({"msg":"Resource server로부터 앱 사용 검토 및  승인 대기중 입니다."},status=status.HTTP_200_OK)
-        # return SocialLogin(**data)
+        data = {
+            "profile_image": user_data.get("profile_image"),
+            "email": user_data.get("email"),
+            "nickname": user_data.get("nickname"),
+            "login_type": "naver",
+        }
+        return SocialLogin(**data)

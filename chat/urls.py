@@ -5,7 +5,7 @@ urlpatterns = [
     path('', views.ChatViewSet.as_view(
         {'get': 'list'}), name='chat_room_list'),
     path('room/', views.ChatRoomView.as_view(), name='chat_room_post'),
-    path('room/<int:room_id>', views.ChatRoomView.as_view(), name='chat_room_post'),
-    path('<int:pk>/',
+    path('room/<int:room_id>/', views.ChatRoomView.as_view(), name='chat_room_new'),
+    path('<int:room_id>/',
          views.ChatViewSet.as_view({'get': 'retrieve'}), name='chat_room'),
 ]

@@ -2,7 +2,7 @@ from django.db import models
 from config.models import CommonModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from datetime import date
-from config.models import CommonModel
+from config.models import CommonModel,img_upload_to
 from .iamport import validation_prepare, get_transaction
 from .validated import ValidatedData
 import hashlib
@@ -10,16 +10,17 @@ import random
 import time
 from django.db.models.signals import post_save
 
-
 class UserManager(BaseUserManager):
-    """커스텀 유저 매니저"""
+    """
+    커스텀 유저 매니저
+    """
 
     def create_user(self, email, nickname, password=None):
         """관리자 계정 생성"""
 
-        # validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
-        # if validated_result is not True:
-        #     raise ValueError(validated_result[1])
+        validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
+        if validated_result is not True:
+            raise ValueError(validated_result[1])
         user = self.model(
             email=self.normalize_email(email),
             nickname=nickname,
@@ -55,19 +56,18 @@ class User(AbstractBaseUser, CommonModel):
     email = models.EmailField("이메일 주소", max_length=100, unique=True)
     nickname = models.CharField("사용자 이름", max_length=20)
     password = models.CharField("비밀번호", max_length=128)
-    profile_image = models.ImageField("프로필 이미지", upload_to="%Y/%m", blank=True, null=True)
+    profile_image = models.ImageField("프로필 이미지", upload_to=img_upload_to, blank=True, null=True)
     introduction = models.CharField("소개", max_length=50, blank=True, null=True, default="아직 소개글이 없습니다.")
-    login_type = models.CharField(
-        "로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal"
-    )
-    customs_code = models.CharField("통관번호", max_length=20, blank=True, null=True)
+    login_type = models.CharField("로그인유형", max_length=20, choices=LOGIN_TYPES, default="normal")
+    customs_code = models.CharField("통관번호", max_length=100, blank=True, null=True)
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
-    is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
-    is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
     product_wish_list = models.ManyToManyField("products.Product", symmetrical=False, related_name="wish_lists", blank=True)
     review_like = models.ManyToManyField("products.Review", symmetrical=False, related_name="review_liking_people", blank=True)
     follower = models.ManyToManyField('self', symmetrical=False, related_name="followings", blank=True)
+
+    is_admin = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+    is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname", "password"]
@@ -92,8 +92,9 @@ class PhoneVerification(CommonModel):
     휴대폰 , 휴대폰 인증 모델
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
-    user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE)
-    phone_number = models.CharField('휴대폰 번호', max_length=30)
+
+    user = models.OneToOneField("users.User", related_name="phone_verification", on_delete=models.CASCADE, primary_key=True)
+    phone_number = models.CharField('휴대폰 번호', max_length=100)
     verification_numbers = models.CharField('인증 번호', max_length=4, blank=True, null=True)
     is_verified = models.BooleanField('인증 유무', default=False)
 
@@ -103,8 +104,17 @@ class EmailVerification(CommonModel):
     이메일 인증 모델
     인증 코드를 발급 받은 시간은 공통 상속 모델의 updated_at을 사용
     """
-    user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE)
-    verification_code = models.CharField('인증 코드', max_length=4,blank=True,null=True)
+
+    user = models.OneToOneField("users.User", related_name="email_verification", on_delete=models.CASCADE, primary_key=True)
+    verification_code = models.CharField('인증 코드', max_length=30, blank=True, null=True)
+    new_email = models.EmailField("변경 이메일 주소", max_length=100, unique=True, blank=True, null=True)
+    AUTHENTICATION_TYPE = [
+        # normal : 회원 인증, 비밀 번호 재 설정
+        ("normal", "일반"),
+        # change : 이메일 변경 신청
+        ("change", "변경"),
+    ]
+    authentication_type = models.CharField("인증 유형", max_length=20, choices=AUTHENTICATION_TYPE, default="normal")
 
 
 class Seller(CommonModel):
@@ -112,17 +122,15 @@ class Seller(CommonModel):
     판매자 모델
     """
 
-    user = models.OneToOneField(
-        "users.User", related_name="user_seller", on_delete=models.CASCADE
-    )
+    user = models.OneToOneField("users.User", related_name="user_seller", on_delete=models.CASCADE, primary_key=True)
     company_name = models.CharField("업체명", max_length=20, unique=True)
     business_number = models.CharField("사업자 등록 번호", max_length=20)
-    bank_name = models.CharField("은행 이름", max_length=20)
-    account_number = models.CharField("계좌 번호", max_length=30)
+    bank_name = models.CharField("은행 이름", max_length=100)
+    account_number = models.CharField("계좌 번호", max_length=100)
     business_owner_name = models.CharField("대표자 성함", max_length=20)
-    account_holder = models.CharField("예금주", max_length=20)
+    account_holder = models.CharField("예금주", max_length=100)
     contact_number = models.CharField("업체 연락처", max_length=20)
-    company_img = models.ImageField("업체 로고", upload_to="%Y/%m", blank=True, null=True)
+    company_img = models.ImageField("업체 로고", upload_to=img_upload_to, blank=True, null=True)
 
     def __str__(self):
         """업체명"""
@@ -136,19 +144,18 @@ class Delivery(models.Model):
         "users.User", related_name="deliveries_data", on_delete=models.CASCADE
     )
     address = models.CharField("주소", max_length=100)
-    detail_address = models.CharField("상세주소", max_length=100)
-    recipient = models.CharField("수령인", max_length=30)
-    postal_code = models.CharField("우편번호", max_length=10)
+    detail_address = models.CharField("상세주소", max_length=100, blank=True, null=True)
+    recipient = models.CharField("수령인", max_length=100)
+    postal_code = models.CharField("우편번호", max_length=100)
 
     def __str__(self):
         """수령인"""
-        return self.user
+        return str(self.user)
 
 
 class CartItem(CommonModel):
     """장바구니"""
 
-    # * User와 Product의 ManyToManyField
     user = models.ForeignKey(
         "users.User",
         models.CASCADE,
@@ -172,8 +179,8 @@ class Bill(CommonModel):
     )
     address = models.CharField("주소", max_length=100)
     detail_address = models.CharField("상세주소", max_length=100)
-    recipient = models.CharField("수령인", max_length=30)
-    postal_code = models.CharField("우편번호", max_length=10)
+    recipient = models.CharField("수령인", max_length=100)
+    postal_code = models.CharField("우편번호", max_length=100)
     is_paid = models.BooleanField("결제 여부", default=False)
 
 
@@ -190,19 +197,20 @@ class StatusCategory(models.Model):
 class OrderItem(CommonModel):
     """주문상품"""
 
-    bill = models.ForeignKey("users.Bill", models.CASCADE, verbose_name="주문내역")
+    bill = models.ForeignKey("users.Bill", models.PROTECT, verbose_name="주문내역")
     seller = models.ForeignKey("users.Seller", models.CASCADE, verbose_name="판매자")
     order_status = models.ForeignKey(
-        "users.StatusCategory", models.CASCADE, verbose_name="주문상태", default=1
+        "users.StatusCategory", models.PROTECT, verbose_name="주문상태", default=1
     )
     name = models.CharField("상품명", max_length=100)
     amount = models.PositiveIntegerField("상품개수", default=1)
     price = models.PositiveIntegerField("상품가격")
-    product_id = models.IntegerField("상품ID")
+    image = models.TextField("상품이미지", null=True)
+    product_id = models.PositiveIntegerField("상품ID")
 
 
 class PointType(models.Model):
-    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8)"""
 
     title = models.CharField(
         verbose_name="포인트 종류", max_length=10, null=False, blank=False
@@ -213,14 +221,14 @@ class PointType(models.Model):
 
 
 class Point(CommonModel):
-    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6)"""
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8)"""
 
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="detail_point"
     )
     date = models.DateField("날짜", default=date.today)
-    point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
-    point_type = models.ForeignKey(PointType, on_delete=models.CASCADE)
+    point = models.PositiveIntegerField("포인트점수", default=0, null=False, blank=False)
+    point_type = models.ForeignKey(PointType, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.user.nickname + self.point_type.title + str(self.point)
@@ -231,7 +239,7 @@ class Point(CommonModel):
 
 class TransactionManager(models.Manager):
     # 새로운 트랜젝션 생성
-    def create_new(self, user, amount, type, success=None, transaction_status=None):
+    def create_new(self, user, amount, payment_type, success=None, transaction_status=None):
 
         if not user:
             raise ValueError("유저가 확인되지 않습니다.")
@@ -250,7 +258,7 @@ class TransactionManager(models.Manager):
             user=user,
             order_id=new_order_id,
             amount=amount,
-            type=type
+            payment_type=payment_type
         )
 
         if success is not None:
@@ -286,14 +294,14 @@ class PayTransaction(CommonModel):
     user = models.ForeignKey(
         "users.User", related_name="point_data", on_delete=models.CASCADE
     )
-    transaction_id = models.CharField(max_length=120, null=True, blank=True)
-    order_id = models.CharField(max_length=120, unique=True)
+    transaction_id = models.CharField(verbose_name="imp결제고유번호", max_length=120, null=True, blank=True)
+    order_id = models.CharField(verbose_name="주문번호", max_length=120, unique=True)
     amount = models.PositiveIntegerField(default=0)
     # 해외 payment 쓸거면 DecimalField으로 바꿔야함..!!
     # amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     transaction_status = models.CharField(max_length=220, null=True, blank=True)
-    type = models.CharField(max_length=120)
+    payment_type = models.CharField(max_length=120)
 
     objects = TransactionManager()
 
