@@ -167,7 +167,7 @@ class NaverLogin(APIView):
     """네이버 소셜 로그인"""
 
     def get(self, request):
-        return Response('I4Tza14KkUFWhXG7MWZ5', status=status.HTTP_200_OK)
+        return Response(NAVER_CLIENT_ID, status=status.HTTP_200_OK)
 
     def post(self, request):
         code = request.data.get("naver_code")
