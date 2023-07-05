@@ -206,7 +206,7 @@ class OrderItem(CommonModel):
     amount = models.PositiveIntegerField("상품개수", default=1)
     price = models.PositiveIntegerField("상품가격")
     image = models.TextField("상품이미지", null=True)
-    product_id = models.IntegerField("상품ID")
+    product_id = models.PositiveIntegerField("상품ID")
 
 
 class PointType(models.Model):
@@ -227,7 +227,7 @@ class Point(CommonModel):
         "users.User", on_delete=models.CASCADE, related_name="detail_point"
     )
     date = models.DateField("날짜", default=date.today)
-    point = models.IntegerField("포인트점수", default=0, null=False, blank=False)
+    point = models.PositiveIntegerField("포인트점수", default=0, null=False, blank=False)
     point_type = models.ForeignKey(PointType, on_delete=models.PROTECT)
 
     def __str__(self):

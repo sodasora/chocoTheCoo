@@ -288,6 +288,7 @@ class BillView(ListCreateAPIView):
         elif self.request.method == "POST":
             return BillCreateSerializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         # 기존 배송정보 사용 시
         new_delivery = request.data.pop("new_delivery", False)

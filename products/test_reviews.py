@@ -8,14 +8,14 @@ class BaseTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.seller_user = User.objects.create_user(
-            "seller@naver.com", "test_seller", "password"
+            "seller@naver.com", "test_seller", "!@#password123"
         )
-        cls.seller_user_data = {"email": "seller@naver.com", "password": "password"}
+        cls.seller_user_data = {"email": "seller@naver.com", "password": "!@#password123"}
 
         cls.user = User.objects.create_user(
-            "testuser@naver.com", "test_user", "password"
+            "testuser@naver.com", "test_user", "!@#password123"
         )
-        cls.user_data = {"email": "testuser@naver.com", "password": "password"}
+        cls.user_data = {"email": "testuser@naver.com", "password": "!@#password123"}
 
         cls.seller = Seller.objects.create(
             user=cls.seller_user,
@@ -45,6 +45,20 @@ class BaseTestCase(APITestCase):
                 "name": "product test name3",
                 "content": "product test introduction3",
             },
+        ]
+
+        cls.review_data = [
+            {
+                "user": "user",
+                "product": "product",
+                "title": "title",
+                "content": "content",
+                "image": "image",
+                "star": "star",
+                "delivery_evaluation": "delivery_evaluation",
+                "service_evaluation": "service_evaluation",
+                "feedback_evaluation": "feedback_evaluation",
+            }
         ]
 
     def setUp(self):
