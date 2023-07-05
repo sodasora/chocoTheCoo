@@ -83,7 +83,6 @@ class SmsSendView(APIView):
             data=json.dumps(body)
         )
 
-
 class EmailService:
     """
     이메일 발송 및 인증코드 만들기
@@ -134,7 +133,7 @@ class EmailService:
 
         verification_code = cls.get_authentication_code()
         try:
-            # 원투원 필드가 존재하면 인증 코드만 수
+            # 원투원 필드가 존재하면 인증 코드만 수집
             email_verification = user.email_verification
             email_verification.verification_code = verification_code
         except users.models.EmailVerification.DoesNotExist:
@@ -184,7 +183,7 @@ class ValidatedData:
     @classmethod
     def validated_nickname(cls, nickname):
         """
-        유저 네임 검증
+        닉네임 검증
         """
 
         check = [
@@ -283,6 +282,22 @@ class ValidatedData:
                 return False
         return True
 
+    @classmethod
+    def address_information_verification(cls, **information):
+        """
+        배송 정보 검증
+        상세 주소를 제외한 데이터가 값이 없거나 공백으로만 기록 되었는지 확인
+        """
+
+        check_list = [
+            information.get('address'),
+            information.get('recipient'),
+        ]
+
+        try:
+            return all([False if len(element.replace(" ", "")) == 0 else True for element in check_list])
+        except AttributeError:
+            return False
 
     @classmethod
     def validated_phone_number(cls, numbers):
@@ -363,23 +378,6 @@ class ValidatedData:
             return [False, '인증 번호가 일치하지 않습니다.']
         else:
             return True
-
-    @classmethod
-    def address_information_verification(cls, **information):
-        """
-        배송 정보 검증
-        상세 주소를 제외한 데이터가 값이 없거나 공백으로만 기록 되었는지 확인
-        """
-
-        check_list = [
-            information.get('address'),
-            information.get('recipient'),
-        ]
-
-        try:
-            return all([False if len(element.replace(" ", "")) == 0 else True for element in check_list])
-        except AttributeError:
-            return False
 
     @classmethod
     def validated_deliveries(cls, user, request):

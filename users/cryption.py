@@ -5,7 +5,7 @@ from Crypto.Util.Padding import pad, unpad
 from binascii import Error
 
 # 필요 라이브러리 : poytre add pycryptodome
-# 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES2.PY0
+# 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES.py
 
 class AESAlgorithm:
     """

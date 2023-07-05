@@ -8,7 +8,7 @@ from django.utils import timezone
 from products.models import Product
 from django.db.models import Sum
 from datetime import datetime, timedelta
-from .validated import ValidatedData, SmsSendView
+from .validated import ValidatedData, SmsSendView, EmailService
 from .cryption import AESAlgorithm
 from users.models import (
     User,
@@ -48,6 +48,8 @@ class UserSerializer(serializers.ModelSerializer):
         user = super().create(validated_data)
         user.set_password(user.password)
         user.save()
+        EmailService.send_email_verification_code()
+
         # 포인트 기본값 할당
         Point.objects.create(point=29900, user_id=user.pk, point_type_id=5)
         return user
