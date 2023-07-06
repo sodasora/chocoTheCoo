@@ -210,7 +210,7 @@ class OrderItem(CommonModel):
 
 
 class PointType(models.Model):
-    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8)"""
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8), 환불(9)"""
 
     title = models.CharField(
         verbose_name="포인트 종류", max_length=10, null=False, blank=False
