@@ -1,5 +1,5 @@
 from .models import Subscribe
-from .serializers import PointSerializer
+# from .serializers import PointSerializer
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import F
@@ -7,13 +7,14 @@ from .validated import EmailService
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from users.models import User
+from users.models import User, OrderItem, Point
 from chat.models import RoomMessage
 from datetime import timedelta
 from .views import PointStatisticView
+from .orderviews import order_point_create
+from math import ceil
 
-# 구독 갱신(다음 결제일은 4주 뒤) (포인트 차감)
-class SubscribecheckView(APIView):
+class CrontabView(APIView):
 
     def post(self, request):
         # 로그인 및 활성화 기록에 따른 제어
@@ -21,9 +22,23 @@ class SubscribecheckView(APIView):
         UserControlSystem.delete_user_data()
         UserControlSystem.account_deactivation()
         
-        # 일주일 전 채팅은 지워지도록
-        one_week_ago = timezone.now() - timedelta(days=7)
-        RoomMessage.objects.filter(created_at__lte = one_week_ago).delete()
+        # 구독 자동갱신, 채팅기록 삭제, 자동구매확정
+        RelatedSubscriptionandChatandPoint.subscription_update()
+        RelatedSubscriptionandChatandPoint.chatlog_delete()
+        RelatedSubscriptionandChatandPoint.pointpaid()
+                
+        return Response({"msg":"완료"}, status=status.HTTP_202_ACCEPTED)
+
+
+
+class RelatedSubscriptionandChatandPoint:
+    
+    @classmethod
+    def subscription_update(cls):
+        """
+        구독 자동 갱신
+        (다음 결제일은 4주 뒤) (포인트 차감)
+        """
         
         # 다음 결제일이 오늘의 날짜 이전인 구독들을 삭제(보안목적)
         Subscribe.objects.filter(next_payment__lt=timezone.now().date(), subscribe=True).delete()
@@ -37,10 +52,7 @@ class SubscribecheckView(APIView):
 
                 # 구독료 9900원
                 if total_point >= 9900:
-                    point_data = {"point": 9900}
-                    serializer = PointSerializer(data=point_data)
-                    if serializer.is_valid():
-                        serializer.save(user=subscribe_user.user, point_type_id=6)
+                    Point.objects.create(user=subscribe_user.user, point_type_id=6, point= 9900)
 
                     subscribe_user.subscribe = True
                     subscribe_user.next_payment = F('next_payment') + timedelta(weeks=4)
@@ -50,9 +62,31 @@ class SubscribecheckView(APIView):
                 else:
                     subscribe_user.subscribe = False
                     subscribe_user.save()
-                
-        return Response({"msg":"완료"}, status=status.HTTP_202_ACCEPTED)
+        
+    @classmethod
+    def chatlog_delete(cls):
+        # 일주일 전 채팅은 지워지도록
+        
+        one_week_ago = timezone.now() - timedelta(days=7)
+        RoomMessage.objects.filter(created_at__lte = one_week_ago).delete()
 
+    @classmethod
+    def pointpaid(cls):
+        # 배송완료 후 일주일이 지난 경우, 자동 포인트차감 진행
+        one_week_ago = timezone.now() - timedelta(days=7)
+        items = OrderItem.objects.filter(updated_at__lte = one_week_ago, order_status = 5)
+        if items != None:
+            for item in items:
+                item.order_status = 6
+                item.save()
+                
+                seller = item.seller.user
+                user = item.bill.user
+                total_point = item.amount * item.price
+                
+                # 유저 포인트 적립하기, 판매자에게 포인트 지불
+                order_point_create(user, seller, total_point)
+                     
 
 class UserControlSystem:
     """
