@@ -24,7 +24,8 @@ from users.models import OrderItem, Seller, User
 from config.permissions_ import IsApprovedSeller, IsReadOnly
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
-from django.db.models import Avg, Count, Q
+from django.db import models
+from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery
 
 
 # 페이지네이션
@@ -88,16 +89,22 @@ class ProductListAPIView(ListCreateAPIView):
 
 
 def ordering_queryset(queryset, ordering):
+    
+    order_items_qs = OrderItem.objects.filter(
+    product_id=OuterRef("id")
+    ).values('product_id').annotate(sales_count=Sum("amount")).values("sales_count")
+
     """쿼리셋 정렬 함수"""
     orderings = {
         "popularity": queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
             "-num_wishlists"
         ),
-        "stars": queryset.annotate(stars=Avg("product_reviews__star")).order_by(
-            "-stars"
-        ),
+        "stars":  queryset.annotate(stars=Avg("product_reviews__star")).order_by("-stars"),
         "expensive": queryset.order_by("-price"),
         "cheap": queryset.order_by("price"),
+        "sales": queryset.annotate(
+            sales_count=Subquery(order_items_qs, output_field=models.IntegerField())
+        ).order_by("-sales_count"),
     }
     return orderings[ordering]
 
