@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from products.models import Product, Review
 from .validated import ValidatedData, EmailService
+
 from .models import (
     User,
     Delivery,

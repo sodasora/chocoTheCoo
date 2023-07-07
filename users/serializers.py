@@ -4,11 +4,11 @@ from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.generics import get_object_or_404
 from django.contrib.auth.hashers import check_password
-from django.utils import timezone
 from products.models import Product
 from django.db.models import Sum
 from datetime import datetime, timedelta
-from .validated import ValidatedData, SmsSendView
+from .validated import ValidatedData, SmsSendView, EmailService
+from django.utils import timezone
 from .cryption import AESAlgorithm
 from users.models import (
     User,
@@ -48,6 +48,8 @@ class UserSerializer(serializers.ModelSerializer):
         user = super().create(validated_data)
         user.set_password(user.password)
         user.save()
+        # 이메일 전송
+        EmailService.send_email_verification_code(user, user.email, "normal")
         # 포인트 기본값 할당
         Point.objects.create(point=29900, user_id=user.pk, point_type_id=5)
         return user
@@ -415,8 +417,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     payload 재정의
     """
 
-    @classmethod
-    def validate(cls, attrs):
+    def validate(self, attrs):
         user = get_object_or_404(User, email=attrs.get("email"))
         try:
             if user.login_type != 'normal':
@@ -430,6 +431,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 user.save()
                 raise ValidationError(f'비밀번호가 올바르지 않습니다. 남은 로그인 시도 회수 {5 - user.login_attempts_count}')
             else:
+                user.last_login = timezone.now()
                 user.login_attempts_count = 0
                 user.save()
                 refresh = RefreshToken.for_user(user)
@@ -462,6 +464,17 @@ class BriefProductInformation(serializers.ModelSerializer):
         fields = ('id', 'name', 'content', 'image')
 
 
+# class SellerInformationSerializer(serializers.ModelSerializer):
+#     followings_count = serializers.SerializerMethodField()
+#
+#     def get_followings_count(self,obj):
+#         return obj.followings.count()
+#
+#     class Meta:
+#         model = Product
+#         fields = ('user', 'company_img', 'company_name', 'contact_number', 'followings')
+
+
 class ReadUserSerializer(serializers.ModelSerializer):
     """
     유저 프로필 정보 읽어오기
@@ -472,6 +485,8 @@ class ReadUserSerializer(serializers.ModelSerializer):
     def get_product_wish_list_count(self, obj):
         return obj.product_wish_list.count()
 
+
+
     class Meta:
         model = User
 
@@ -480,15 +495,35 @@ class ReadUserSerializer(serializers.ModelSerializer):
             'follower'
         )
 
-    def to_representation(self, instance):
+    def get_user_total_point(self, user_id):
         """
-        프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
+        포인트 합산 내역 정리
         """
-        information = super().to_representation(instance)
+        total_plus_point = (
+            Point.objects.filter(user_id=user_id)
+                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8, 9])
+                .aggregate(total=Sum("point"))
+        )
+        total_minus_point = (
+            Point.objects.filter(user_id=user_id)
+                .filter(point_type_id__in=[6, 7])
+                .aggregate(total=Sum("point"))
+        )
+        try:
+            total_point = total_plus_point["total"] - total_minus_point["total"]
+        except TypeError:
+            total_point = (
+                total_plus_point["total"]
+                if total_plus_point["total"] is not None else 0
+            )
+        return total_point
 
-        # 팔로우 하는 판매자 정보 불러오기
-        sellers = information.get('follower')
-        seller_information = []
+    def get_seller_information(self, follower):
+        """
+        팔로우하는 판매자의 더 자세한 정보 뽑아오기
+        """
+        sellers = follower
+        seller_list = []
         for pk in sellers:
             seller = get_object_or_404(Seller, pk=pk)
             company_img = (
@@ -503,28 +538,16 @@ class ReadUserSerializer(serializers.ModelSerializer):
                 'contact_number': seller.contact_number,
                 'followings_count': seller.user.followings.count()
             }
-            seller_information.append(data)
+            seller_list.append(data)
+        return seller_list
 
-        # 포인트 합산 내역 뽑아오기
-        total_plus_point = (
-            Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8, 9])
-                .aggregate(total=Sum("point"))
-        )
-        total_minus_point = (
-            Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[6, 7])
-                .aggregate(total=Sum("point"))
-        )
-        try:
-            total_point = total_plus_point["total"] - total_minus_point["total"]
-        except TypeError:
-            total_point = (
-                total_plus_point["total"]
-                if total_plus_point["total"] is not None else 0
-            )
-        information["total_point"] = total_point
-        information["seller_information"] = seller_information
+    def to_representation(self, instance):
+        """
+        프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
+        """
+        information = super().to_representation(instance)
+        information["total_point"] = self.get_user_total_point(information.get('id'))
+        information["seller_information"] = self.get_seller_information(information.get('follower'))
         information.pop('follower')
         return information
 

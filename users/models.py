@@ -10,13 +10,16 @@ import random
 import time
 from django.db.models.signals import post_save
 
+
 class UserManager(BaseUserManager):
     """
     커스텀 유저 매니저
     """
 
     def create_user(self, email, nickname, password=None):
-        """관리자 계정 생성"""
+        """
+        오브젝트 생성
+        """
 
         validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
         if validated_result is not True:
@@ -186,7 +189,7 @@ class Bill(CommonModel):
 
 class StatusCategory(models.Model):
     """상태 카테고리"""
-    '''결제대기(1) 주문확인중(2) 배송준비중(3) 발송완료(4) 배송완료(5) 구매확정(6)'''
+    """결제대기(1) 주문확인중(2) 배송준비중(3) 발송완료(4) 배송완료(5) 구매확정(6) 주문취소(7) 환불요청(8) 환불완료(9)"""
     name = models.CharField("상태", max_length=20)
 
     def __str__(self):
