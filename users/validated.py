@@ -90,14 +90,6 @@ class EmailService:
     """
 
     @classmethod
-    def set_information(cls, subject_message, content_message):
-        information = {
-            'subject_message': subject_message,
-            'content_message': content_message,
-        }
-        return information
-
-    @classmethod
     def get_authentication_code(cls):
         """
         랜덤 값 반환
@@ -116,7 +108,10 @@ class EmailService:
         """
 
         title = "Choco The Coo"
-        context = cls.set_information(subject_message, content_message)
+        context = {
+            'subject_message': subject_message,
+            'content_message': content_message,
+        }
         content = render_to_string('email_template.html', context)
 
         mail = EmailMessage(title, content, to=[email])
@@ -393,7 +388,7 @@ class ValidatedData:
             elif deliveries_cnt > 4:
                 # 배송 정보를 다섯개 이상 등록 했을 경우
                 return [False, '배송 정보를 다섯개 이상 등록 하셨습니다.']
-            elif cls.validated_postal_code(request.get("postal_code"))is not True:
+            elif cls.validated_postal_code(request.get("postal_code")) is not True:
                 # 우편 번호를 작성하지 않았을 경우
                 return [False, '우편 번호가 올바르지 않습니다.']
             elif cls.address_information_verification(**request) is not True:

@@ -10,13 +10,16 @@ import random
 import time
 from django.db.models.signals import post_save
 
+
 class UserManager(BaseUserManager):
     """
     커스텀 유저 매니저
     """
 
     def create_user(self, email, nickname, password=None):
-        """관리자 계정 생성"""
+        """
+        오브젝트 생성
+        """
 
         validated_result = ValidatedData.validated_user_data(email=email, nickname=nickname, password=password)
         if validated_result is not True:
