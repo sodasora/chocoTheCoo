@@ -113,7 +113,7 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     """상세 조회, 수정, 삭제"""
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
-    queryset = Product.objects.exclude(item_state__in=[5, 6])
+    queryset = Product.objects.exclude(item_state__in=[5])
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -128,8 +128,8 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
         cur_item_state = self.get_object().item_state
         item_state = self.request.data.get("item_state")
 
-        # (5, "차단됨"), (6, "삭제됨")의 경우 어드민만 변경 가능
-        if item_state in [5, 6]:
+        # (5, "차단됨")의 경우 어드민만 변경 가능
+        if item_state in [5]:
             if self.request.user.is_admin:
                 pass
             else:

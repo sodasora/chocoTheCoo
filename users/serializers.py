@@ -460,7 +460,7 @@ class BriefProductInformation(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'content', 'image')
+        fields = ('id', 'name', 'content', 'image','item_state')
 
 
 # class SellerInformationSerializer(serializers.ModelSerializer):
