@@ -279,6 +279,8 @@ class OrderItemSerializer(ModelSerializer):
 
 
 class OrderStatusSerializer(ModelSerializer):
+    """결제대기(1) 주문확인중(2) 배송준비중(3) 발송완료(4) 배송완료(5) 구매확정(6) 주문취소(7) 환불요청(8) 환불완료(9)"""
+
     order_status = PrimaryKeyRelatedField(
         queryset=StatusCategory.objects.all(), required=True
     )
@@ -289,19 +291,41 @@ class OrderStatusSerializer(ModelSerializer):
 
     def validate_order_status(self, value):
         request = self.context["request"]
-        user = request.user
-        cur_status = self.instance.order_status.id
-        seller = self.instance.seller
-        buyer = self.instance.bill.user
+        data = {
+            "user": request.user,
+            "cur_status": self.instance.order_status.id,
+            "new_status": value.id,
+            "buyer": self.instance.bill.user,
+            "seller": self.instance.seller,
+        }
+        is_allowed_change = self.is_valid_status_change(**data)
 
-        if cur_status in [2, 3, 4] and value.id in [2, 3, 4, 5]:
-            if not (seller == user.user_seller):
-                raise ValidationError("주문 상품의 판매자만 변경 가능합니다")
-        elif cur_status == 5 and value.id == 6:
-            if not (buyer == user):
-                raise ValidationError("상품의 구매자만 변경 가능합니다")
-        elif cur_status in [1, 6]:
-            raise ValidationError("현재 상태에서 주문 상태를 수정할 수 없습니다.")
-        else:
+        if not is_allowed_change:
             raise ValidationError("유효하지 않은 주문 상태입니다.")
         return value
+
+    def is_valid_status_change(self, user, cur_status, new_status, buyer, seller):
+        if buyer == user:
+            """구매자 상태 변경"""
+            if cur_status == 5 and new_status == 6:
+                """구매확정"""
+                return True
+            elif cur_status in [2, 3, 4, 5] and new_status == 8:
+                """환불요청"""
+                return True
+
+        if seller == user.user_seller:
+            """판매자 상태 변경"""
+            if cur_status in [2, 3, 4] and new_status in [2, 3, 4, 5]:
+                """주문확정, 배송 및 배송완료"""
+                return True
+            elif cur_status == 2 and new_status == 7:
+                """주문취소"""
+                return True
+            elif cur_status == 8 and new_status == 9:
+                """환불완료"""
+                return True
+        else:
+            raise ValidationError("상품의 구매자 혹은 판매자가 아닙니다.")
+
+        return False
