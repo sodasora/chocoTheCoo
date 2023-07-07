@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
 from django.core import files
 import os, requests, tempfile
 from .models import User, Point
@@ -31,6 +32,7 @@ def SocialLogin(**kwargs):
         if login_type == user.login_type:
             # 휴면 계정으로 전환한 이력이 있다면, 자동 활성화
             user.is_active = True
+            user.last_login = timezone.now()
             user.save()
             # 토큰 발급
             refresh = RefreshToken.for_user(user)
@@ -62,9 +64,9 @@ def SocialLogin(**kwargs):
 
         # 프로필 이미지 필드에 저장
         new_user.profile_image.save(file_name, files.File(tmp_img))
-
         new_user.is_active = True
         new_user.set_unusable_password()
+        new_user.last_login = timezone.now()
         new_user.save()
         Point.objects.create(point=29900, user_id=new_user.pk, point_type_id=5)
         # 토큰 발급
@@ -192,3 +194,9 @@ class NaverLogin(APIView):
             "login_type": "naver",
         }
         return SocialLogin(**data)
+
+
+
+
+
+

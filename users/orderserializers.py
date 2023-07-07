@@ -313,6 +313,9 @@ class OrderStatusSerializer(ModelSerializer):
             elif cur_status in [2, 3, 4, 5] and new_status == 8:
                 """환불요청"""
                 return True
+            elif cur_status == 8 and new_status == 2:
+                """환불요청취소"""
+                return True
 
         if seller == user.user_seller:
             """판매자 상태 변경"""
