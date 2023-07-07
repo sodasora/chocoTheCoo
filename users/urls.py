@@ -38,7 +38,7 @@ from .orderviews import (
     StatusCategoryView,
     StatusChangeView
 )
-from users.crontab import SubscribecheckView
+from users.crontab import CrontabView
 
 
 """
@@ -144,6 +144,6 @@ urlpatterns += [
     path("payment/checkout/", PointCheckoutView.as_view(), name="point_checkout"),
     path("payment/validation/", PointImpAjaxView.as_view(), name="point_validation"),
     # 스케줄링
-    path("scheduling/", SubscribecheckView.as_view(), name='subscribe_check'),
+    path("scheduling/", CrontabView.as_view(), name='subscribe_check'),
 ]
 

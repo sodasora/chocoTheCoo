@@ -758,18 +758,6 @@ class PointAttendanceView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user, point_type_id=1, point=100)
 
 
-"""포인트 종류: 구독권이용료(6)"""
-
-
-class PointServiceView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PointSerializer
-
-    @classmethod
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user, point=9900, point_type_id=6)
-
-
 """포인트충전 결제후처리"""
 
 class PointCheckoutView(APIView):
@@ -822,10 +810,7 @@ class PointImpAjaxView(APIView):
 
         if trans is not None:
             try:
-                point_data = {"point": trans.amount}
-                serializer = PointSerializer(data=point_data)
-                if serializer.is_valid():
-                    serializer.save(user=user, point_type_id=5)
+                Point.objects.create(user=user, point_type_id=5, point=trans.amount)
 
                 trans.transaction_id = imp_id
                 trans.transaction_status = "paid"
@@ -844,7 +829,6 @@ class PointImpAjaxView(APIView):
 
 """구독"""
 
-
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -856,13 +840,12 @@ class SubscribeView(APIView):
 
     # 구독 최초 생성
     def post(self, request):
-        data = {"point": 9900}
-        point_serializer = PointSerializer(data=data)
+        
         serializer = SubscriptionSerializer(data=request.data)
-        if serializer.is_valid() and point_serializer.is_valid():
+        if serializer.is_valid() :
             newmonth = int(timezone.now().date().month) + 1
             try:
-                point_serializer.save(user=request.user, point_type_id=6)
+                Point.objects.create(user=request.user, point_type_id=6, point=9900)
                 serializer.save(user=request.user,
                                 next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(
                                     timezone.now().date().day))

@@ -166,23 +166,25 @@ class OrderCreateView(CreateAPIView):
         try:
             cart_ids: list = request.query_params.get("cart_id").split(",")
             cart_objects = CartItem.objects.filter(pk__in=cart_ids)
+            
+            # 포인트 조회
+            total_point = PointStatisticView.get_total_point(self.request.user)
             total_buy_price = sum(
                 [(cart.product.price * cart.amount) for cart in cart_objects]
             )
+            if total_point < total_buy_price:
+                raise PermissionDenied("insufficient_balance")
+            else:
+                Point.objects.create(user=self.request.user, point_type_id=7, point=total_buy_price)
         except AttributeError:  # url params 오류
             bill.delete()
             return Response(
                 {"err": "no_cart"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # 유저 포인트 차감 및 적립하기
-        try:
-            order_point_create(request.user, total_buy_price)
         except PermissionDenied as e:  # 포인트 부족
             bill.delete()
             return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)
-
         # orderitem 객체 리스트 생성
         try:
             is_paid = StatusCategory.objects.get(pk=2)
@@ -228,20 +230,14 @@ class OrderCreateView(CreateAPIView):
             return Response(
                 {"err": "status_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
-
     #     order_items.append(order_item_data)
     #     serializer = self.get_serializer(data=order_items, many=True)
     #     serializer.is_valid(raise_exception=True)
     #     serializer.save(bill=bill)
 
 
-def order_point_create(user: object, total_buy_price: int):
+def order_point_create(user: object, seller:object, total_buy_price: int):
     """주문 상품 포인트 생성"""
-    total_point = PointStatisticView.get_total_point(user)
-
-    if total_point < total_buy_price:
-        raise PermissionDenied("insufficient_balance")
-
     try:
         is_subscribed = int(user.subscribe_data.subscribe)
     except:
@@ -249,8 +245,9 @@ def order_point_create(user: object, total_buy_price: int):
 
     buy_point_earn = ceil(total_buy_price / 20) * (1 + is_subscribed)
 
-    Point.objects.create(user=user, point_type_id=7, point=total_buy_price)
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
+    Point.objects.create(user=seller, point_type_id=8, point=total_buy_price)
+
 
 
 def product_amount_deduction(product: object, buy_amount: int):
@@ -370,5 +367,8 @@ class StatusChangeView(UpdateAPIView):
         if cur_status == 5 and new_status == 6:
             seller = order_item.seller.user
             total_point = order_item.amount * order_item.price
-            Point.objects.create(user=seller, point_type_id=8, point=total_point)
+            
+            # 유저 포인트 적립 및 판매자 포인트 지급
+            order_point_create(self.request.user, seller, total_point)
+            
         serializer.save()

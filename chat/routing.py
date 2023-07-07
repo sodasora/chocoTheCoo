@@ -4,6 +4,6 @@ from chat import consumers
 websocket_urlpatterns = [
     # 로컬 url
     path("ws/chat/<str:room_id>/", consumers.ChatConsumer.as_asgi()),
-    # 도커 url
+    # 배포 url
     # path("chat/<str:room_id>/", consumers.ChatConsumer.as_asgi()),
 ]
