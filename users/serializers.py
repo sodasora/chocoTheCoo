@@ -495,15 +495,35 @@ class ReadUserSerializer(serializers.ModelSerializer):
             'follower'
         )
 
-    def to_representation(self, instance):
+    def get_user_total_point(self, user_id):
         """
-        프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
+        포인트 합산 내역 정리
         """
-        information = super().to_representation(instance)
+        total_plus_point = (
+            Point.objects.filter(user_id=user_id)
+                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8])
+                .aggregate(total=Sum("point"))
+        )
+        total_minus_point = (
+            Point.objects.filter(user_id=user_id)
+                .filter(point_type_id__in=[6, 7])
+                .aggregate(total=Sum("point"))
+        )
+        try:
+            total_point = total_plus_point["total"] - total_minus_point["total"]
+        except TypeError:
+            total_point = (
+                total_plus_point["total"]
+                if total_plus_point["total"] is not None else 0
+            )
+        return total_point
 
-        # 팔로우 하는 판매자 정보 불러오기
-        sellers = information.get('follower')
-        seller_information = []
+    def get_seller_information(self, follower):
+        """
+        팔로우하는 판매자의 더 자세한 정보 뽑아오기
+        """
+        sellers = follower
+        seller_list = []
         for pk in sellers:
             seller = get_object_or_404(Seller, pk=pk)
             company_img = (
@@ -518,29 +538,16 @@ class ReadUserSerializer(serializers.ModelSerializer):
                 'contact_number': seller.contact_number,
                 'followings_count': seller.user.followings.count()
             }
-            seller_information.append(data)
+            seller_list.append(data)
+        return seller_list
 
-        # 포인트 합산 내역 뽑아오기
-        total_plus_point = (
-            Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8])
-                .aggregate(total=Sum("point"))
-        )
-        total_minus_point = (
-            Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[6, 7])
-                .aggregate(total=Sum("point"))
-        )
-        try:
-            total_point = total_plus_point["total"] - total_minus_point["total"]
-        except TypeError:
-            total_point = (
-                total_plus_point["total"]
-                if total_plus_point["total"] is not None else 0
-            )
-
-        information["total_point"] = total_point
-        information["seller_information"] = seller_information
+    def to_representation(self, instance):
+        """
+        프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
+        """
+        information = super().to_representation(instance)
+        information["total_point"] = self.get_user_total_point(information.get('id'))
+        information["seller_information"] = self.get_seller_information(information.get('follower'))
         information.pop('follower')
         return information
 
