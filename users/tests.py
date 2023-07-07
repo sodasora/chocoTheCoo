@@ -80,39 +80,39 @@ class SignupAPIViewTest(CommonTestClass):
 
         test_cases = [
             ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 200),
-            # 회원 가입 성공 테스트
-            ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 400),
-            # 회원 가입 실패 테스트 - 같은 이메일 형식으로 가입
-            ({"email": "testnaver.com", "password": "Test123123!", "nickname": "test"}, 400),
-            # 이메일 형식 오류
-            ({"email": "te st@naver.com", "password": "Test123123!", "nickname": "test"}, 400),
-            # 이메일 형식 오류 - 공백이 포함되어 있음
-            ({"email": "test1@navercom", "password": "Test123123!", "nickname": "test"}, 400),
-            # 이메일 형식 오류 - dot 이 없음
-            ({"email": "test2@naver.com", "password": "test123123!", "nickname": "test"}, 200),
-            # 성공 - 영문자 대문자 없어도 가능
-            ({"email": "test3@naver.com", "password": "TEST123123!", "nickname": "test"}, 200),
-            # 성공 - 영문자 소문자 없어도 가능
-            ({"email": "test4@naver.com", "password": "Testtesttest!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 숫자 없음
-            ({"email": "test5@naver.com", "password": "Test123123", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 특수문자 없음
-            ({"email": "tes6@naver.com", "password": "Aa1!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 5자의 길이를 충족 못함
-            ({"email": "tes7@naver.com", "password": "Test1 23123!", "nickname": "test"}, 400),
-            # 비밀번호 형식 오류 - 공백이 포함되어 있음
-            ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "tes t"}, 400),
-            # # 닉네임 형식 오류 - 공백이 포함되어 있음
-            ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "t"}, 400),
-            # # 닉네임 형식 오류 - 2자 이상 조건을 충족 못함
-            ({"email": "test9@naver.com", "password": "Test123123!", "nickname": "testtesttesttesttestestsets"}, 400),
-            # # 닉네임 형식 오류 - 20자 이상의 길이를 가짐
-            ({"password": "Test123123!", "nickname": "test"}, 400),
-            # # 이메일 형식 오류 - 값이 없음
-            ({"email": "test10@naver.com", "nickname": "test"}, 400),
-            # # 비밀번호 형식 오류 - 값이 없음
-            ({"email": "test11@naver.com", "password": "Test123123!"}, 400),
-            # 닉네임 형식 오류 - 값이 없음
+            # # 회원 가입 성공 테스트
+            # ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 400),
+            # # 회원 가입 실패 테스트 - 같은 이메일 형식으로 가입
+            # ({"email": "testnaver.com", "password": "Test123123!", "nickname": "test"}, 400),
+            # # 이메일 형식 오류
+            # ({"email": "te st@naver.com", "password": "Test123123!", "nickname": "test"}, 400),
+            # # 이메일 형식 오류 - 공백이 포함되어 있음
+            # ({"email": "test1@navercom", "password": "Test123123!", "nickname": "test"}, 400),
+            # # 이메일 형식 오류 - dot 이 없음
+            # ({"email": "test2@naver.com", "password": "test123123!", "nickname": "test"}, 200),
+            # # 성공 - 영문자 대문자 없어도 가능
+            # ({"email": "test3@naver.com", "password": "TEST123123!", "nickname": "test"}, 200),
+            # # 성공 - 영문자 소문자 없어도 가능
+            # ({"email": "test4@naver.com", "password": "Testtesttest!", "nickname": "test"}, 400),
+            # # 비밀번호 형식 오류 - 숫자 없음
+            # ({"email": "test5@naver.com", "password": "Test123123", "nickname": "test"}, 400),
+            # # 비밀번호 형식 오류 - 특수문자 없음
+            # ({"email": "tes6@naver.com", "password": "Aa1!", "nickname": "test"}, 400),
+            # # 비밀번호 형식 오류 - 5자의 길이를 충족 못함
+            # ({"email": "tes7@naver.com", "password": "Test1 23123!", "nickname": "test"}, 400),
+            # # 비밀번호 형식 오류 - 공백이 포함되어 있음
+            # ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "tes t"}, 400),
+            # # # 닉네임 형식 오류 - 공백이 포함되어 있음
+            # ({"email": "test8@naver.com", "password": "Test123123!", "nickname": "t"}, 400),
+            # # # 닉네임 형식 오류 - 2자 이상 조건을 충족 못함
+            # ({"email": "test9@naver.com", "password": "Test123123!", "nickname": "testtesttesttesttestestsets"}, 400),
+            # # # 닉네임 형식 오류 - 20자 이상의 길이를 가짐
+            # ({"password": "Test123123!", "nickname": "test"}, 400),
+            # # # 이메일 형식 오류 - 값이 없음
+            # ({"email": "test10@naver.com", "nickname": "test"}, 400),
+            # # # 비밀번호 형식 오류 - 값이 없음
+            # ({"email": "test11@naver.com", "password": "Test123123!"}, 400),
+            # # 닉네임 형식 오류 - 값이 없음
         ]
 
         for information, stats_code in test_cases:

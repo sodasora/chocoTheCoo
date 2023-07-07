@@ -4,8 +4,9 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from binascii import Error
 
+
 # 필요 라이브러리 : poytre add pycryptodome
-# 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES2.PY0
+# 코드 설명 : https://github.com/sungsu05/B2Coin_algorithm/blob/master/05_30/SonSungSu/AES.py
 
 class AESAlgorithm:
     """
@@ -30,8 +31,6 @@ class AESAlgorithm:
             data_dict[key] = encrypt_element
         return data_dict
 
-    # 키값을 기준으로
-
     @classmethod
     def decrypt_all(cls, **kwargs):
         """
@@ -46,26 +45,21 @@ class AESAlgorithm:
                 data = unpad(cipher.decrypt(cipher_data), AES.block_size)
                 cipher_element = data.decode()
                 data_dict[key] = cipher_element
-            except TypeError:
-                data_dict[key] = value
-            except Error:
-                data_dict[key] = value
-            except ValueError:
+            except (TypeError, Error, ValueError):
                 data_dict[key] = value
         return data_dict
 
     @classmethod
     def decrypt_deliveries(cls, elements):
         """ 배송 정보 복호화 """
-        data_dict ={}
-        for key,value in enumerate(elements):
+        data_dict = {}
+        for key, value in enumerate(elements):
             new_data = AESAlgorithm.decrypt_all(**value)
             data_dict[key] = new_data
         return data_dict
 
-
     @classmethod
-    def encrypt(cls,data):
+    def encrypt(cls, data):
         """ 단일 데이터 암호화 """
         cipher = AES.new(cls.AES_KEY, AES.MODE_ECB)
         cipher_data = cipher.encrypt(pad(data.encode(), AES.block_size))
@@ -81,3 +75,4 @@ class AESAlgorithm:
             return data.decode()
         except (ValueError, Error, ValueError):
             return cipher_data
+
