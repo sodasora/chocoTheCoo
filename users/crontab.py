@@ -1,5 +1,4 @@
 from .models import Subscribe
-# from .serializers import PointSerializer
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import F
@@ -12,7 +11,6 @@ from chat.models import RoomMessage
 from datetime import timedelta
 from .views import PointStatisticView
 from .orderviews import order_point_create
-from math import ceil
 
 class CrontabView(APIView):
 
@@ -75,7 +73,7 @@ class RelatedSubscriptionandChatandPoint:
         # 배송완료 후 일주일이 지난 경우, 자동 포인트차감 진행
         one_week_ago = timezone.now() - timedelta(days=7)
         items = OrderItem.objects.filter(updated_at__lte = one_week_ago, order_status = 5)
-        if items != None:
+        if items:
             for item in items:
                 item.order_status = 6
                 item.save()
