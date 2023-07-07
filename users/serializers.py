@@ -508,7 +508,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         # 포인트 합산 내역 뽑아오기
         total_plus_point = (
             Point.objects.filter(user_id=information.get('id'))
-                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8])
+                .filter(point_type_id__in=[1, 2, 3, 4, 5, 8, 9])
                 .aggregate(total=Sum("point"))
         )
         total_minus_point = (

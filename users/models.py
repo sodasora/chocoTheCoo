@@ -221,7 +221,7 @@ class PointType(models.Model):
 
 
 class Point(CommonModel):
-    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8)"""
+    """포인트 종류: 출석(1), 텍스트리뷰(2), 포토리뷰(3), 구매(4), 충전(5), 사용(6), 결제(7), 정산(8), 환불(9)"""
 
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="detail_point"
