@@ -25,7 +25,8 @@ from config.permissions_ import IsApprovedSeller, IsReadOnly
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
 from django.db import models
-from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery
+from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery, F
+from django.db.models.functions import Coalesce
 
 
 # 페이지네이션
@@ -96,15 +97,20 @@ def ordering_queryset(queryset, ordering):
 
     """쿼리셋 정렬 함수"""
     orderings = {
+        "recent": queryset.order_by("-created_at"),
         "popularity": queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
             "-num_wishlists"
         ),
-        "stars":  queryset.annotate(stars=Avg("product_reviews__star")).order_by("-stars"),
+        "stars": queryset.annotate(stars=Avg("product_reviews__star")).order_by(
+            F('stars').desc(nulls_last=True)
+        ),
         "expensive": queryset.order_by("-price"),
         "cheap": queryset.order_by("price"),
         "sales": queryset.annotate(
-            sales_count=Subquery(order_items_qs, output_field=models.IntegerField())
-        ).order_by("-sales_count"),
+            sales_count=Coalesce(Subquery(order_items_qs, output_field=models.IntegerField()), 0)
+        ).order_by(
+            F('sales_count').desc(nulls_last=True)
+        ),
     }
     return orderings[ordering]
 
