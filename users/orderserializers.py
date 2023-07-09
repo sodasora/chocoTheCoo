@@ -255,7 +255,6 @@ class BillDetailSerializer(ModelSerializer):
         """
         information = super().to_representation(instance)
         decrypt_result = AESAlgorithm.decrypt_all(**information)
-        # print(decrypt_result)
         return decrypt_result
 
     class Meta:

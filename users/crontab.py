@@ -41,12 +41,10 @@ class RelatedSubscriptionandChatandPoint:
         # 다음 결제일이 오늘의 날짜 이전인 구독들을 삭제(보안목적)
         Subscribe.objects.filter(next_payment__lt=timezone.now().date(), subscribe=True).delete()
         subscribe_users = Subscribe.objects.filter(next_payment=timezone.now().date(), subscribe=True)
-        # print(subscribe_users)
         
         for subscribe_user in subscribe_users:
             with transaction.atomic():
                 total_point = PointStatisticView.get_total_point(subscribe_user.user)
-                # print(total_point)
 
                 # 구독료 9900원
                 if total_point >= 9900:
