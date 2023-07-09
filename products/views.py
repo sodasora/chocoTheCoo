@@ -97,7 +97,7 @@ def ordering_queryset(queryset, ordering):
 
     """쿼리셋 정렬 함수"""
     orderings = {
-        "recent": queryset.order_by("-created_at"),
+        "recent": queryset,
         "popularity": queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
             "-num_wishlists"
         ),
