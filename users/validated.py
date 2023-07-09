@@ -122,9 +122,9 @@ class EmailService:
     def send_email_verification_code(cls, user, email, mod):
         if user.login_type != 'normal':
             # 소셜 계정으로 가입된 사용자일 경우 예외 처리
-            return [False, '소셜 계정으로 가입된 이메일 입니다.']
+            return [False, '0']
         elif ValidatedData.validated_email(email) is not True:
-            return [False, '이메일 형식이 올바르지 않습니다.']
+            return [False, '1']
 
         verification_code = cls.get_authentication_code()
         try:
@@ -183,8 +183,13 @@ class ValidatedData:
 
         check = [
             lambda element: element is not None,
+            # 값이 없을 경우 False
             lambda element: len(element) == len(element.replace(" ", "")),
+            # 공백이 포함될 경우 False
+            lambda element: all(x.islower() or x.isupper() for x in element),
+            # 알파벳을 제외한 값이 있을 경우 False
             lambda element: True if (1 < len(element) < 20) else False,
+            # 두글자 미만, 열 아홉글자 초과일 경우 False
         ]
         for i in check:
             if not i(nickname):
@@ -228,11 +233,11 @@ class ValidatedData:
         """
 
         if not cls.validated_email(kwargs.get('email')):
-            return [False, '이메일 정보가 올바르지 않습니다.']
+            return [False, '0']
         elif not cls.validated_nickname(kwargs.get('nickname')):
-            return [False, '닉네임 정보가 올바르지 않습니다.']
+            return [False, '1']
         elif not cls.validated_password(kwargs.get('password')):
-            return [False, '비밀번호가 올바르지 않습니다.']
+            return [False, '2']
         return True
 
     @classmethod
@@ -322,28 +327,28 @@ class ValidatedData:
 
         if user.login_type != "normal":
             # 소셜 로그인일 경우 이메일 인증이 필요 없음을 알림
-            return [False, '소셜 로그인 계정 입니다.']
+            return [False, '0']
         try:
             # 사용자에게 등록된 이메일 인증번호 불러오기
             verification_code = user.email_verification.verification_code
         except users.models.EmailVerification.DoesNotExist:
             # 원투원 필드가 없을 경우 예외처리
-            return [False, '인증 코드를 발급 받아 주세요.']
+            return [False, '1']
 
         if verification_code is None:
             # 인증 코드를 발급받지 않았을 경우 예외 처리
-            return [False, '인증 코드를 발급 받아 주세요.']
+            return [False, '1']
         elif user.email_verification.authentication_type != mod:
             # 발급 받은 유형의 인증 코드를 다른 용도로 사용할 경우
-            return [False, '현재 발급 받은 인증 코드 유형이 올바르지 않습니다.']
+            return [False, '2']
         elif not (timezone.now() - user.email_verification.updated_at) <= timedelta(minutes=5):
             # 인증 유효 기간이 지났을 경우 예외 처리
             user.email_verification.verification_code = None
             user.email_verification.save()
-            return [False, '인증 코드 유효 기간이 만료되었습니다.']
+            return [False, '3']
         elif not verification_code == request_verification_code:
             # 사용자가 입력한 이메일 인증번호와, 등록된 이메일 인증번호가 일치하지 않을 경우 예외처리
-            return [False, '인증 코드가 일치하지 않습니다.']
+            return [False, '4']
         else:
             return True
 
@@ -358,19 +363,19 @@ class ValidatedData:
             verification_numbers = user.phone_verification.verification_numbers
         except users.models.PhoneVerification.DoesNotExist:
             # 원투원 필드가 없을 경우 예외처리
-            return [False, '핸드폰 정보를 등록해 주세요.']
+            return [False, '0']
 
         if verification_numbers is None:
             # 인증 코드를 발급받지 않았을 경우 예외 처리
-            return [False, '인증 번호를 발급받아 주세요.']
+            return [False, '1']
         elif not (timezone.now() - user.phone_verification.updated_at) <= timedelta(minutes=5):
             user.phone_verification.verification_code = None
             user.phone_verification.save()
             # 인증 유효 기간이 지났을 경우 예외 처리
-            return [False, '인증 번호 유효기간이 만료되었습니다.']
+            return [False, '2']
         elif not verification_numbers == request_verification_numbers:
             # 사용자가 입력한 이메일 인증번호와, 등록된 이메일 인증번호가 일치하지 않을 경우 예외처리
-            return [False, '인증 번호가 일치하지 않습니다.']
+            return [False, '3']
         else:
             return True
 
@@ -384,21 +389,21 @@ class ValidatedData:
         try:
             if user.phone_verification.is_verified is False:
                 # 핸드폰 인증을 받지 않았을 경우
-                return [False, '핸드폰 인증이 필요합니다.']
+                return [False, '0']
             elif deliveries_cnt > 4:
                 # 배송 정보를 다섯개 이상 등록 했을 경우
-                return [False, '배송 정보를 다섯개 이상 등록 하셨습니다.']
+                return [False, '1']
             elif cls.validated_postal_code(request.get("postal_code")) is not True:
                 # 우편 번호를 작성하지 않았을 경우
-                return [False, '우편 번호가 올바르지 않습니다.']
+                return [False, '2']
             elif cls.address_information_verification(**request) is not True:
                 # 상세 정보, 수령인 데이터 검증
-                return [False, '주소지 정보가 올바르지 않습니다.']
+                return [False, '3']
             else:
                 return True
         except users.models.PhoneVerification.DoesNotExist:
             # 핸드폰 번호를 등록하지 않았을 경우
-            return [False, '핸드폰 인증이 필요합니다.']
+            return [False, '0']
 
     @classmethod
     def user_password_update_validation(cls, instance, attrs):
@@ -409,10 +414,10 @@ class ValidatedData:
         password = attrs.get('password')
         new_password = attrs.get('new_password')
         if instance.login_type != "normal":
-            return [False, '소셜 계정으로 가입된 사용자 입니다.']
+            return [False, '0']
         elif not check_password(password, instance.password):
-            return [False, '입력하신 비밀번호가 사용자의 비밀번호와 일치하지 않습니다.']
+            return [False, '1']
         elif not cls.validated_password(new_password):
-            return [False, '비밀번호는 영문자,숫자,특수문자로 길이 5이상의 조건이 충족되어야 합니다.']
+            return [False, '2']
         else:
             return True

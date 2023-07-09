@@ -103,15 +103,14 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
         """
         비밀번호 데이터 검증
         """
-        verification_result = ValidatedData.validated_email_verification_code(self.instance,
-                                                                              attrs.get('verification_code'), 'normal')
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'normal')
         if verification_result is not True:
             # 이메일 인증 코드 검증
             raise ValidationError(verification_result[1])
 
         if ValidatedData.validated_password(attrs.get('password')) is not True:
             # 비밀번호  검증
-            raise ValidationError('비밀번호는 영문자,숫자,특수문자로 길이 5이상의 조건이 충족되어야 합니다.')
+            raise ValidationError('5')
         return attrs
 
     def update(self, instance, validated_data):
@@ -145,8 +144,7 @@ class UserUpdateEmailSerializer(serializers.ModelSerializer):
         이메일 정보 검증
         """
 
-        verification_result = ValidatedData.validated_email_verification_code(self.instance,
-                                                                              attrs.get('verification_code'), 'change')
+        verification_result = ValidatedData.validated_email_verification_code(self.instance, attrs.get('verification_code'), 'change')
         if verification_result is not True:
             # 이메일 인증 코드 유효성 검사
             raise ValidationError(verification_result[1])
@@ -179,7 +177,7 @@ class UserUpdateCustomsCodeSerializer(serializers.ModelSerializer):
 
         verification_result = ValidatedData.validated_customs_code(attrs.get('customs_code'))
         if verification_result is not True:
-            raise ValidationError('통관 번호 정보가 올바르지 않습니다.')
+            raise ValidationError('validation failed')
         return attrs
 
     def update(self, instance, validated_data):
@@ -210,7 +208,7 @@ class UserUpdateProfileSerializer(serializers.ModelSerializer):
 
         verification_result = ValidatedData.validated_nickname(attrs.get('nickname'))
         if verification_result is not True:
-            raise ValidationError('닉네임 정보가 올바르지 않습니다.')
+            raise ValidationError('validation failed')
         return attrs
 
 
@@ -225,7 +223,7 @@ class DeliverySerializer(serializers.ModelSerializer):
 
     def validate(self, deliveries_data):
         """
-        우편 번호 검증
+        배송 정보 유효성 검증
         """
 
         validated_result = ValidatedData.validated_deliveries(self.context.get('user'), deliveries_data)
@@ -617,7 +615,7 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
          """
         numbers = element['phone_number']
         if not ValidatedData.validated_phone_number(numbers):
-            raise ValidationError("핸드폰 번호가 올바르지 않습니다.")
+            raise ValidationError("validation failed")
         return element
 
     def set_cell_phone_information(self, phone_verification, validated_data):
