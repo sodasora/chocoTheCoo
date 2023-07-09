@@ -29,10 +29,9 @@ from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery, F
 from django.db.models.functions import Coalesce
 
 
-# 페이지네이션
-
-
 class ProductPagination(PageNumberPagination):
+    """페이지네이션"""
+
     page_size = 9
     page_size_query_param = "page_size"
     max_page_size = 10000
