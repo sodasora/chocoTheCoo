@@ -25,13 +25,13 @@ from config.permissions_ import IsApprovedSeller, IsReadOnly
 from rest_framework.pagination import PageNumberPagination
 from math import ceil
 from django.db import models
-from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery
-
-
-# 페이지네이션
+from django.db.models import Avg, Count, Q, Sum, OuterRef, Subquery, F
+from django.db.models.functions import Coalesce
 
 
 class ProductPagination(PageNumberPagination):
+    """페이지네이션"""
+
     page_size = 9
     page_size_query_param = "page_size"
     max_page_size = 10000
@@ -96,15 +96,20 @@ def ordering_queryset(queryset, ordering):
 
     """쿼리셋 정렬 함수"""
     orderings = {
+        "recent": queryset,
         "popularity": queryset.annotate(num_wishlists=Count("wish_lists")).order_by(
             "-num_wishlists"
         ),
-        "stars":  queryset.annotate(stars=Avg("product_reviews__star")).order_by("-stars"),
+        "stars": queryset.annotate(stars=Avg("product_reviews__star")).order_by(
+            F('stars').desc(nulls_last=True)
+        ),
         "expensive": queryset.order_by("-price"),
         "cheap": queryset.order_by("price"),
         "sales": queryset.annotate(
-            sales_count=Subquery(order_items_qs, output_field=models.IntegerField())
-        ).order_by("-sales_count"),
+            sales_count=Coalesce(Subquery(order_items_qs, output_field=models.IntegerField()), 0)
+        ).order_by(
+            F('sales_count').desc(nulls_last=True)
+        ),
     }
     return orderings[ordering]
 
@@ -113,7 +118,7 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     """상세 조회, 수정, 삭제"""
 
     permission_classes = [(IsAuthenticated & IsApprovedSeller) | IsReadOnly]
-    queryset = Product.objects.exclude(item_state__in=[5, 6])
+    queryset = Product.objects.exclude(item_state__in=[5])
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -128,8 +133,8 @@ class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
         cur_item_state = self.get_object().item_state
         item_state = self.request.data.get("item_state")
 
-        # (5, "차단됨"), (6, "삭제됨")의 경우 어드민만 변경 가능
-        if item_state in [5, 6]:
+        # (5, "차단됨")의 경우 어드민만 변경 가능
+        if item_state in [5]:
             if self.request.user.is_admin:
                 pass
             else:

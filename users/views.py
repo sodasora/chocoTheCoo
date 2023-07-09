@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.utils import IntegrityError
 from django.db.models import Sum
+from datetime import timedelta
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
@@ -844,12 +845,10 @@ class SubscribeView(APIView):
         
         serializer = SubscriptionSerializer(data=request.data)
         if serializer.is_valid() :
-            newmonth = int(timezone.now().date().month) + 1
             try:
                 Point.objects.create(user=request.user, point_type_id=6, point=9900)
                 serializer.save(user=request.user,
-                                next_payment=str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(
-                                    timezone.now().date().day))
+                                next_payment=timezone.now().date() + timedelta(weeks=4))
                 return Response({"message": "성공!"}, status=status.HTTP_200_OK)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -865,11 +864,6 @@ class SubscribeView(APIView):
             return Response({"message": "해지"}, status.HTTP_200_OK)
         else:
             subscription.subscribe = True
-            if timezone.now().date().month == 12:
-                newmonth = 1
-            else:
-                newmonth = int(timezone.now().date().month) + 1
-            subscription.next_payment = str(timezone.now().date().year) + "-" + str(newmonth) + "-" + str(
-                timezone.now().date().day)
+            subscription.next_payment = timezone.now().date() + timedelta(weeks=4)
             subscription.save()
             return Response({"message": "성공!"}, status.HTTP_200_OK)

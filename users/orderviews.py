@@ -248,6 +248,10 @@ def order_point_create(user: object, seller:object, total_buy_price: int):
     Point.objects.create(user=user, point_type_id=4, point=buy_point_earn)
     Point.objects.create(user=seller, point_type_id=8, point=total_buy_price)
 
+def order_point_refund(user: object, total_buy_price: int):
+    """환불 포인트 생성"""
+    Point.objects.create(user=user, point_type_id=9, point=total_buy_price)
+
 
 
 def product_amount_deduction(product: object, buy_amount: int):
@@ -256,9 +260,15 @@ def product_amount_deduction(product: object, buy_amount: int):
         raise ValidationError(code="out_of_stock")
     else:
         product.amount -= buy_amount
-        if product.amount == 0:
-            product.item_state = 2
+        if product.amount == 0: # 재고량 없을 시
+            product.item_state = 2 # 품절(2)상태로 변경
         product.save()
+
+def product_amount_restock(product: object, buy_amount: int):
+    """환불 시 상품 재고량 복구"""
+    product.amount += buy_amount
+    product.item_state = 1 # 판매중(1)상태로 변경
+    product.save()
 
 
 class OrderDetailView(RetrieveUpdateAPIView):
@@ -355,6 +365,7 @@ class StatusCategoryView(ListAPIView):
 
 class StatusChangeView(UpdateAPIView):
     """주문 상태 변경"""
+    '''결제대기(1) 주문확인중(2) 배송준비중(3) 발송완료(4) 배송완료(5) 구매확정(6) 주문취소(7) 환불요청중(8) 환불완료(9)'''
 
     permission_classes = [IsAuthenticated]
     serializer_class = OrderStatusSerializer
@@ -364,11 +375,23 @@ class StatusChangeView(UpdateAPIView):
         order_item = self.get_object()
         cur_status = order_item.order_status.id
         new_status = self.request.data.get("order_status")
+        # 배송완료(5)상태에서 구매확정(6)이 되었을 때
         if cur_status == 5 and new_status == 6:
             seller = order_item.seller.user
             total_point = order_item.amount * order_item.price
             
             # 유저 포인트 적립 및 판매자 포인트 지급
             order_point_create(self.request.user, seller, total_point)
+        
+        # 주문취소(7), 환불완료(9) 되었을 때
+        if new_status in [7,9] :
+            
+            # 유저 포인트 환불
+            total_point = order_item.amount * order_item.price
+            order_point_refund(self.request.user, total_point)
+            
+            # 상품 수량 복구
+            product = get_object_or_404(Product, id=order_item.product_id)
+            product_amount_restock(product=product, buy_amount=order_item.amount)
             
         serializer.save()
