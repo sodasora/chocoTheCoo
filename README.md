@@ -247,7 +247,9 @@ https://developers.portone.io/docs/ko/readme/get-started
 >* 채팅방 삭제(채팅방 만든 사람만 가능)
 > ![스크린샷 2023-06-23 184532](https://github.com/sodasora/chocoTheCoo/assets/126075796/00867796-208a-4b7e-8342-5061ede26a4d)
 >* 채팅방 실시간 채팅 (웹소켓 활용)
-> ![스크린샷 2023-06-23 184243](https://github.com/sodasora/chocoTheCoo/assets/126075796/c3113b6b-133d-433e-8905-00db16b7dbe1)
+> ![image](https://github.com/sodasora/chocoTheCoo/assets/126075796/40b6e701-b42e-4b13-acf3-864e42773a5c)
+>* 비밀 채팅방 기능
+
 
 ---
 #### 메인 페이지 - <a href="https://chocothecoo.com/" >상세보기</a>
