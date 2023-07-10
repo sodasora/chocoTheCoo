@@ -24,16 +24,16 @@ class SmsSendView(APIView):
     네이버 문자 발송 받기
     """
 
-    @classmethod
-    def get_auth_numbers(cls):
+    @staticmethod
+    def get_auth_numbers():
         """
         4자리 숫자의 인증 번호 반환
         """
         result = "".join([str(random.randint(0, 9)) for _ in range(4)])
         return result
 
-    @classmethod
-    def make_signature(cls, timestamp):
+    @staticmethod
+    def make_signature(timestamp):
         """
         네이버 클라우드 클랫폼 시그니쳐 생성
         # https://api.ncloud-docs.com/docs/common-ncpapi
@@ -89,8 +89,8 @@ class EmailService:
     템플릿 경로 : .admin/templates/email_template.html
     """
 
-    @classmethod
-    def get_authentication_code(cls):
+    @staticmethod
+    def get_authentication_code():
         """
         랜덤 값 반환
         """
@@ -101,8 +101,8 @@ class EmailService:
         code = "".join(random_value[:10])
         return code
 
-    @classmethod
-    def message_forwarding(cls, email, subject_message, content_message):
+    @staticmethod
+    def message_forwarding(email, subject_message, content_message):
         """
         이메일 발송
         """
@@ -148,8 +148,8 @@ class ValidatedData:
     데이터 검증 클래스
     """
 
-    @classmethod
-    def validated_password(cls, password):
+    @staticmethod
+    def validated_password(password):
         """
         비밀 번호 검증
         """
@@ -175,8 +175,8 @@ class ValidatedData:
                 return False
         return True
 
-    @classmethod
-    def validated_nickname(cls, nickname):
+    @staticmethod
+    def validated_nickname(nickname):
         """
         닉네임 검증
         """
@@ -196,8 +196,8 @@ class ValidatedData:
                 return False
         return True
 
-    @classmethod
-    def validated_email(cls, email):
+    @staticmethod
+    def validated_email(email):
         """
         이메일 검증
         """
@@ -207,8 +207,8 @@ class ValidatedData:
         email_match = re.match(email_pattern, email)
         return bool(email_match)
 
-    @classmethod
-    def validated_customs_code(cls, customs_clearance_number):
+    @staticmethod
+    def validated_customs_code(customs_clearance_number):
         """
         통관 번호 검증
         """
@@ -268,8 +268,8 @@ class ValidatedData:
                 return [False, '통관번호 정보가 올바르지 않습니다.']
         return True
 
-    @classmethod
-    def validated_postal_code(cls, postal_code):
+    @staticmethod
+    def validated_postal_code(postal_code):
         """
         우편 번호 양식 : https://www.epost.go.kr/search/zipcode/cmzcd003k01.jsp
         """
@@ -285,8 +285,8 @@ class ValidatedData:
                 return False
         return True
 
-    @classmethod
-    def address_information_verification(cls, **information):
+    @staticmethod
+    def address_information_verification(**information):
         """
         배송 정보 검증
         상세 주소를 제외한 데이터가 값이 없거나 공백으로만 기록 되었는지 확인
@@ -302,8 +302,8 @@ class ValidatedData:
         except AttributeError:
             return False
 
-    @classmethod
-    def validated_phone_number(cls, numbers):
+    @staticmethod
+    def validated_phone_number(numbers):
         """
         핸드폰 번호 검증
         """
@@ -322,8 +322,8 @@ class ValidatedData:
                 return False
         return True
 
-    @classmethod
-    def validated_email_verification_code(cls, user, request_verification_code, mod):
+    @staticmethod
+    def validated_email_verification_code(user, request_verification_code, mod):
         """
         이메일 인증 코드 유효성 검사
         """
@@ -355,8 +355,8 @@ class ValidatedData:
         else:
             return True
 
-    @classmethod
-    def validated_phone_verification(cls, user, request_verification_numbers):
+    @staticmethod
+    def validated_phone_verification(user, request_verification_numbers):
         """
         휴대폰 인증 코드 유효성 검사
         """
