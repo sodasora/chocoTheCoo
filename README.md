@@ -33,6 +33,7 @@ ChcoTheCoo supports your LOVE!!
  <br></br>
  - 팀원3 : 손성수 <br>- 사용자 정보 CRUD, 판매자 정보 CRUD, 배송지 정보 CRUD, 이메일 핸드폰 인증, 소셜 로그인, 개인 정보 암·복호화, 팔로우, 리뷰 좋아요, 상품 찜, 이메일 및 핸드폰 메시지 발송
 
+
 ### 🔩 ARCHITECTURE
 ![아키텍쳐](https://github.com/sodasora/chocoTheCoo/assets/126075796/c8285fbc-18f4-4aba-a8c9-8b940dad7ddc)
 
@@ -115,6 +116,10 @@ ChcoTheCoo supports your LOVE!!
 >* daphne: ASGI 서버(장고/채널스 개발서버)
 <br>
 
+> ### django-grappelli
+>* 백 오피스 기능 구현을 위한 라이브러리
+>* 정렬,검색,필터링 등등 다양한 기능 제공
+>* 실 백오피스 기능을 구현은 하지 못했으나, 추후 초코더쿠의 확장성을 위하여 적용
 ---
 
 ## 📌 주요 기능

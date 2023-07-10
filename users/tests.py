@@ -809,13 +809,12 @@ class DeliveryInformationTestCase(CommonTestClass):
         """
 
         delivery_id = information.get('delivery_id')
-        information = information.get('information')
+        delivery_information = information.get('information')
         token = information.get('token')
         status_code = information.get('status_code')
-
         response = self.client.put(
-            path=reverse("update-delivery", args={"pk": delivery_id}),
-            data=json.dumps(information),
+            path=reverse("update-delivery", kwargs={"delivery_id": delivery_id}),
+            data=json.dumps(delivery_information),
             content_type='application/json',
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
@@ -837,6 +836,7 @@ class DeliveryInformationTestCase(CommonTestClass):
 
         deliveries_data = self.read_delivery_information(self.user.pk, token, 200)
 
+        delivery_id = deliveries_data[0].get('id')
         set_information = {
             "information": {
                 "address": "서울시 강남구 스마일 아파트",
@@ -846,5 +846,15 @@ class DeliveryInformationTestCase(CommonTestClass):
             },
             "token": token,
             "status_code": 200,
-            "delivery_id": deliveries_data[0].get('id')
+            "delivery_id": delivery_id
         }
+        self.edit_delivery_information(**set_information)
+
+        # 배송 정보 삭제 테스트
+        response = self.client.delete(
+            path=reverse("update-delivery", kwargs={"delivery_id": delivery_id}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 204)
+
