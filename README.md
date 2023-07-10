@@ -31,7 +31,7 @@ ChcoTheCoo supports your LOVE!!
  - 팀원3 : 손성수 - 사용자 정보 CRUD, 판매자 정보 CRUD, 배송지 정보 CRUD, 이메일 핸드폰 인증, 소셜 로그인, 개인 정보 암·복호화, 팔로우, 리뷰 좋아요, 상품 찜, 이메일 및 핸드폰 메시지 발송
 
 ### 🔩 ARCHITECTURE
-<img src="https://i.postimg.cc/wBm2wqRR/architecture.png">
+![아키텍쳐](https://github.com/sodasora/chocoTheCoo/assets/126075796/c8285fbc-18f4-4aba-a8c9-8b940dad7ddc)
 
 ### 📚 STACK
 * 백엔드
@@ -82,7 +82,7 @@ ChcoTheCoo supports your LOVE!!
 >* 공유되어선 안되는 민감한 정보를 환경 변수를 통해 관리 <br>
 
 > django-cors-headers = "^4.0.0" <br>
->* CORS 정책 관리, API 연결을 위해 채택 프brr>
+>* CORS 정책 관리, API 연결을 위해 채택 <br>
 
 > pillow = "^9.5.0" <br>
 >*이미지 처리 및 조작 기능을 제공명 <br
