@@ -179,8 +179,8 @@ if AWS_S3_ON:
 
 # AWS_S3_ON 비활성일 때 기본경로를 사용.
 else:
-    STATIC_ROOT = BASE_DIR / "static"
-    STATIC_URL = "/static/"
+    STATIC_ROOT = BASE_DIR / "statics"
+    STATIC_URL = "/statics/"
 
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
