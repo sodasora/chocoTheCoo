@@ -6,7 +6,7 @@ from users.models import User
 
 class ChatRoom(CommonModel):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=10, blank=False, null=False)
+    name = models.CharField(unique=True, max_length=10, blank=False, null=False)
     desc = models.CharField(max_length=50, blank=False)
     password = models.CharField(max_length=128, null=True, blank=True)
 
