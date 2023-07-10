@@ -176,7 +176,7 @@ class UserAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"msg": "회원 가입 되었습니다. 계정 인증을 진행해 주세요."}, status=status.HTTP_200_OK
+                {"msg": "Success"}, status=status.HTTP_200_OK
             )
         else:
             return Response(
@@ -243,13 +243,16 @@ class UpdateUserInformationAPIView(APIView):
         user = get_object_or_404(User, pk=request.user.pk)
         new_email = request.data.get('email')
         try:
+            # 변공하고자 하는 이메일 정보가, 이미 가입된 이메일 정보일 경우
             User.objects.get(email=new_email)
             return Response({"err": f'validation failed'}, status=status.HTTP_403_FORBIDDEN)
         except User.DoesNotExist:
             email_delivery_result = EmailService.send_email_verification_code(user, new_email, 'change')
             if email_delivery_result is not True:
+                # 이메일 정보 유효성 검사
                 return Response({"err": email_delivery_result[1]}, status=status.HTTP_400_BAD_REQUEST)
             else:
+                # 변경할 이메일로 인증 코드 발송
                 user.email_verification.new_email = new_email
                 user.email_verification.save()
                 return Response({"msg": "Success"}, status=status.HTTP_200_OK)
@@ -402,6 +405,7 @@ class SellerAPIView(APIView):
                     {"err": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
         except IntegrityError:
+            # 이미 사업자 등록이 되어 있을 경우
             return Response(
                 {"err": "Locked"}, status=status.HTTP_423_LOCKED
             )

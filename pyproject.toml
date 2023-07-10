@@ -22,6 +22,7 @@ django-environ = "^0.10.0"
 psycopg2 = "^2.9.6"
 django-storages = "^1.13.2"
 boto3 = "^1.26.160"
+django-grappelli = "^3.0.6"
 
 
 
