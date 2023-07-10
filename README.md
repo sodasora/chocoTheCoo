@@ -221,14 +221,23 @@ https://developers.portone.io/docs/ko/readme/get-started
 
 >찜목록 모아보기 기능<br>
 >* 관심 제품을 모아볼 수 있으며, 제품 상세페이지와 연결
+>  <img width="50%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/1aef604b-4837-4a61-9ada-a55eb54a991f">
+<br>
+
 >구독 정보 확인 및 관리 기능<br>
 >* 다음 결제일이나 구독 상태 등을 확인 가능<br>
 >* 버튼(구독/해지)은 구독 상태에 맞게 바뀜<br>
 >* 구독을 하지 않은 상태에서는, 버튼을 누르면 구독등록 페이지로 연결되며, 구독 상태에서는 해지예약이 이루어짐<br>
 >* 이후 다음 결제일에 해지가 이루어짐.
-
->페이지네이션 <br>
+>  <img width="30%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/a6bd2c8d-f829-4371-9694-822614373ab2">
 <br>
+
+>팔로우 스토어<br>
+>* 판매자 팔로우 기능<br>
+>* unfollow 또는 follow, 판매자 스토어로 이동
+>  <img width="50%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/dab14df9-539a-4e3e-a98b-bc6f39f8f6a3">
+<br>
+
 
 ---
 #### 채팅 - <a href="https://chocothecoo.com/chatindex.html" >상세보기</a>
@@ -311,10 +320,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 > 판매자별 주문현황 - <a herf="https://chocothecoo.com/seller_orderlist.html">상세보기</a> 
 >* 판매자id에 해당하는 판매자 전용 주문 현황 조회 페이지 구현
 >* 해당 주문에 따른 주문상태변경 가능
-
----
-#### 관리자 페이지 
-<br>
 
 ---
 #### 상품 주문하기
