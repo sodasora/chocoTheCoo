@@ -247,7 +247,7 @@ class UpdateUserInformationAPIView(APIView):
         try:
             # 변공하고자 하는 이메일 정보가, 이미 가입된 이메일 정보일 경우
             User.objects.get(email=new_email)
-            return Response({"err": f'validation failed'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"err": f'validation failed'}, status=status.HTTP_409_CONFLICT)
         except User.DoesNotExist:
             email_delivery_result = EmailService.send_email_verification_code(user, new_email, 'change')
             if email_delivery_result is not True:
@@ -366,7 +366,7 @@ class UpdateDeliveryAPIView(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"err": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, delivery_id):
         """
@@ -374,12 +374,13 @@ class UpdateDeliveryAPIView(APIView):
         """
         delivery = get_object_or_404(Delivery, id=delivery_id)
         if request.user == delivery.user:
+            #
             delivery.delete()
             return Response(
                 {"msg": "Success"}, status=status.HTTP_204_NO_CONTENT
             )
         else:
-            return Response({"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"err": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
 
 class SellerAPIView(APIView):
@@ -409,7 +410,7 @@ class SellerAPIView(APIView):
         except IntegrityError:
             # 이미 사업자 등록이 되어 있을 경우
             return Response(
-                {"err": "Locked"}, status=status.HTTP_423_LOCKED
+                {"err": "Locked"}, status=status.HTTP_409_CONFLICT
             )
 
     def put(self, request):
@@ -425,7 +426,7 @@ class SellerAPIView(APIView):
             )
         except Seller.DoesNotExist:
             return Response(
-                {"err": "Locked"}, status=status.HTTP_423_LOCKED
+                {"err": "Locked"}, status=status.HTTP_409_CONFLICT
             )
         if serializer.is_valid():
             serializer.save()
@@ -450,7 +451,7 @@ class SellerAPIView(APIView):
             user.save()
         except Seller.DoesNotExist:
             return Response(
-                {"err": "Locked"}, status=status.HTTP_423_LOCKED
+                {"err": "Locked"}, status=status.HTTP_409_CONFLICT
             )
         return Response(
             {"msg": "Success"}, status=status.HTTP_204_NO_CONTENT
@@ -466,7 +467,7 @@ class GetSalesMemberApplicationDetails(APIView):
         admin = get_object_or_404(User, pk=request.user.pk)
         if admin.is_admin is not True:
             return Response(
-                {"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
+                {"err": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN
             )
         else:
             # seller 원투원 필드가 존재하면서, 판매 회원 권한이 없는 사용자 목록
@@ -494,7 +495,7 @@ class SellerPermissionAPIView(APIView):
             serializer = SellerSerializer(user.user_seller, context={'request': request})
         except Seller.DoesNotExist:
             return Response(
-                {"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
+                {"err": "not found"}, status=status.HTTP_404_NOT_FOUND
             )
         return Response(
             serializer.data, status=status.HTTP_200_OK
@@ -507,7 +508,7 @@ class SellerPermissionAPIView(APIView):
         admin = get_object_or_404(User, pk=request.user.pk)
         if not admin.is_admin:
             return Response(
-                {"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
+                {"err": "Forbidden"}, status=status.HTTP_403_FORBIDDEN
             )
         user = get_object_or_404(User, id=user_id)
         user.is_seller = True
@@ -532,7 +533,7 @@ class SellerPermissionAPIView(APIView):
         admin = get_object_or_404(User, pk=request.user.pk)
         if not admin.is_admin:
             return Response(
-                {"err": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
+                {"err": "Forbidden"}, status=status.HTTP_403_FORBIDDEN
             )
         user = get_object_or_404(User, id=user_id)
         try:
@@ -625,7 +626,7 @@ class FollowAPIView(APIView):
         if owner.is_seller is False:
             # 팔로우 대상자가 판매자가 아닌 경우
             return Response(
-                {"err": "locked"}, status=status.HTTP_423_LOCKED
+                {"err": "Unprocessable Entity"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
         elif owner == user:
             # 팔로우 대상자가 자기 자신이라면
