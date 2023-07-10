@@ -233,10 +233,13 @@ class ValidatedData:
         """
 
         if not cls.validated_email(kwargs.get('email')):
+            # 이메일 정보가 유효성 검사를 통과 하지 못할 경우
             return [False, '0']
         elif not cls.validated_nickname(kwargs.get('nickname')):
+            # 닉네임 정보가 유효성 검사를 통과 하지 못할 경우
             return [False, '1']
         elif not cls.validated_password(kwargs.get('password')):
+            # 비밀번호 정보가 유효성 검사를 통과 하지 못할 경우
             return [False, '2']
         return True
 
@@ -374,7 +377,7 @@ class ValidatedData:
             # 인증 유효 기간이 지났을 경우 예외 처리
             return [False, '2']
         elif not verification_numbers == request_verification_numbers:
-            # 사용자가 입력한 이메일 인증번호와, 등록된 이메일 인증번호가 일치하지 않을 경우 예외처리
+            # 사용자가 입력한 휴대폰 인증 번호와, 등록된 휴대폰 인증 번호가 일치하지 않을 경우 예외처리
             return [False, '3']
         else:
             return True
@@ -414,10 +417,13 @@ class ValidatedData:
         password = attrs.get('password')
         new_password = attrs.get('new_password')
         if instance.login_type != "normal":
+            # 소셜 계정 사용자일 경우 False
             return [False, '0']
         elif not check_password(password, instance.password):
+            # 데이터 베이스에 저장된 비밀번호와, 사용자가 입력한 비밀번호가 다를 경우
             return [False, '1']
         elif not cls.validated_password(new_password):
+            # 변경하고자 하는 비밀번호가 유효성 검사를 통과하지 못할 경우
             return [False, '2']
         else:
             return True

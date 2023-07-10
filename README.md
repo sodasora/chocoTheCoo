@@ -25,13 +25,13 @@ ChcoTheCoo supports your LOVE!!
  - 리더  : 우소라 - 프로젝트 기획, 상품 CRUD 및 프론트, 카테고리CR 및 프론트, 리뷰 CRU 프론트 구현, 검색기능 프론트, 통합 및 형상관리, 발표
  - 부리더 : 김지수 - 결제기능(포인트 충전), 포인트 CRU, 실시간 채팅기능,
  마이페이지(달력, 찜목록보기, 포인트조회, 프로필, 내리뷰보기), 구독 기능(프론트(광고 및 초코구독안내문), 백엔드CRU(구독 자동갱신)), 
- 프론트 페이지네이션, 결제 테스트코드, 채팅 테스트코드
+ 프론트 페이지네이션, 포인트 테스트코드, 채팅 테스트코드, 구독 테스트코드
  - 팀원1 : 김광운 - 리뷰 CRUD, 장바구니 CRUD, 주문내역 CR, 주문상품 CR, 주문상태 R, 커스텀 퍼미션, 테스트 코드(상품, 리뷰, 장바구니, 주문), fixture 생성, 백엔드 상품 정렬 및 필터링(카테고리, 검색, 페이지네이션), 프론트(장바구니, 구매내역, 구매내역 상세, 장바구니 담기, 상품 좋아요, 주문하기)
  - 팀원2 : 문영오 - 헤더&푸터, 판매자통계페이지(판재자정보,판매통계정보), 판매자별주문현황조회(주문상태변경), 판매자별상품현황조회, 배포
  - 팀원3 : 손성수 - 사용자 정보 CRUD, 판매자 정보 CRUD, 배송지 정보 CRUD, 이메일 핸드폰 인증, 소셜 로그인, 개인 정보 암·복호화, 팔로우, 리뷰 좋아요, 상품 찜, 이메일 및 핸드폰 메시지 발송
 
 ### 🔩 ARCHITECTURE
-<img src="https://i.postimg.cc/wBm2wqRR/architecture.png">
+![아키텍쳐](https://github.com/sodasora/chocoTheCoo/assets/126075796/c8285fbc-18f4-4aba-a8c9-8b940dad7ddc)
 
 ### 📚 STACK
 * 백엔드
@@ -82,7 +82,7 @@ ChcoTheCoo supports your LOVE!!
 >* 공유되어선 안되는 민감한 정보를 환경 변수를 통해 관리 <br>
 
 > django-cors-headers = "^4.0.0" <br>
->* CORS 정책 관리, API 연결을 위해 채택 프brr>
+>* CORS 정책 관리, API 연결을 위해 채택 <br>
 
 > pillow = "^9.5.0" <br>
 >*이미지 처리 및 조작 기능을 제공명 <br
@@ -139,22 +139,13 @@ Clinet Server는 Resurce Server로 부터 발급받은 사용자의 Access Token
 Resource Server로 부터 소셜 계정의 데이터 수집 <br>
 email, profile image, nickname <br>
 사용자의 프로필 정보 데이터 수집 <br>
-<br>
+>* Choco The Coo의 소셜 로그인 구현도
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/DBGriMlAgm.png">
 
->* kakao <br>
-https://developers.kakao.com/docs/latest/ko/kakaologin/common
-<br>
-
->* naver <br>
-https://developers.naver.com/docs/login/devguide/devguide.md#%EB%84%A4%EC%9D%B4%EB%B2%84%20%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B0%9C%EB%B0%9C%EA%B0%80%EC%9D%B4%EB%93%9C
-<br>
-
->* google <br>
-https://cloud.google.com/identity-platform/docs/sign-in-user-email?hl=ko <br>
 ---
  
 #### 회원가입 - <a href="https://chocothecoo.com/signup.html" >상세보기</a>
-> AbstractBaseUser<br>
+> ### AbstractBaseUser<br>
 >* Model field에 사용자의 다양한 데이터 공간 확보 <br>
 Login Type 세분화 필드를 추가하여 소셜 계정 구분 <br>
 Bollean 필드를 사용하여 계정 활성화, 관리자 및 판매자 권한 구분 <br>
@@ -167,14 +158,27 @@ is_active, last_login 등 다양한 기능 지원을 통해 편의성 향상 <br
 unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현
 <br>
 
-> 보안 <br>
+> ### 보안 <br>
 >* 필요성 <br>
 사용자의 주소지 정보, 통관 번호, 휴대폰 연락처와 판매자 정보 암·복호화 과정이 필요<br>
 >* pycryptodome Library 
 다양한 암호화 알고리즘중 AES 알고리즘 사용 <br>
-블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현
+블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현 <br>
+>* ChocoTheCoo의 보완 및 검증 시스템
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/xW8zGeH2FW.png">
 <br>
  
+---
+
+> ### 이메일 인증 <br>
+>* 필요성 <br>
+유효한 이메일 사용자를 검증하여 사용자에게 서비스의 신뢰성 향상
+>* Host Server
+Google Gmail을 Eamil Host Server로 채택
+사용자는 인증 코드 및 서비스의 안내 사항을 Email로 전송 받을 수 있다.
+>* ChocoTheCoo의 이메일 시스템
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/i30UDfCZCL.png">
+
 ---
 ### 결제 - <a href="https://chocothecoo.com/pointcharge.html" >상세보기</a>
 
@@ -205,7 +209,7 @@ https://developers.portone.io/docs/ko/readme/get-started
 
 >포인트 통계
 >* 달력을 통해 오늘 또는 날짜에 따른 포인트 내역 확인<br>
-> ![스크린샷 2023-06-23 144510](https://github.com/sodasora/chocoTheCoo/assets/126075796/2db5d498-1f9f-412c-a15c-9a5ee8ade282)
+> ![image](https://github.com/sodasora/chocoTheCoo/assets/126075796/f96afde2-6e54-4e77-84ec-19730395da3b)
 
 > 출석인증, 구매내역, 리뷰보기 기능<br>
 >* 유저의 구매내역과 리뷰내역 등 관리 가능
@@ -217,14 +221,23 @@ https://developers.portone.io/docs/ko/readme/get-started
 
 >찜목록 모아보기 기능<br>
 >* 관심 제품을 모아볼 수 있으며, 제품 상세페이지와 연결
+>  <img width="50%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/1aef604b-4837-4a61-9ada-a55eb54a991f">
+<br>
+
 >구독 정보 확인 및 관리 기능<br>
 >* 다음 결제일이나 구독 상태 등을 확인 가능<br>
 >* 버튼(구독/해지)은 구독 상태에 맞게 바뀜<br>
 >* 구독을 하지 않은 상태에서는, 버튼을 누르면 구독등록 페이지로 연결되며, 구독 상태에서는 해지예약이 이루어짐<br>
 >* 이후 다음 결제일에 해지가 이루어짐.
-
->페이지네이션 <br>
+>  <img width="30%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/a6bd2c8d-f829-4371-9694-822614373ab2">
 <br>
+
+>팔로우 스토어<br>
+>* 판매자 팔로우 기능<br>
+>* unfollow 또는 follow, 판매자 스토어로 이동
+>  <img width="50%" src="https://github.com/sodasora/chocoTheCoo/assets/126075796/dab14df9-539a-4e3e-a98b-bc6f39f8f6a3">
+<br>
+
 
 ---
 #### 채팅 - <a href="https://chocothecoo.com/chatindex.html" >상세보기</a>
@@ -239,11 +252,17 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 > 채팅방
->* 생성과 입장
+>* 생성과 입장<br>
+> <img width="30%" src=https://github.com/sodasora/chocoTheCoo/assets/126075796/86278864-5c8b-48bc-93a6-056804729f85>
+
 >* 채팅방 삭제(채팅방 만든 사람만 가능)
 > ![스크린샷 2023-06-23 184532](https://github.com/sodasora/chocoTheCoo/assets/126075796/00867796-208a-4b7e-8342-5061ede26a4d)
+
 >* 채팅방 실시간 채팅 (웹소켓 활용)
-> ![스크린샷 2023-06-23 184243](https://github.com/sodasora/chocoTheCoo/assets/126075796/c3113b6b-133d-433e-8905-00db16b7dbe1)
+> ![image](https://github.com/sodasora/chocoTheCoo/assets/126075796/40b6e701-b42e-4b13-acf3-864e42773a5c)
+>* 비밀 채팅방 기능(비밀번호 설정)
+> ![스크린샷 2023-07-10 112151](https://github.com/sodasora/chocoTheCoo/assets/126075796/391ceece-50df-4adb-8761-229739cea9dc)
+
 
 ---
 #### 메인 페이지 - <a href="https://chocothecoo.com/" >상세보기</a>
@@ -265,10 +284,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 >* 로그인한 유저 id의 판매자 여부를 판별하여 해당되는 navbar를 보여줌  
 >* 카테고리와는 별도로 제작됨  
 
----
-  
-#### 1대1문의 및 공지사항 - <a href="" >상세보기</a> 
-<br>
 
 ---
 #### 판매자 페이지  - <a herf = "https://chocothecoo.com/sellerpage.html"></a> 
@@ -305,10 +320,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 > 판매자별 주문현황 - <a herf="https://chocothecoo.com/seller_orderlist.html">상세보기</a> 
 >* 판매자id에 해당하는 판매자 전용 주문 현황 조회 페이지 구현
 >* 해당 주문에 따른 주문상태변경 가능
-
----
-#### 관리자 페이지 
-<br>
 
 ---
 #### 상품 주문하기
