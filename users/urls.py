@@ -147,11 +147,3 @@ urlpatterns += [
     # 스케줄링
     path("scheduling/", CrontabView.as_view(), name='subscribe_check'),
 ]
-
-"""
-백 오피스
-"""
-
-# urlpatterns += [
-#     path('admin_dashboard/custom_users/', CustomUsersListView.as_view(), name='custom_users_list'),
-# ]

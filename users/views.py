@@ -44,18 +44,6 @@ from .serializers import (
 )
 
 
-# class CustomUsersListView(TemplateView):
-#     template_name = "admin/custom_users_list.html"
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         sellers = User.objects.filter(is_seller=True)
-#         consumers = User.objects.filter(is_seller=False)
-#         context["sellers_data"] = sellers.values("email")
-#         context["consumers_data"] = consumers.values("email")
-#         return context
-
-
 class EmailAuthenticationAPIView(APIView):
     """
     이메일 인증 기능 API
