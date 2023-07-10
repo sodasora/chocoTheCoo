@@ -77,8 +77,8 @@ class Review(CommonModel):
         ("bad", "재구매 의사 없어요 😥"),
     ]
     delivery_evaluation = models.CharField("배송 평가", max_length=20, choices=DELIVERY_EVALUATION, default="normal")
-    service_evaluation = models.CharField("서비스 평가", max_length=20, choices=DELIVERY_EVALUATION, default="normal")
-    feedback_evaluation = models.CharField("피드백 평가", max_length=20, choices=DELIVERY_EVALUATION, default="normal")
+    service_evaluation = models.CharField("서비스 평가", max_length=20, choices=SERVICE_EVALUATION, default="normal")
+    feedback_evaluation = models.CharField("피드백 평가", max_length=20, choices=FEEDBACK_EVALUATION, default="normal")
 
     class Meta:
         ordering = ["-updated_at"]
