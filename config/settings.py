@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'grappelli',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -68,6 +69,7 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
+                'django.template.context_processors.request',
                 "django.contrib.messages.context_processors.messages",
             ],
         },
@@ -174,7 +176,6 @@ if AWS_S3_ON:
     AWS_LOCATION = "statics"
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
     STATICFILES_DIRS = [os.path.join(BASE_DIR, "statics")]
-
 
 # AWS_S3_ON 비활성일 때 기본경로를 사용.
 else:

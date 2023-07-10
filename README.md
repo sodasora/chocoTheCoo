@@ -139,22 +139,13 @@ Clinet Server는 Resurce Server로 부터 발급받은 사용자의 Access Token
 Resource Server로 부터 소셜 계정의 데이터 수집 <br>
 email, profile image, nickname <br>
 사용자의 프로필 정보 데이터 수집 <br>
-<br>
+>* Choco The Coo의 소셜 로그인 구현도
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/DBGriMlAgm.png">
 
->* kakao <br>
-https://developers.kakao.com/docs/latest/ko/kakaologin/common
-<br>
-
->* naver <br>
-https://developers.naver.com/docs/login/devguide/devguide.md#%EB%84%A4%EC%9D%B4%EB%B2%84%20%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B0%9C%EB%B0%9C%EA%B0%80%EC%9D%B4%EB%93%9C
-<br>
-
->* google <br>
-https://cloud.google.com/identity-platform/docs/sign-in-user-email?hl=ko <br>
 ---
  
 #### 회원가입 - <a href="https://chocothecoo.com/signup.html" >상세보기</a>
-> AbstractBaseUser<br>
+> ### AbstractBaseUser<br>
 >* Model field에 사용자의 다양한 데이터 공간 확보 <br>
 Login Type 세분화 필드를 추가하여 소셜 계정 구분 <br>
 Bollean 필드를 사용하여 계정 활성화, 관리자 및 판매자 권한 구분 <br>
@@ -167,14 +158,27 @@ is_active, last_login 등 다양한 기능 지원을 통해 편의성 향상 <br
 unusable_password 메서드를 이용하여 소셜 계정 사용자 로직 구현
 <br>
 
-> 보안 <br>
+> ### 보안 <br>
 >* 필요성 <br>
 사용자의 주소지 정보, 통관 번호, 휴대폰 연락처와 판매자 정보 암·복호화 과정이 필요<br>
 >* pycryptodome Library 
 다양한 암호화 알고리즘중 AES 알고리즘 사용 <br>
-블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현
+블록 알고리즘 대칭키 AES를 사용하여 암·복호화 과정 구현 <br>
+>* ChocoTheCoo의 보완 및 검증 시스템
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/xW8zGeH2FW.png">
 <br>
  
+---
+
+> ### 이메일 인증 <br>
+>* 필요성 <br>
+유효한 이메일 사용자를 검증하여 사용자에게 서비스의 신뢰성 향상
+>* Host Server
+Google Gmail을 Eamil Host Server로 채택
+사용자는 인증 코드 및 서비스의 안내 사항을 Email로 전송 받을 수 있다.
+>* ChocoTheCoo의 이메일 시스템
+<img src="https://i.esdrop.com/d/f/c6qRNTBnLI/i30UDfCZCL.png">
+
 ---
 ### 결제 - <a href="https://chocothecoo.com/pointcharge.html" >상세보기</a>
 

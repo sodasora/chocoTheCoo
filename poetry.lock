@@ -533,6 +533,17 @@ docs = ["furo (>=2021.8.17b43,<2021.9.dev0)", "sphinx (>=3.5.0)", "sphinx-notfou
 testing = ["coverage[toml] (>=5.0a4)", "pytest (>=4.6.11)"]
 
 [[package]]
+name = "django-grappelli"
+version = "3.0.6"
+description = "A jazzy skin for the Django Admin-Interface."
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-grappelli-3.0.6.tar.gz", hash = "sha256:7a39f6c5bf5d3333fdbf8345c0427c1129a2fb6a37966d07a1bf74346d708c76"},
+    {file = "django_grappelli-3.0.6-py2.py3-none-any.whl", hash = "sha256:6cef98fe717473f1cb2bddfe68218193d5709ffacf184cdb62138093a6bd8fc5"},
+]
+
+[[package]]
 name = "django-storages"
 version = "1.13.2"
 description = "Support for many storage backends in Django"
@@ -1309,4 +1320,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "de8b9dadc62a45e349131d22d9d06839d20e9cd85a940db2ffa2aa25452a4725"
+content-hash = "c1b01c227ee726c879d12c6395eca9523d0b5a3266215151463061521cffff75"
