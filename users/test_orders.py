@@ -58,34 +58,38 @@ class BaseTestCase(APITestCase):
             {
                 "name": "product test name1",
                 "content": "product test introduction1",
+                "amount": 100,
             },
             {
                 "name": "product test name2",
                 "content": "product test introduction2",
+                "amount": 100,
             },
             {
                 "name": "product test name3",
                 "content": "product test introduction3",
+                "amount": 100,
             },
         ]
+
         cls.product = Product.objects.create(seller=cls.seller, **cls.product_data[0])
         cls.product2 = Product.objects.create(seller=cls.seller, **cls.product_data[1])
         cls.product3 = Product.objects.create(seller=cls.seller, **cls.product_data[2])
-        cls.status_one = StatusCategory.objects.create(name="결제대기")
-        cls.status_two = StatusCategory.objects.create(name="주문확인")
-        cls.status_three = StatusCategory.objects.create(name="배송준비중")
-        cls.status_four = StatusCategory.objects.create(name="발송완료")
-        cls.status_five = StatusCategory.objects.create(name="배송완료")
-        cls.status_six = StatusCategory.objects.create(name="구매확정")
-        cls.point_one = PointType.objects.create(title="출석")
-        cls.point_two = PointType.objects.create(title="텍스트리뷰")
-        cls.point_three = PointType.objects.create(title="포토리뷰")
-        cls.point_four = PointType.objects.create(title="구매")
-        cls.point_five = PointType.objects.create(title="충전")
-        cls.point_six = PointType.objects.create(title="사용")
-        cls.point_seven = PointType.objects.create(title="결제")
-        cls.point_eight = PointType.objects.create(title="정산")
-        cls.point_nine = PointType.objects.create(title="환불")
+        # cls.status_one = StatusCategory.objects.create(name="결제대기")
+        # cls.status_two = StatusCategory.objects.create(name="주문확인")
+        # cls.status_three = StatusCategory.objects.create(name="배송준비중")
+        # cls.status_four = StatusCategory.objects.create(name="발송완료")
+        # cls.status_five = StatusCategory.objects.create(name="배송완료")
+        # cls.status_six = StatusCategory.objects.create(name="구매확정")
+        # cls.point_one = PointType.objects.create(title="출석")
+        # cls.point_two = PointType.objects.create(title="텍스트리뷰")
+        # cls.point_three = PointType.objects.create(title="포토리뷰")
+        # cls.point_four = PointType.objects.create(title="구매")
+        # cls.point_five = PointType.objects.create(title="충전")
+        # cls.point_six = PointType.objects.create(title="사용")
+        # cls.point_seven = PointType.objects.create(title="결제")
+        # cls.point_eight = PointType.objects.create(title="정산")
+        # cls.point_nine = PointType.objects.create(title="환불")
 
     def setUp(self):
         self.seller_user_access_token = self.client.post(
@@ -95,24 +99,6 @@ class BaseTestCase(APITestCase):
         self.user_access_token = self.client.post(
             reverse("login"), self.user_data
         ).data["access"]
-
-        # self.bill = Bill.objects.create(
-        #     user=self.user,
-        #     address="address",
-        #     detail_address="detailaddress",
-        #     recipient="recipient",
-        #     postal_code="12345",
-        #     is_paid=True,
-        # )
-        # self.orderitem = OrderItem.objects.create(
-        #     bill=self.bill,
-        #     seller=self.seller,
-        #     order_status=self.status_six,
-        #     name="name",
-        #     amount=1,
-        #     price=1000,
-        #     product_id=self.product.id,
-        # )
 
 
 class CartItemCreateTest(BaseTestCase):
@@ -247,7 +233,8 @@ class OrderCreateTest(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        call_command("loaddata", "json_data/test.json")
+        call_command("loaddata", "json_data/status.json")
+        call_command("loaddata", "json_data/point.json")
         self.cart = CartItem.objects.create(
             user=self.user,
             product=self.product,
@@ -263,7 +250,7 @@ class OrderCreateTest(BaseTestCase):
             product=self.product3,
             amount=3,
         )
-        point_type = PointType.objects.first()
+        point_type = PointType.objects.get(pk=1)
         self.user_point = Point.objects.create(
             user=self.user, point=100000, point_type=point_type
         )
