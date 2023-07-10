@@ -15,7 +15,7 @@ import json
 import tempfile
 import os
 CALLING_NUMBER = os.environ.get('CALLING_NUMBER')
-
+from django.core.management import call_command
 
 class CommonTestClass(APITestCase):
     """
@@ -77,7 +77,7 @@ class SignupAPIViewTest(CommonTestClass):
         """
         회원가입 유효성 검사 테스트 케이스
         """
-
+        call_command("loaddata", "json_data/point.json")
         test_cases = [
             ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 200),
             # # 회원 가입 성공 테스트
