@@ -1,0 +1,44 @@
+[
+  {
+    "model": "users.statuscategory",
+    "pk": 1,
+    "fields": {
+      "name": "결제대기"
+    }
+  },
+  {
+    "model": "users.statuscategory",
+    "pk": 2,
+    "fields": {
+      "name": "주문확인중"
+    }
+  },
+  {
+    "model": "users.statuscategory",
+    "pk": 3,
+    "fields": {
+      "name": "배송준비중"
+    }
+  },
+  {
+    "model": "users.statuscategory",
+    "pk": 4,
+    "fields": {
+      "name": "발송완료"
+    }
+  },
+  {
+    "model": "users.statuscategory",
+    "pk": 5,
+    "fields": {
+      "name": "배송완료"
+    }
+  },
+  {
+    "model": "users.statuscategory",
+    "pk": 6,
+    "fields": {
+      "name": "구매확정"
+    }
+  }
+]

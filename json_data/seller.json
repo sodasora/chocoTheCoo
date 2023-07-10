@@ -1,0 +1,19 @@
+[
+  {
+    "model": "users.seller",
+    "pk": 1,
+    "fields": {
+      "created_at": "2023-06-19T11:38:33.671",
+      "updated_at": "2023-06-19T11:38:38.672",
+      "user": 1,
+      "company_name": "ADMINcorp",
+      "business_number": "000000",
+      "bank_name": "ADMINbank",
+      "account_number": "00000000",
+      "business_owner_name": "admin",
+      "account_holder": "admin",
+      "contact_number": "01012345678",
+      "company_img": ""
+    }
+  }
+]
