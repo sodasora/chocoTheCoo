@@ -243,12 +243,16 @@ https://developers.portone.io/docs/ko/readme/get-started
 <br>
 
 > 채팅방
->* 생성과 입장
+>* 생성과 입장<br>
+> <img width="30%" src=https://github.com/sodasora/chocoTheCoo/assets/126075796/86278864-5c8b-48bc-93a6-056804729f85>
+
 >* 채팅방 삭제(채팅방 만든 사람만 가능)
 > ![스크린샷 2023-06-23 184532](https://github.com/sodasora/chocoTheCoo/assets/126075796/00867796-208a-4b7e-8342-5061ede26a4d)
+
 >* 채팅방 실시간 채팅 (웹소켓 활용)
 > ![image](https://github.com/sodasora/chocoTheCoo/assets/126075796/40b6e701-b42e-4b13-acf3-864e42773a5c)
->* 비밀 채팅방 기능
+>* 비밀 채팅방 기능(비밀번호 설정)
+> ![스크린샷 2023-07-10 112151](https://github.com/sodasora/chocoTheCoo/assets/126075796/391ceece-50df-4adb-8761-229739cea9dc)
 
 
 ---
@@ -271,10 +275,6 @@ https://developers.portone.io/docs/ko/readme/get-started
 >* 로그인한 유저 id의 판매자 여부를 판별하여 해당되는 navbar를 보여줌  
 >* 카테고리와는 별도로 제작됨  
 
----
-  
-#### 1대1문의 및 공지사항 - <a href="" >상세보기</a> 
-<br>
 
 ---
 #### 판매자 페이지  - <a herf = "https://chocothecoo.com/sellerpage.html"></a> 
