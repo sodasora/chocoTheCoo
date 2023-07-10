@@ -11,9 +11,10 @@ from datetime import timedelta
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Count
+from django.views.generic import TemplateView
 from products.models import Product, Review
 from .validated import ValidatedData, EmailService
-
 from .models import (
     User,
     Delivery,
@@ -65,7 +66,8 @@ class EmailAuthenticationAPIView(APIView):
         """
 
         user = get_object_or_404(User, email=request.data["email"])
-        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'), 'normal')
+        validate_result = ValidatedData.validated_email_verification_code(user, request.data.get('verification_code'),
+                                                                          'normal')
         if validate_result is not True:
             # 이메일 인증 코드 유효성 검사 False 또는 status 코드 값을 반환
             return Response(
@@ -684,7 +686,7 @@ class PointStatisticView(APIView):
         minus_point = (
             day_minus_point["total"] if day_minus_point["total"] is not None else 0
         )
-        
+
         month_plus_point = (
             Point.objects.filter(user_id=request.user.id)
                 .filter(point_type__in=[1, 2, 3, 4, 5, 8, 9])
@@ -705,19 +707,18 @@ class PointStatisticView(APIView):
         )
 
         total_point = PointStatisticView.get_total_point(request.user)
-        
+
         return Response(
             {
                 "day_plus": plus_point,
                 "day_minus": minus_point,
-                "month_plus":month_plus,
-                "month_minus":month_minus,
+                "month_plus": month_plus,
+                "month_minus": month_minus,
                 "total_point": total_point,
             },
             status=status.HTTP_200_OK,
         )
-        
-    
+
     @classmethod
     def get_total_point(self, user):
         total_plus_point = (
@@ -725,7 +726,7 @@ class PointStatisticView(APIView):
                 .filter(point_type__in=[1, 2, 3, 4, 5, 8, 9])
                 .aggregate(total=Sum("point"))
         )
-        
+
         total_minus_point = (
             Point.objects.filter(user_id=user.id)
                 .filter(point_type__in=[6, 7])
@@ -740,9 +741,8 @@ class PointStatisticView(APIView):
                 if total_plus_point["total"] is not None
                 else 0
             )
-        
-        return total_point
 
+        return total_point
 
 
 """포인트 종류: 출석(1)"""
@@ -765,6 +765,7 @@ class PointAttendanceView(generics.ListCreateAPIView):
 
 
 """포인트충전 결제후처리"""
+
 
 class PointCheckoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -835,6 +836,7 @@ class PointImpAjaxView(APIView):
 
 """구독"""
 
+
 class SubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -846,9 +848,9 @@ class SubscribeView(APIView):
 
     # 구독 최초 생성
     def post(self, request):
-        
+
         serializer = SubscriptionSerializer(data=request.data)
-        if serializer.is_valid() :
+        if serializer.is_valid():
             try:
                 Point.objects.create(user=request.user, point_type_id=6, point=9900)
                 serializer.save(user=request.user,

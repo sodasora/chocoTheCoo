@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 from .social import (
     KakaoLogin,
@@ -26,6 +26,7 @@ from .views import (
     UpdateUserInformationAPIView,
     FollowAPIView,
     GetSalesMemberApplicationDetails,
+    # CustomUsersListView,
 )
 from .orderviews import (
     CartView,
@@ -146,4 +147,3 @@ urlpatterns += [
     # 스케줄링
     path("scheduling/", CrontabView.as_view(), name='subscribe_check'),
 ]
-

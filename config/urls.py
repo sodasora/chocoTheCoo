@@ -2,11 +2,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+# from users.views import CustomUsersListView
 
 urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
+    # path("admin/admin/", CustomUsersListView.as_view(), name="custom-admin-list"),
     path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
+    path('api/admin/', include('users.urls')),
     path('api/products/', include('products.urls')),
     path('chat/', include('chat.urls')),
 ]

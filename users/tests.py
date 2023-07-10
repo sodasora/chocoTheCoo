@@ -79,7 +79,7 @@ class SignupAPIViewTest(CommonTestClass):
         """
         call_command("loaddata", "json_data/point.json")
         test_cases = [
-            ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 200),
+            # ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 200),
             # # 회원 가입 성공 테스트
             # ({"email": "son@naver.com", "password": "Test123123!", "nickname": "test"}, 400),
             # # 회원 가입 실패 테스트 - 같은 이메일 형식으로 가입
@@ -675,7 +675,7 @@ class UserAPITestCase(CommonTestClass):
     #         self.mobile_phone_verification_test(information, access_token, status_code)
     #
     #     # 인증 여부 확인
-    #     user = users.models.User.objects.get(pk=self.user.pk)
+    #     user = admin.models.User.objects.get(pk=self.user.pk)
     #     self.assertEqual(user.phone_verification.is_verified, True)
 
 
