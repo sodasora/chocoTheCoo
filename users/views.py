@@ -793,7 +793,7 @@ class PointCheckoutView(APIView):
 
             return JsonResponse(data)
         else:
-            return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PointImpAjaxView(APIView):
@@ -829,9 +829,9 @@ class PointImpAjaxView(APIView):
                 }
                 return JsonResponse(data)
             except:
-                return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
+                return JsonResponse({}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return JsonResponse({}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({}, status=status.HTTP_400_BAD_REQUEST)
 
 
 """구독"""
