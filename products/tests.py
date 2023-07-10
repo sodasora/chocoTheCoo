@@ -171,7 +171,6 @@ class ProductDetailTest(BaseTestCase):
     def test_retrieve_success(self):
         url = reverse("product-detail", kwargs={"pk": self.product.id})
         response = self.client.get(url)
-        # print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["name"], self.product_data[0]["name"])
         self.assertEqual(
@@ -233,7 +232,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.user_access_token}",
         )
-        # print("\n - test_fail_if_not_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # is_seller가 False일 때 수정 실패
@@ -243,7 +241,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_fail_if_not_approved_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # 자신의 상품이 아닐 때 수정 실패
@@ -253,7 +250,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_fail_if_not_product_owner:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # 수정 성공
@@ -265,7 +261,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Product.objects.first().name, self.product_update_data["name"])
         self.assertEqual(
@@ -317,7 +312,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.user_access_token}",
         )
-        # print("\ntest_fail_if_not_seller:", response.data)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
@@ -327,7 +321,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_fail_if_not_approved_seller:", response.data)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
@@ -339,7 +332,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Product.objects.count(), 3)
         self.assertEqual(Product.objects.get(pk=self.product.id).item_state, 6)
