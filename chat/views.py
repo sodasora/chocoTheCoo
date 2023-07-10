@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
+from django.contrib.auth.hashers import check_password
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,7 +19,7 @@ class ChatViewSet(ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK) 
     
     # 특정 방의 요청이 'retrive' 오면 채팅방의 채팅 보여주기
-    def retrieve(self, request, room_id=None): # pk = room_id
+    def retrieve(self, request, room_id=None):
         room = get_object_or_404(ChatRoom, pk=room_id)
         self.check_object_permissions(request, room)
         RoomMessage.objects.filter(room_id=room.id).exclude(author_id = request.user.id).update(
@@ -28,7 +29,14 @@ class ChatViewSet(ViewSet):
         serializer = MessageSerializer(queryset, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK) 
-
+    
+    def checkpassword(self, request, room_id, password):
+        room = get_object_or_404(ChatRoom, pk=room_id)
+        if check_password(password, room.password):
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
 
 # 채팅방 생성(삭제), 특정 채팅방 정보 보여주기
 class ChatRoomView(APIView):
