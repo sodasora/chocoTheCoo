@@ -1,0 +1,548 @@
+[
+    {
+        "model": "products.product",
+        "pk": 1,
+        "fields": {
+            "created_at": "2023-06-26T03:26:12",
+            "updated_at": "2023-06-26T03:26:12",
+            "seller": 1,
+            "name": "다크초콜릿",
+            "content": "다크초콜릿 맛있어요!!",
+            "price": 1000,
+            "amount": 100,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 2,
+        "fields": {
+            "created_at": "2023-06-26T03:34:05",
+            "updated_at": "2023-06-26T03:34:05",
+            "seller": 1,
+            "name": "초코시럽",
+            "content": "더티 플레이팅 필수 재료, 초코시럽!!",
+            "price": 1000,
+            "amount": 20,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 3,
+        "fields": {
+            "created_at": "2023-06-26T03:37:00",
+            "updated_at": "2023-06-26T03:37:00",
+            "seller": 1,
+            "name": "허쉬 코코아 파우더",
+            "content": "허쉬 코코아파우더와 따뜻한 겨울 보내세요~",
+            "price": 5000,
+            "amount": 50,
+            "category": 3
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 4,
+        "fields": {
+            "created_at": "2023-06-26T03:39:37",
+            "updated_at": "2023-06-26T03:39:37",
+            "seller": 1,
+            "name": "Nutella,750g",
+            "content": "미각을 위한 새로운 자극! \n누텔라로 맛의 신세계를 경험해 보세요!!!",
+            "price": 6500,
+            "amount": 50,
+            "category": 4
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 5,
+        "fields": {
+            "created_at": "2023-06-26T03:42:42",
+            "updated_at": "2023-06-26T03:42:42",
+            "seller": 1,
+            "name": "허쉬리치초코케이크,126g",
+            "content": "허쉬 리치 초코 케이크로 당신의 티타임을 리치하게 만들어보시는 것은 어떠신가요?",
+            "price": 4000,
+            "amount": 40,
+            "category": 5
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 6,
+        "fields": {
+            "created_at": "2023-06-26T03:45:44",
+            "updated_at": "2023-06-26T03:45:44",
+            "seller": 1,
+            "name": "Something 파베 초콜릿 만들기 세트",
+            "content": "제품명\t코코아파우더, 다크 초콜릿 커버춰\t식품의 유형\t당류가공품\n생산자 및 소재지\t컨텐츠참조\t제조연월일, 소비기한 또는 품질유지기한\t\n소비기한(또는 유통기한) :2023년 07월 24일 이거나 그 이후인 상품\n제조년월일 :2023년 02월 27일 이후인 제조상품\n포장단위별 내용물의 용량(중량), 수량\t10종,1세트\t원재료명 및 함량\t컨텐츠참조\n영양성분\t컨텐츠참조\t유전자변형식품에 해당하는 경우의 표시\t해당없음\n소비자안전을 위한 주의사항\t컨텐츠 참조\t수입식품 문구\t해당없음\n소비자상담관련 전화번호\t초코더쿠 고객센터 01071683106",
+            "price": 18000,
+            "amount": 100,
+            "category": 6
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 7,
+        "fields": {
+            "created_at": "2023-06-26T03:48:32",
+            "updated_at": "2023-06-26T03:48:32",
+            "seller": 1,
+            "name": "Chocolate Packaging-Decorations",
+            "content": "특별한 날, 특별한 경험을 선물하기 위한 탁월한 선택!\n\n\n소비자상담관련 전화번호\t초코더쿠 고객센터 01071683106",
+            "price": 2000,
+            "amount": 50,
+            "category": 7
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 8,
+        "fields": {
+            "created_at": "2023-06-26T04:25:06",
+            "updated_at": "2023-06-26T04:25:06",
+            "seller": 1,
+            "name": "다크초콜릿",
+            "content": "카카오 70% 다크초콜릿",
+            "price": 3000,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 9,
+        "fields": {
+            "created_at": "2023-06-26T05:09:55",
+            "updated_at": "2023-06-26T05:09:55",
+            "seller": 1,
+            "name": "허쉬 키세스 쿠앤크크림",
+            "content": "허쉬 키세스 쿠앤크 크림 100g X 10개",
+            "price": 9000,
+            "amount": 100,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 10,
+        "fields": {
+            "created_at": "2023-06-26T05:11:15",
+            "updated_at": "2023-06-26T05:11:15",
+            "seller": 1,
+            "name": "화이트 커버춰 초콜릿",
+            "content": "화이트 커버춰 초콜릿 200g",
+            "price": 9000,
+            "amount": 90,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 11,
+        "fields": {
+            "created_at": "2023-06-26T05:12:30",
+            "updated_at": "2023-06-26T05:12:30",
+            "seller": 1,
+            "name": "로아커 초콜릿 클래식 화이트",
+            "content": "로아커 초콜릿 클래식 화이트 12개 X 100g",
+            "price": 12000,
+            "amount": 100,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 12,
+        "fields": {
+            "created_at": "2023-06-26T05:13:56",
+            "updated_at": "2023-06-26T05:13:56",
+            "seller": 1,
+            "name": "벨기에 알버트코인초콜릿",
+            "content": "벨기에 알버트 코인 초콜릿 200개",
+            "price": 9000,
+            "amount": 60,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 13,
+        "fields": {
+            "created_at": "2023-06-26T05:15:22",
+            "updated_at": "2023-06-26T05:15:22",
+            "seller": 1,
+            "name": "허쉬 크리미 아몬드 초콜릿",
+            "content": "허쉬 크리미 아몬드 초콜릿 20개",
+            "price": 7000,
+            "amount": 70,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 14,
+        "fields": {
+            "created_at": "2023-06-26T05:16:19",
+            "updated_at": "2023-06-26T05:16:19",
+            "seller": 1,
+            "name": "위토소 네로 서브라임 다크 초콜릿",
+            "content": "위토소 네로 서브라임 다크 초콜릿",
+            "price": 12000,
+            "amount": 100,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 16,
+        "fields": {
+            "created_at": "2023-06-26T05:18:36",
+            "updated_at": "2023-06-26T05:18:36",
+            "seller": 1,
+            "name": "페레로로쉐 콜렉션 초콜릿",
+            "content": "페레로로쉐 콜렉션 초콜릿 15개",
+            "price": 15000,
+            "amount": 150,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 19,
+        "fields": {
+            "created_at": "2023-06-26T05:32:24",
+            "updated_at": "2023-06-26T05:32:24",
+            "seller": 1,
+            "name": "토라니 퓨어메이디 미니 소스 캬라멜",
+            "content": "토라니 퓨어메이디 미니 소스 캬라멜\n그대는 캬라멜 마끼아또~~",
+            "price": 20000,
+            "amount": 110,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 20,
+        "fields": {
+            "created_at": "2023-06-26T05:33:32",
+            "updated_at": "2023-06-26T05:33:32",
+            "seller": 1,
+            "name": "쥬피터 초코시럽",
+            "content": "쥬피터 초코시럽 350g \n초코라떼, 카페모카 기본템",
+            "price": 10000,
+            "amount": 100,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 21,
+        "fields": {
+            "created_at": "2023-06-26T05:34:35",
+            "updated_at": "2023-06-26T05:34:35",
+            "seller": 1,
+            "name": "흑원당 마스코바도 흑당시럽",
+            "content": "흑당 버블티 이젠 우리집에",
+            "price": 5000,
+            "amount": 30,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 22,
+        "fields": {
+            "created_at": "2023-06-26T05:36:28",
+            "updated_at": "2023-06-26T05:36:28",
+            "seller": 1,
+            "name": "기라델리 초콜렛 프리미엄 소스",
+            "content": "프리미엄 카페 전용 초콜릿 소스 \n이거 사시면 됩니다.",
+            "price": 23000,
+            "amount": 200,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 23,
+        "fields": {
+            "created_at": "2023-06-26T05:39:09",
+            "updated_at": "2023-06-26T05:39:09",
+            "seller": 1,
+            "name": "까르망 65c 다크 초코렛 소스",
+            "content": "프리미엄 초콜릿 소스",
+            "price": 20000,
+            "amount": 200,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 24,
+        "fields": {
+            "created_at": "2023-06-26T05:40:26",
+            "updated_at": "2023-06-26T05:40:26",
+            "seller": 1,
+            "name": "토스키 소스",
+            "content": "밀크초콜릿, 캬라멜, 화이트초콜릿 3개 묶음 세트",
+            "price": 9900,
+            "amount": 50,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 25,
+        "fields": {
+            "created_at": "2023-06-26T05:41:48",
+            "updated_at": "2023-06-26T05:41:48",
+            "seller": 1,
+            "name": "다빈치 카라멜 소스 2L",
+            "content": "명장이 만든 캬라멜 소스, 커피에 풍미를 더하다.",
+            "price": 10000,
+            "amount": 100,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 26,
+        "fields": {
+            "created_at": "2023-06-26T05:43:29",
+            "updated_at": "2023-06-26T05:43:29",
+            "seller": 1,
+            "name": "허쉬 초콜릿 시럽 680g",
+            "content": "허쉬 초콜렛 시럽, 다가오는 여름 빙수와 함께하세요!!",
+            "price": 7000,
+            "amount": 70,
+            "category": 2
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 28,
+        "fields": {
+            "created_at": "2023-06-26T09:55:08",
+            "updated_at": "2023-06-26T09:55:08",
+            "seller": 1,
+            "name": "허쉬 케이크",
+            "content": "허쉬케이크 200g",
+            "price": 5000,
+            "amount": 10,
+            "category": 5
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 29,
+        "fields": {
+            "created_at": "2023-06-26T10:45:02",
+            "updated_at": "2023-06-30T15:01:37",
+            "seller": 1,
+            "name": "허쉬케이크",
+            "content": "허쉬케이크",
+            "price": 2000,
+            "amount": 20,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 30,
+        "fields": {
+            "created_at": "2023-06-27T23:02:27",
+            "updated_at": "2023-06-27T23:02:27",
+            "seller": 1,
+            "name": "파우더",
+            "content": "ㅇㅇ",
+            "price": 10000,
+            "amount": 10,
+            "category": 3
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 31,
+        "fields": {
+            "created_at": "2023-06-27T23:25:49",
+            "updated_at": "2023-06-27T23:25:49",
+            "seller": 1,
+            "name": "코코아 파우더",
+            "content": "코코아 파우더 더티 플레이팅 필수템",
+            "price": 20000,
+            "amount": 100,
+            "category": 3
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 32,
+        "fields": {
+            "created_at": "2023-06-28T16:06:53",
+            "updated_at": "2023-06-30T14:22:24",
+            "seller": 1,
+            "name": "바나나 초콜렛",
+            "content": "바나나향 초콜렛입니다 :)",
+            "price": 3950,
+            "amount": 30,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 33,
+        "fields": {
+            "created_at": "2023-06-28T16:08:57",
+            "updated_at": "2023-06-28T16:08:57",
+            "seller": 1,
+            "name": "헤이즐넛 초콜렛",
+            "content": "헤이즐넛 초콜렛 입니다.",
+            "price": 8190,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 34,
+        "fields": {
+            "created_at": "2023-06-28T16:11:26",
+            "updated_at": "2023-06-28T16:11:26",
+            "seller": 1,
+            "name": "밀크 초콜렛",
+            "content": "밀크 초콜렛",
+            "price": 850,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 35,
+        "fields": {
+            "created_at": "2023-06-28T16:12:36",
+            "updated_at": "2023-06-28T16:12:36",
+            "seller": 1,
+            "name": "해바라기씨 초콜렛",
+            "content": "해바라기씨 초콜렛 10개입",
+            "price": 9000,
+            "amount": 90,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 36,
+        "fields": {
+            "created_at": "2023-06-28T16:13:48",
+            "updated_at": "2023-06-29T22:34:55",
+            "seller": 1,
+            "name": "오렌지 초콜렛",
+            "content": "오렌지 초콜렛 2개입 9900원 입니다. 수정",
+            "price": 9900,
+            "amount": 90,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 37,
+        "fields": {
+            "created_at": "2023-06-28T16:14:57",
+            "updated_at": "2023-06-28T16:14:57",
+            "seller": 1,
+            "name": "커피 초콜렛",
+            "content": "트러플이 첨가된 커피 초콜렛입니다.",
+            "price": 9900,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 38,
+        "fields": {
+            "created_at": "2023-06-28T16:16:18",
+            "updated_at": "2023-06-28T16:16:18",
+            "seller": 1,
+            "name": "라즈베리 초콜렛",
+            "content": "기라델리 라즈베리 초콜렛입니다.",
+            "price": 6000,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 39,
+        "fields": {
+            "created_at": "2023-06-28T16:17:34",
+            "updated_at": "2023-06-28T16:17:34",
+            "seller": 1,
+            "name": "민트 초콜렛",
+            "content": "민트초콜렛 4묶음 입니다.\r\n민트러버 환영~!",
+            "price": 18100,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 40,
+        "fields": {
+            "created_at": "2023-06-28T16:18:51",
+            "updated_at": "2023-06-28T16:18:51",
+            "seller": 1,
+            "name": "아몬드 초콜렛",
+            "content": "아몬드 초콜렛 10묶음 입니다.",
+            "price": 10400,
+            "amount": 40,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 41,
+        "fields": {
+            "created_at": "2023-06-29T17:24:19",
+            "updated_at": "2023-06-29T17:24:19",
+            "seller": 1,
+            "name": "dd",
+            "content": "ddd",
+            "price": 1000,
+            "amount": 10,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 42,
+        "fields": {
+            "created_at": "2023-06-30T13:28:14",
+            "updated_at": "2023-06-30T13:28:14",
+            "seller": 1,
+            "name": "다크 초콜릿",
+            "content": "건강에 좋습니다.",
+            "price": 3000,
+            "amount": 30,
+            "category": 1
+        }
+    },
+    {
+        "model": "products.product",
+        "pk": 43,
+        "fields": {
+            "created_at": "2023-06-30T15:01:21",
+            "updated_at": "2023-06-30T15:01:21",
+            "seller": 1,
+            "name": "바나나초콜렛",
+            "content": "바나나초콜렛",
+            "price": 1000,
+            "amount": 30,
+            "category": 1
+        }
+    }
+]

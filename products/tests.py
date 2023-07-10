@@ -1,30 +1,30 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from users.models import Seller, User
-from products.models import Product, Review
+from products.models import Product
 
 
 class BaseTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.seller_user = User.objects.create_user(
-            "seller@naver.com", "test_seller", "!@#password123"
+            "seller@naver.com", "testseller", "!@#password123"
         )
         cls.seller_user_data = {"email": "seller@naver.com", "password": "!@#password123"}
 
         cls.user = User.objects.create_user(
-            "testuser@naver.com", "test_user", "!@#password123"
+            "testuser@naver.com", "testuser", "!@#password123"
         )
         cls.user_data = {"email": "testuser@naver.com", "password": "!@#password123"}
 
         cls.seller = Seller.objects.create(
             user=cls.seller_user,
-            company_name="test company",
+            company_name="testcompany",
             business_number="012345",
-            bank_name="test bank",
+            bank_name="testbank",
             account_number="123456",
-            business_owner_name="test business owner",
-            account_holder="test account holder",
+            business_owner_name="testbusinessowner",
+            account_holder="testaccountholder",
             contact_number="234567",
         )
         cls.user.is_active = True
@@ -112,7 +112,7 @@ class ProductListTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "!@#password123"
+            "seller2@naver.com", "testseller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -171,7 +171,6 @@ class ProductDetailTest(BaseTestCase):
     def test_retrieve_success(self):
         url = reverse("product-detail", kwargs={"pk": self.product.id})
         response = self.client.get(url)
-        # print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["name"], self.product_data[0]["name"])
         self.assertEqual(
@@ -186,7 +185,7 @@ class ProductUpdateTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "!@#password123"
+            "seller2@naver.com", "testseller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -233,7 +232,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.user_access_token}",
         )
-        # print("\n - test_fail_if_not_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # is_seller가 False일 때 수정 실패
@@ -243,7 +241,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_fail_if_not_approved_seller:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # 자신의 상품이 아닐 때 수정 실패
@@ -253,7 +250,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_fail_if_not_product_owner:", response.data)
         self.assertEqual(response.status_code, 403)
 
     # 수정 성공
@@ -265,7 +261,6 @@ class ProductUpdateTest(BaseTestCase):
             self.product_update_data,
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\n - test_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Product.objects.first().name, self.product_update_data["name"])
         self.assertEqual(
@@ -280,7 +275,7 @@ class ProductDeleteTest(BaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.seller_user2 = User.objects.create_user(
-            "seller2@naver.com", "test_seller", "!@#password123"
+            "seller2@naver.com", "testseller", "!@#password123"
         )
         cls.seller2 = Seller.objects.create(
             user=cls.seller_user2,
@@ -317,7 +312,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.user_access_token}",
         )
-        # print("\ntest_fail_if_not_seller:", response.data)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
@@ -327,7 +321,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_fail_if_not_approved_seller:", response.data)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Product.objects.count(), 3)
 
@@ -339,7 +332,6 @@ class ProductDeleteTest(BaseTestCase):
             reverse("product-detail", kwargs={"pk": self.product.id}),
             HTTP_AUTHORIZATION=f"Bearer {self.seller_user_access_token}",
         )
-        # print("\ntest_success_if_approved_seller:", response.data)
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Product.objects.count(), 3)
         self.assertEqual(Product.objects.get(pk=self.product.id).item_state, 6)

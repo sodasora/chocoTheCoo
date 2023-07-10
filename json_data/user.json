@@ -1,0 +1,27 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "created_at": "2023-06-09T09:41:39.468",
+      "updated_at": "2023-06-19T11:36:35.976",
+      "email": "admin@naver.com",
+      "nickname": "ADMIN",
+      "password": "pbkdf2_sha256$600000$2WZi2jtD7xDtFCuzGWbwYC$WnZ3wT2gnxUgtJr3JvuoE2mMosi2MoiRARDfYzfhqx0=",
+      "is_admin": true,
+      "is_active": true,
+      "is_seller": true
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 2,
+    "fields": {
+      "created_at": "2023-06-09T09:41:39.468",
+      "updated_at": "2023-06-19T11:37:12.838",
+      "email": "with@draw.al",
+      "nickname": "withdrawal",
+      "password": "pbkdf2_sha256$600000$2WZi2jtD7xDtFCuzGWbwYC$WnZ3wT2gnxUgtJr3JvuoE2mMosi2MoiRARDfYzfhqx0="
+    }
+  }
+]
