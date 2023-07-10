@@ -86,7 +86,7 @@ class SmsSendView(APIView):
 class EmailService:
     """
     이메일 발송 및 인증코드 만들기
-    템플릿 경로 : .users/templates/email_template.html
+    템플릿 경로 : .admin/templates/email_template.html
     """
 
     @classmethod

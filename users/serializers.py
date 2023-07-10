@@ -51,7 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
         # 이메일 전송
         EmailService.send_email_verification_code(user, user.email, "normal")
         # 포인트 기본값 할당
-        Point.objects.create(point=29900, user_id=user.pk, point_type_id=5)
+        # Point.objects.create(point=29900, user_id=user.pk, point_type_id=5)
         return user
 
 
