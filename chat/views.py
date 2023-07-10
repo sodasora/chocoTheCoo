@@ -77,4 +77,4 @@ class ChatRoomView(APIView):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_403_FORBIDDEN)
