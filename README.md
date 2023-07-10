@@ -209,7 +209,7 @@ https://developers.portone.io/docs/ko/readme/get-started
 
 >포인트 통계
 >* 달력을 통해 오늘 또는 날짜에 따른 포인트 내역 확인<br>
-> ![스크린샷 2023-06-23 144510](https://github.com/sodasora/chocoTheCoo/assets/126075796/2db5d498-1f9f-412c-a15c-9a5ee8ade282)
+> ![image](https://github.com/sodasora/chocoTheCoo/assets/126075796/f96afde2-6e54-4e77-84ec-19730395da3b)
 
 > 출석인증, 구매내역, 리뷰보기 기능<br>
 >* 유저의 구매내역과 리뷰내역 등 관리 가능
