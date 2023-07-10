@@ -26,7 +26,6 @@ from .views import (
     UpdateUserInformationAPIView,
     FollowAPIView,
     GetSalesMemberApplicationDetails,
-    # CustomUsersListView,
 )
 from .orderviews import (
     CartView,
