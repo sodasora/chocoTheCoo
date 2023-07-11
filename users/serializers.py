@@ -347,19 +347,19 @@ class SellerSerializer(serializers.ModelSerializer):
         return len(sent_orders)
 
     # 브랜드좋아요
-    followings_count = serializers.SerializerMethodField()
+    follower_count = serializers.SerializerMethodField()
 
-    def get_followings_count(self, obj):
-        return obj.user.followings.count()
+    def get_follower_count(self, obj):
+        return obj.follower.count()
 
     # 셀러 팔로우
-    is_like = serializers.SerializerMethodField()
+    is_follow = serializers.SerializerMethodField()
 
-    def get_is_like(self, obj):
-        request = self.context.get("request")
-        if request.user.is_authenticated:
+    def get_is_follow(self, obj):
+        user = self.context.get("user")
+        if user.is_authenticated:
             # 좋아요 object에 포함되 있다면 True 아니라면 False
-            return obj.user.followings.filter(pk=request.user.pk).exists()
+            return user.followings.filter(pk=obj.pk).exists()
         return False
 
     class Meta:
@@ -461,15 +461,15 @@ class BriefProductInformation(serializers.ModelSerializer):
         fields = ('id', 'name', 'content', 'image','item_state')
 
 
-# class SellerInformationSerializer(serializers.ModelSerializer):
-#     followings_count = serializers.SerializerMethodField()
-#
-#     def get_followings_count(self,obj):
-#         return obj.followings.count()
-#
-#     class Meta:
-#         model = Product
-#         fields = ('user', 'company_img', 'company_name', 'contact_number', 'followings')
+class SellerInformationSerializer(serializers.ModelSerializer):
+    followings = serializers.SerializerMethodField()
+
+    def get_followings(self,obj):
+        return obj.follower.count()
+
+    class Meta:
+        model = Seller
+        fields = ('user', 'company_img', 'company_name', 'contact_number', 'followings')
 
 
 class ReadUserSerializer(serializers.ModelSerializer):
@@ -478,18 +478,16 @@ class ReadUserSerializer(serializers.ModelSerializer):
     """
     product_wish_list = BriefProductInformation(many=True)
     product_wish_list_count = serializers.SerializerMethodField()
+    followings = SellerInformationSerializer(many=True)
 
     def get_product_wish_list_count(self, obj):
         return obj.product_wish_list.count()
-
-
 
     class Meta:
         model = User
 
         fields = (
-            "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction',
-            'follower'
+            "profile_image", "nickname", 'id', "email", 'product_wish_list', 'product_wish_list_count', 'introduction', 'followings',
         )
 
     def get_user_total_point(self, user_id):
@@ -515,37 +513,12 @@ class ReadUserSerializer(serializers.ModelSerializer):
             )
         return total_point
 
-    def get_seller_information(self, follower):
-        """
-        팔로우하는 판매자의 더 자세한 정보 뽑아오기
-        """
-        sellers = follower
-        seller_list = []
-        for pk in sellers:
-            seller = get_object_or_404(Seller, pk=pk)
-            company_img = (
-                seller.company_img.url if seller.company_img else None
-            )
-            data = {
-                'company_img': company_img,
-                'company_name': seller.company_name,
-                'user': {
-                    'id': seller.user.id,
-                },
-                'contact_number': seller.contact_number,
-                'followings_count': seller.user.followings.count()
-            }
-            seller_list.append(data)
-        return seller_list
-
     def to_representation(self, instance):
         """
         프로필 정보에 포인트 합산 데이터, 팔로우 하는 판매자 데이터 추가
         """
         information = super().to_representation(instance)
         information["total_point"] = self.get_user_total_point(information.get('id'))
-        information["seller_information"] = self.get_seller_information(information.get('follower'))
-        information.pop('follower')
         return information
 
 

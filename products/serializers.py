@@ -108,24 +108,24 @@ class SimpleSellerInformation(serializers.ModelSerializer):
     """
     간단한 판매자 정보 리스트
     """
-    followings_count = serializers.SerializerMethodField()
+    follower_count = serializers.SerializerMethodField()
     is_follow = serializers.SerializerMethodField()
+
     def get_is_follow(self, obj):
         """
         get 요청한 사용자가 팔로우중인지 판단.
         """
-        request = self.context.get("request")
-        if request.user.is_authenticated:
-            return obj.user.followings.filter(pk=request.user.pk).exists()
+        user = self.context.get("request").user
+        if user.is_authenticated:
+            return user.followings.filter(pk=obj.pk).exists()
         return False
 
-
-    def get_followings_count(self, obj):
-        return obj.user.followings.count()
+    def get_follower_count(self, obj):
+        return obj.follower.count()
 
     class Meta:
         model = Seller
-        fields = ('company_img', 'company_name', 'user', 'business_owner_name', 'contact_number', 'is_follow', 'followings_count')
+        fields = ('company_img', 'company_name', 'user', 'business_owner_name', 'contact_number', 'is_follow', 'follower_count')
 
 
 class GetProductDetailSerializer(serializers.ModelSerializer):

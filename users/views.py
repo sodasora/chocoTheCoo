@@ -443,9 +443,6 @@ class SellerAPIView(APIView):
         user = get_object_or_404(User, pk=request.user.pk)
 
         try:
-            for follower in user.follower.all():
-                follower.followings.remove(user)
-
             user.is_seller = False
             user.user_seller.delete()
             user.save()
@@ -492,7 +489,7 @@ class SellerPermissionAPIView(APIView):
         """
         user = get_object_or_404(User, id=user_id)
         try:
-            serializer = SellerSerializer(user.user_seller, context={'request': request})
+            serializer = SellerSerializer(user.user_seller, context={'user': request.user})
         except Seller.DoesNotExist:
             return Response(
                 {"err": "not found"}, status=status.HTTP_404_NOT_FOUND
@@ -537,9 +534,6 @@ class SellerPermissionAPIView(APIView):
             )
         user = get_object_or_404(User, id=user_id)
         try:
-            for follower in user.follower.all():
-                follower.followings.remove(user)
-
             subject_message = '관리자가 판매자 권한을 거절 했습니다.'
             content_message = request.data.get('msg')
             EmailService.message_forwarding(user.email, subject_message, content_message)
@@ -571,18 +565,16 @@ class WishListAPIView(APIView):
         """
         user = get_object_or_404(User, pk=request.user.pk)
         product = get_object_or_404(Product, id=product_id, item_state=1)
-        if product in user.product_wish_list.all():
-            user.product_wish_list.remove(product)
-            wish_list = product.wish_lists.count()
-            return Response(
-                {"wish_list": wish_list}, status=status.HTTP_200_OK
-            )
-        else:
-            user.product_wish_list.add(product)
-            wish_list = product.wish_lists.count()
-            return Response(
-                {"wish_list": wish_list}, status=status.HTTP_201_CREATED
-            )
+
+        is_wish = user.product_wish_list.remove(product) if user.product_wish_list.filter(pk=product.pk).exists() else user.product_wish_list.add(product)
+        # 사용자가 찜 등록 여부에 따른 좋아요 등록 및 취소 처리
+        status_code = 200 if is_wish else 201
+        # 사용자의 찜 등록 여부에 따른 status_code 결괏값 처리
+        wish_list = product.wish_lists.count()
+        # 상품 찜 등록 사용자 목록 count
+        return Response(
+            {"wish_list": wish_list}, status=status_code
+        )
 
 
 class ReviewListAPIView(APIView):
@@ -597,18 +589,18 @@ class ReviewListAPIView(APIView):
 
         user = get_object_or_404(User, email=request.user.email)
         review = get_object_or_404(Review, id=review_id)
-        if review in user.review_like.all():
-            user.review_like.remove(review)
-            liking_people = review.review_liking_people.count()
-            return Response(
-                {"liking_people": liking_people}, status=status.HTTP_200_OK
-            )
-        else:
-            user.review_like.add(review)
-            liking_people = review.review_liking_people.count()
-            return Response(
-                {"liking_people": liking_people}, status=status.HTTP_201_CREATED
-            )
+
+        is_like = user.review_like.filter(pk=review.pk).exists()
+        # 사용자가 리뷰 좋아요 등록 했는지 확인
+        user.review_like.remove(review) if is_like else user.review_like.add(review)
+        # 좋아요 등록 여부에 따른 좋아요 등록 및 취소 처리
+        status_code = 200 if is_like else 201
+        # 좋아요 등록 여부에 따른 status 괄괏값 처리
+        liking_people = review.review_liking_people.count()
+        # 좋아요 등록한 사용자들의 수 연산
+        return Response(
+            {"liking_people": liking_people}, status=status_code
+        )
 
 
 class FollowAPIView(APIView):
@@ -623,28 +615,22 @@ class FollowAPIView(APIView):
 
         user = get_object_or_404(User, pk=request.user.pk)
         owner = get_object_or_404(User, id=user_id)
-        if owner.is_seller is False:
+
+        if owner.is_seller is False or owner == user:
             # 팔로우 대상자가 판매자가 아닌 경우
-            return Response(
-                {"err": "Unprocessable Entity"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
-        elif owner == user:
-            # 팔로우 대상자가 자기 자신이라면
             return Response(
                 {"err": "bad request"}, status=status.HTTP_400_BAD_REQUEST
             )
-
-        if owner in user.follower.all():
-            user.follower.remove(owner)
-            followings = owner.followings.count()
-            return Response(
-                {"followings": followings}, status=status.HTTP_200_OK
-            )
         else:
-            user.follower.add(owner)
-            followings = owner.followings.count()
+            #  팔로우, 또는 언 팔로우
+            is_follow = user.followings.filter(pk=owner.user_seller.pk).exists()
+            # 삼항 연산자를 이용하여, 팔로우 하거나 팔로우 취소 및 status_code 결괏값 저장
+            user.followings.remove(owner.user_seller) if is_follow else user.followings.add(owner.user_seller)
+            status_code = 200 if is_follow else 201
+            # 팔로워를 팔로윙 하는 사람의 수 연산하여 반환
+            followings = owner.user_seller.follower.count()
             return Response(
-                {"followings": followings}, status=status.HTTP_201_CREATED
+                {"followings": followings}, status=status_code
             )
 
 

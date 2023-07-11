@@ -66,8 +66,7 @@ class User(AbstractBaseUser, CommonModel):
     login_attempts_count = models.PositiveIntegerField("로그인 시도 횟수", default=0)
     product_wish_list = models.ManyToManyField("products.Product", symmetrical=False, related_name="wish_lists", blank=True)
     review_like = models.ManyToManyField("products.Review", symmetrical=False, related_name="review_liking_people", blank=True)
-    follower = models.ManyToManyField('self', symmetrical=False, related_name="followings", blank=True)
-
+    followings = models.ManyToManyField('users.Seller', symmetrical=False, related_name="follower", blank=True)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     is_seller = models.BooleanField(default=False)  # 판매자 신청 후 관리자 승인하 에 판매 권한 획득
