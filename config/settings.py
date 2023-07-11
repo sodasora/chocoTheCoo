@@ -69,7 +69,6 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                'django.template.context_processors.request',
                 "django.contrib.messages.context_processors.messages",
             ],
         },
@@ -156,7 +155,7 @@ if AWS_S3_ON:
     DEFAULT_FILE_STORAGE = "config.storages.MediaStorage"  # 미디어 저장위치
     AWS_MEDIAFILES_LOCATION = "media"  # aws S3에 모이는 파일명
     STATICFILES_STORAGE = "config.storages.StaticStorage"
-    AWS_STATICFILES_LOCATION = "statics"
+    AWS_STATICFILES_LOCATION = "static"
 
     # S3 설정을 위한 변수
     # iam의 정보
@@ -173,14 +172,14 @@ if AWS_S3_ON:
         "CacheControl": "max-age=86400",
     }
     AWS_DEFAULT_ACL = "public-read"
-    AWS_LOCATION = "statics"
+    AWS_LOCATION = "static"
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, "statics")]
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 # AWS_S3_ON 비활성일 때 기본경로를 사용.
 else:
-    STATIC_ROOT = BASE_DIR / "statics"
-    STATIC_URL = "/statics/"
+    STATIC_ROOT = BASE_DIR / "static"
+    STATIC_URL = "/static/"
 
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
