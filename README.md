@@ -18,7 +18,7 @@ ChcoTheCoo supports your LOVE!!
  
 ## 🕰️DEVELOPMENT PERIOD
 
-* 22.06.05일 - 22.07.11일
+* 23.06.05일 - 23.07.11일
 
 ### 🧑‍🤝‍🧑 MEMBER
 
